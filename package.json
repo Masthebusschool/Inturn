@@ -1,0 +1,19 @@
+{
+  "name": "inturn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inturn - IS216 WAD2 group project (Vue client + Express API)",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n client,server -c cyan,green \"pnpm --filter ./client run dev\" \"pnpm --filter ./server run dev\"",
+    "dev:client": "pnpm --filter ./client run dev",
+    "dev:server": "pnpm --filter ./server run dev",
+    "build": "pnpm --filter ./client run build",
+    "start": "pnpm --filter ./server run start"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.0"
+  }
+}
