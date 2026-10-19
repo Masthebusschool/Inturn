@@ -9,6 +9,21 @@ const userSchema = new mongoose.Schema(
     skills: [String],
     targetRoles: [String],
     targetIndustries: [String],
+    // Resume profile (additive). Dates are free text ("Jan 2024", "Present").
+    summary: String,
+    experience: [
+      {
+        title: String,
+        company: String,
+        startDate: String,
+        endDate: String,
+        current: { type: Boolean, default: false },
+        bullets: [String],
+        skills: [String],
+      },
+    ],
+    projects: [{ name: String, bullets: [String], skills: [String], url: String }],
+    education: [{ school: String, degree: String, field: String, startDate: String, endDate: String }],
   },
   { timestamps: true }
 );
