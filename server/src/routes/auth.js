@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { notImplemented } from '../utils/notImplemented.js';
+import { isLoggedIn } from '../middleware/authMiddleware.js';
+import * as authController from '../controllers/authController.js';
 
 const router = Router();
 
-router.post('/signup', notImplemented('auth.signup'));
-router.post('/login', notImplemented('auth.login'));
-router.post('/logout', notImplemented('auth.logout'));
-router.get('/me', notImplemented('auth.me'));
+router.post('/signup', authController.signup);
+router.post('/login', authController.login);
+router.post('/logout', authController.logout);
+router.get('/me', isLoggedIn, authController.me);
 
 export default router;

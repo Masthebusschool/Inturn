@@ -1,32 +1,44 @@
+<script setup>
+import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import AppSidebar from './components/layout/AppSidebar.vue'
+import { authStore } from './stores/auth.js'
+
+const route = useRoute()
+
+// Find out who is logged in once, so the sidebar can show Log in / Log out.
+onMounted(() => authStore.fetchMe())
+</script>
+
 <template>
-  <nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
-    <div class="container">
-      <RouterLink class="navbar-brand" to="/">Inturn</RouterLink>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#mainNav"
-        aria-controls="mainNav"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="mainNav">
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/jobs">Jobs</RouterLink></li>
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/skill-gap">Skill Gap</RouterLink></li>
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/mock-interview">Mock Interview</RouterLink></li>
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/intel">Interview Intel</RouterLink></li>
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/shortlist">Shortlist</RouterLink></li>
-        </ul>
-        <ul class="navbar-nav">
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/login">Log in</RouterLink></li>
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/signup">Sign up</RouterLink></li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-  <main class="container py-4"><RouterView /></main>
+  <!-- Login, sign up and onboarding are full pages without the sidebar (route meta.fullPage) -->
+  <main v-if="route.meta.fullPage" class="container py-4"><RouterView /></main>
+
+  <div v-else class="app-layout">
+    <AppSidebar />
+    <main class="app-main"><RouterView /></main>
+  </div>
 </template>
+
+<style scoped>
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 1rem 1.5rem 2rem;
+}
+
+@media (max-width: 767.98px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .app-main {
+    padding: 1rem;
+  }
+}
+</style>

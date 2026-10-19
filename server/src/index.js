@@ -3,7 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import { connectDB } from './config/db.js';
+import { createSessionMiddleware } from './config/session.js';
 import authRouter from './routes/auth.js';
+import profileRouter from './routes/profile.js';
 import jobsRouter from './routes/jobs.js';
 import skillgapRouter from './routes/skillgap.js';
 import interviewRouter from './routes/interview.js';
@@ -16,8 +18,9 @@ dotenv.config({ quiet: true });
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+app.use(createSessionMiddleware());
 
 // Health check: reports API status and MongoDB connection state.
 const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
@@ -30,6 +33,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/profile', profileRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/skillgap', skillgapRouter);
 app.use('/api/interview', interviewRouter);
