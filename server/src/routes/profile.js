@@ -6,6 +6,7 @@ import { extractPdfText } from '../services/pdfText.js';
 import { parseResume } from '../services/aiService.js';
 import { PROFILE_FIELDS, toProfile } from '../utils/profile.js';
 import { canonical } from '../utils/skillNormalize.js';
+import { s, strList, objList, lowerKey } from '../utils/sanitize.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -34,32 +35,6 @@ router.post('/resume/parse', upload.single('resume'), async (req, res) => {
 
 router.use(devUser);
 
-// ---- PUT sanitising ----
-const s = (v) => (typeof v === 'string' ? v.trim() : '');
-// keyOf (optional) returns the comparison key for dedupe; first occurrence wins, original text is stored.
-const strList = (v, keyOf) => {
-  const out = [];
-  const seen = new Set();
-  for (const x of Array.isArray(v) ? v : []) {
-    const t = s(x);
-    if (!t) continue;
-    if (keyOf) {
-      const k = keyOf(t);
-      if (seen.has(k)) continue;
-      seen.add(k);
-    }
-    out.push(t);
-  }
-  return out;
-};
-// Build each entry, then drop entries whose text/array fields are all blank.
-const objList = (v, build) =>
-  (Array.isArray(v) ? v : [])
-    .filter((x) => x && typeof x === 'object')
-    .map(build)
-    .filter((e) => Object.values(e).some((val) => (Array.isArray(val) ? val.length > 0 : typeof val === 'string' && val)));
-
-const lowerKey = (t) => t.toLowerCase();
 // "Postgres" and "PostgreSQL" are the same skill; fall back to lowercase if normalising leaves nothing.
 const skillKey = (t) => canonical(t) || t.toLowerCase();
 
