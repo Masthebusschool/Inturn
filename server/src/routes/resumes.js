@@ -1,15 +1,19 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
+import multer from 'multer';
 import { devUser } from '../middleware/devUser.js';
 import { apiErrors } from '../middleware/apiErrors.js';
 import { toProfile } from '../utils/profile.js';
 import { canonical } from '../utils/skillNormalize.js';
 import { s, strList, objList } from '../utils/sanitize.js';
+import { extractPdfText } from '../services/pdfText.js';
+import { parseResume, AIServiceError } from '../services/aiService.js';
 import Resume from '../models/Resume.js';
 
 const router = Router();
 const MAX_NAME = 80;
 const skillKey = (t) => canonical(t) || t.toLowerCase();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.use(devUser);
 
@@ -118,6 +122,31 @@ router.post('/:id/duplicate', async (req, res) => {
   res.status(201).json({ resume: copy });
 });
 
+router.post('/:id/parse', upload.single('resume'), async (req, res) => {
+  const resume = await loadOwned(req, res, '_id user'); // loadOwned's ownership check needs `user` even when the route doesn't
+  if (!resume) return;
+  if (!req.file) return res.status(400).json({ error: 'Upload a PDF in the "resume" field.' });
+  if (req.file.buffer.subarray(0, 5).toString('latin1') !== '%PDF-') {
+    return res.status(400).json({ error: 'Only PDF files are supported.' });
+  }
+  let text;
+  try {
+    text = await extractPdfText(req.file.buffer);
+  } catch {
+    return res.status(422).json({ error: 'Could not read this PDF. It may be corrupted or password-protected.' });
+  }
+  if (text.length < 30) {
+    return res
+      .status(422)
+      .json({ error: 'Could not read any text from this PDF (scanned/image PDFs are not supported).' });
+  }
+  res.json({ draft: await parseResume(text) });
+});
+
+router.use((err, req, res, next) => {
+  if (err instanceof AIServiceError) return res.status(err.status).json({ error: err.message, code: err.code });
+  next(err);
+});
 router.use(apiErrors);
 
 export default router;

@@ -167,3 +167,28 @@ test('POST /:id/duplicate accepts a custom name', async () => {
   const { resume } = await res.json();
   assert.equal(resume.name, `${NAME_PREFIX} custom-copy`);
 });
+
+test('POST /:id/parse 404s for a foreign/invalid resume id before touching the upload', async () => {
+  const res = await fetch(`${base}/${new mongoose.Types.ObjectId()}/parse`, { method: 'POST' });
+  assert.equal(res.status, 404);
+});
+
+test('POST /:id/parse rejects a missing file', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} parse-nofile`, seed: 'blank' }),
+  })).json();
+  const res = await fetch(`${base}/${created.resume._id}/parse`, { method: 'POST' });
+  assert.equal(res.status, 400);
+});
+
+test('POST /:id/parse rejects a non-PDF upload', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} parse-badtype`, seed: 'blank' }),
+  })).json();
+  const form = new FormData();
+  form.append('resume', new Blob(['not a pdf'], { type: 'text/plain' }), 'resume.txt');
+  const res = await fetch(`${base}/${created.resume._id}/parse`, { method: 'POST', body: form });
+  assert.equal(res.status, 400);
+});
