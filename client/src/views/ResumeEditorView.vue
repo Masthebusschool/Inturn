@@ -132,9 +132,53 @@ function cancel() {
   router.push('/resumes')
 }
 
-// Placeholder for Task 10 (Upload PDF); wired here so the button exists but does nothing destructive yet.
 const parsing = ref(false)
-function onFile() {}
+const parseError = ref('')
+
+function dedupeCi(arr) {
+  const seen = new Set()
+  return arr.filter((x) => {
+    const k = x.toLowerCase()
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+}
+
+function mergeDraft(d) {
+  if (d.summary && !form.summary.trim()) form.summary = d.summary
+  form.skills = dedupeCi([...form.skills, ...(d.skills || [])])
+  const addNew = (list, incoming, keyOf, toForm) => {
+    const have = new Set(list.map(keyOf))
+    for (const item of incoming) {
+      const f = toForm(item)
+      const k = keyOf(f)
+      if (!have.has(k)) { have.add(k); list.push(f) }
+    }
+  }
+  const lc = (...xs) => xs.map((x) => (x || '').trim().toLowerCase()).join('|')
+  addNew(form.experience, d.experience || [], (x) => lc(x.title, x.company), expToForm)
+  addNew(form.projects, d.projects || [], (x) => lc(x.name), projToForm)
+  addNew(form.education, d.education || [], (x) => lc(x.school, x.degree), eduToForm)
+}
+
+async function onFile(e) {
+  const file = e.target.files?.[0]
+  e.target.value = '' // allow re-selecting the same file next time
+  if (!file) return
+  parsing.value = true
+  parseError.value = ''
+  try {
+    const fd = new FormData()
+    fd.append('resume', file)
+    const { draft } = await api(`/api/resumes/${props.id}/parse`, { method: 'POST', body: fd })
+    mergeDraft(draft || {})
+  } catch (err) {
+    parseError.value = err.message
+  } finally {
+    parsing.value = false
+  }
+}
 </script>
 
 <template>
@@ -170,6 +214,7 @@ function onFile() {}
       </div>
 
       <div v-if="saveError" class="alert alert-danger" role="alert">{{ saveError }}</div>
+      <div v-if="parseError" class="alert alert-danger" role="alert">{{ parseError }}</div>
       <div v-if="saved && !dirty" class="alert alert-success py-2" role="status">Resume saved</div>
 
       <div class="row g-4">
