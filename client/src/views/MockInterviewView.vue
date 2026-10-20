@@ -1,16 +1,7 @@
 <script setup>
 import { ref, reactive, computed, nextTick } from 'vue'
-// import CommunityQuestionModal from './CommunityQuestionModal.vue'
 
-const nav = [
-  { label: 'Profile', icon: 'bi-person-fill' },
-  { label: 'Applications Board', icon: 'bi-clipboard-check' },
-  { label: 'Job Discovery', icon: 'bi-globe' },
-  { label: 'Interview Intel', icon: 'bi-chat-square-text-fill' },
-  { label: 'Skill Gap Analysis', icon: 'bi-card-checklist' },
-]
-
-// ---- Practice questions (the user's journal)
+// ---- Practice questions (static for now; later these come from the user's journal in the API)
 const questions = ref([
   { id: 1, category: 'Technical', text: 'Explain the concept of technical design and how you implement it',
     tip: 'Outline how you plan before coding, and give one real example.' },
@@ -39,38 +30,11 @@ const save = () => {
   // TODO: replace with your API call
   console.log('Saved', activeId.value, responses[activeId.value])
 }
-
-// ---- Community question bank (modal fetches its own data)
-const showBank = ref(false)
-const added = reactive({}) // { [communityQuestionId]: true }
-
-const addToJournal = (c) => {
-  if (added[c.id]) return
-  const id = Math.max(...questions.value.map((q) => q.id)) + 1
-  questions.value.push({ id, category: c.category, text: c.text, tip: 'Use a specific example from your own experience.' })
-  responses[id] = ''
-  added[c.id] = true
-}
 </script>
 
 <template>
-  <div class="page d-flex flex-column flex-lg-row">
-    <!-- Sidebar (left column >= 992px, sticky top bar below) -->
-    <aside class="sidebar">
-      <div class="brand-row d-flex align-items-center gap-2 p-3 pb-lg-4 pb-2">
-        <small class="fw-bold">Logo</small>
-        <span class="brand">Inturn</span>
-      </div>
-      <nav class="nav flex-nowrap flex-lg-column">
-        <a v-for="item in nav" :key="item.label" href="#" class="nav-link"
-           :class="{ active: item.label === 'Interview Intel' }">
-          <i class="bi" :class="item.icon"></i>{{ item.label }}
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Main -->
-    <main class="flex-grow-1 p-3 p-lg-4">
+  <div class="page">
+    <main class="p-3 p-lg-4">
       <div class="header-card mb-4">
         <h1 class="h5 mb-1">Gerald’s Interview Journal</h1>
         <p class="small mb-0">Hi Gerald - Let’s turn your experiences into ready-made interview stories</p>
@@ -79,7 +43,7 @@ const addToJournal = (c) => {
       <div class="row g-4 px-lg-4">
         <!-- Questions list -->
         <div class="col-12 col-lg-5">
-          <section class="panel pt-4 pb-2 h-100">
+          <section class="panel pt-4 pb-3 h-100">
             <div class="px-3 px-md-4 pb-3 d-flex justify-content-between align-items-start">
               <div>
                 <div class="text-muted fw-semibold" style="font-size:.65rem">Govtech | Fullstack Intern</div>
@@ -97,11 +61,6 @@ const addToJournal = (c) => {
                 <span class="q-text d-block">{{ q.text }}</span>
               </span>
               <i class="bi bi-chevron-right text-secondary"></i>
-            </button>
-
-            <button class="q-item justify-content-between py-4" @click="showBank = true">
-              <span class="fw-semibold small">Browse Community Questions</span>
-              <i class="bi bi-arrow-right fs-5 text-secondary"></i>
             </button>
           </section>
         </div>
@@ -135,25 +94,22 @@ const addToJournal = (c) => {
         </div>
       </div>
     </main>
-
-    <CommunityQuestionModal
-      :open="showBank"
-      :added="added"
-      @close="showBank = false"
-      @add="addToJournal"
-    />
   </div>
 </template>
 
 <style scoped>
-.page { width: 100%; min-height: 100vh; text-align: left; }
+/* Design tokens live here so this component works in any project without a global stylesheet */
+.page {
+  --inturn-blue: #4a86e8;
+  --inturn-blue-dark: #3a74d4;
+  --inturn-blue-light: #e1edfd;
+  --panel: #f3f3f3;
+  --ink: #111;
+  width: 100%; text-align: left; color: var(--ink);
+}
 
-/* Sidebar */
-.sidebar { width: 220px; align-self: stretch; min-height: 100vh; background: var(--inturn-blue); color: #fff; flex-shrink: 0; }
-.sidebar .brand { font-size: 1.5rem; font-weight: 700; }
-.sidebar .nav-link { color: #fff; font-size: .8rem; padding: .7rem 1rem; display: flex; align-items: center; gap: .75rem; border-radius: 0; }
-.sidebar .nav-link.active { background: rgba(0,0,0,.2); font-weight: 600; }
-.sidebar .nav-link:hover { background: rgba(0,0,0,.12); }
+.btn-inturn { background: var(--inturn-blue); color: #fff; border-radius: 999px; font-size: .75rem; font-weight: 600; padding: .45rem 1rem; border: 0; }
+.btn-inturn:hover { background: var(--inturn-blue-dark); color: #fff; }
 
 /* Header card */
 .header-card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.25rem; }
@@ -172,7 +128,7 @@ const addToJournal = (c) => {
 .tips { background: var(--inturn-blue); color: #fff; border-radius: 10px; padding: .75rem 1rem; }
 .reflection { background: #fff; border: 0; border-radius: 22px; resize: none; min-height: 260px; padding: 1.25rem; }
 .reflection:focus { box-shadow: 0 0 0 .2rem rgba(74,134,232,.3); }
-.response-panel { scroll-margin-top: 110px; } /* keeps it clear of the sticky top bar */
+.response-panel { scroll-margin-top: 80px; } /* keeps it clear of a sticky navbar */
 
 /* Below 768px: tighter spacing for phones */
 @media (max-width: 767.98px) {
@@ -180,15 +136,5 @@ const addToJournal = (c) => {
   .q-item { padding: .9rem 1rem; }
   .header-card { padding: .85rem 1rem; }
   .reflection { min-height: 200px; padding: 1rem; border-radius: 16px; }
-  .sidebar .brand { font-size: 1.25rem; }
-}
-
-/* Below 992px: sidebar becomes a sticky top bar, content stacks (questions, then reflection) */
-@media (max-width: 991.98px) {
-  .sidebar { width: 100%; min-height: auto; position: sticky; top: 0; z-index: 100; }
-  .sidebar .nav { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .sidebar .nav::-webkit-scrollbar { display: none; }
-  .sidebar .nav-link { white-space: nowrap; border-bottom: 3px solid transparent; }
-  .sidebar .nav-link.active { background: transparent; border-bottom-color: #fff; }
 }
 </style>

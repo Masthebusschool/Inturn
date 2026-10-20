@@ -17,7 +17,7 @@
         <ul class="navbar-nav me-auto">
           <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/jobs">Jobs</RouterLink></li>
           <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/skill-gap">Skill Gap</RouterLink></li>
-          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/mock-interview">Mock Interview</RouterLink></li>
+          <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/mock-interview">Interview Journal</RouterLink></li>
           <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/intel">Interview Intel</RouterLink></li>
           <li class="nav-item"><RouterLink class="nav-link" active-class="active" to="/shortlist">Shortlist</RouterLink></li>
         </ul>
