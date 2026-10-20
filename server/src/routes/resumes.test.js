@@ -62,3 +62,65 @@ test('POST / rejects a missing name', async () => {
   });
   assert.equal(res.status, 400);
 });
+
+test('GET /:id returns the resume; a foreign/invalid id 404s', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} get`, seed: 'blank' }),
+  })).json();
+
+  const ok = await fetch(`${base}/${created.resume._id}`);
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).resume.name, `${NAME_PREFIX} get`);
+
+  const notAnId = await fetch(`${base}/not-an-id`);
+  assert.equal(notAnId.status, 404);
+
+  const validButMissing = await fetch(`${base}/${new mongoose.Types.ObjectId()}`);
+  assert.equal(validButMissing.status, 404);
+});
+
+test('PUT /:id replaces fields and bumps updatedAt', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} put`, seed: 'blank' }),
+  })).json();
+
+  const res = await fetch(`${base}/${created.resume._id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: `${NAME_PREFIX} put-renamed`,
+      contact: { fullName: 'Aiden Lim', phone: '', email: '', linkedin: '', github: '', portfolio: '' },
+      summary: 'Updated summary', skills: ['SQL', 'sql'], experience: [], projects: [], education: [],
+    }),
+  });
+  assert.equal(res.status, 200);
+  const { resume } = await res.json();
+  assert.equal(resume.name, `${NAME_PREFIX} put-renamed`);
+  assert.equal(resume.contact.fullName, 'Aiden Lim');
+  assert.deepEqual(resume.skills, ['SQL']); // deduped case-insensitively, same as profile.js
+});
+
+test('PUT /:id rejects an empty name', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} put-empty`, seed: 'blank' }),
+  })).json();
+  const res = await fetch(`${base}/${created.resume._id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: '  ', contact: {}, summary: '', skills: [], experience: [], projects: [], education: [] }),
+  });
+  assert.equal(res.status, 400);
+});
+
+test('DELETE /:id removes it; a second GET 404s', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} delete`, seed: 'blank' }),
+  })).json();
+  const del = await fetch(`${base}/${created.resume._id}`, { method: 'DELETE' });
+  assert.equal(del.status, 200);
+  const after = await fetch(`${base}/${created.resume._id}`);
+  assert.equal(after.status, 404);
+});

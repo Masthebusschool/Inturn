@@ -84,6 +84,28 @@ router.post('/', async (req, res) => {
   res.status(201).json({ resume });
 });
 
+router.get('/:id', async (req, res) => {
+  const resume = await loadOwned(req, res);
+  if (resume) res.json({ resume });
+});
+
+router.put('/:id', async (req, res) => {
+  const resume = await loadOwned(req, res);
+  if (!resume) return;
+  const clean = cleanBody(req.body);
+  if (!clean.name) return res.status(400).json({ error: 'Resume name is required.' });
+  Object.assign(resume, clean);
+  await resume.save();
+  res.json({ resume });
+});
+
+router.delete('/:id', async (req, res) => {
+  const resume = await loadOwned(req, res);
+  if (!resume) return;
+  await resume.deleteOne();
+  res.json({ ok: true });
+});
+
 router.use(apiErrors);
 
 export default router;
