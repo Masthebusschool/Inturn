@@ -133,9 +133,14 @@ test('DELETE /:id removes it; a second GET 404s', async () => {
 });
 
 test('POST /:id/duplicate defaults to "Copy of <name>"', async () => {
+  const user = await User.findOneAndUpdate(
+    { email: 'dev@inturn.local' },
+    { $addToSet: { skills: `${NAME_PREFIX}-skill` } },
+    { upsert: true, returnDocument: 'after' }
+  );
   const created = await (await fetch(`${base}/`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: `${NAME_PREFIX} original`, seed: 'blank' }),
+    body: JSON.stringify({ name: `${NAME_PREFIX} original`, seed: 'profile' }),
   })).json();
   const res = await fetch(`${base}/${created.resume._id}/duplicate`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
@@ -144,6 +149,10 @@ test('POST /:id/duplicate defaults to "Copy of <name>"', async () => {
   const { resume } = await res.json();
   assert.equal(resume.name, `Copy of ${NAME_PREFIX} original`);
   assert.notEqual(resume._id, created.resume._id);
+  assert.deepEqual(resume.skills, created.resume.skills); // duplicate actually copies fields, not just the name
+  // cleanup the skill we injected on the shared dev user
+  user.skills = user.skills.filter((sk) => sk !== `${NAME_PREFIX}-skill`);
+  await user.save();
 });
 
 test('POST /:id/duplicate accepts a custom name', async () => {
