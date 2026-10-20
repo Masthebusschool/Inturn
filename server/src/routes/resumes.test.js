@@ -131,3 +131,30 @@ test('DELETE /:id removes it; a second GET 404s', async () => {
   const after = await fetch(`${base}/${created.resume._id}`);
   assert.equal(after.status, 404);
 });
+
+test('POST /:id/duplicate defaults to "Copy of <name>"', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} original`, seed: 'blank' }),
+  })).json();
+  const res = await fetch(`${base}/${created.resume._id}/duplicate`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+  });
+  assert.equal(res.status, 201);
+  const { resume } = await res.json();
+  assert.equal(resume.name, `Copy of ${NAME_PREFIX} original`);
+  assert.notEqual(resume._id, created.resume._id);
+});
+
+test('POST /:id/duplicate accepts a custom name', async () => {
+  const created = await (await fetch(`${base}/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} source`, seed: 'blank' }),
+  })).json();
+  const res = await fetch(`${base}/${created.resume._id}/duplicate`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: `${NAME_PREFIX} custom-copy` }),
+  });
+  const { resume } = await res.json();
+  assert.equal(resume.name, `${NAME_PREFIX} custom-copy`);
+});

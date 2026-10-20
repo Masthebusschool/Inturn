@@ -106,6 +106,18 @@ router.delete('/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+router.post('/:id/duplicate', async (req, res) => {
+  const resume = await loadOwned(req, res);
+  if (!resume) return;
+  const name = s(req.body?.name).slice(0, MAX_NAME) || `Copy of ${resume.name}`;
+  const copy = await Resume.create({
+    user: req.user._id, name,
+    contact: resume.contact, summary: resume.summary, skills: resume.skills,
+    experience: resume.experience, projects: resume.projects, education: resume.education,
+  });
+  res.status(201).json({ resume: copy });
+});
+
 router.use(apiErrors);
 
 export default router;
