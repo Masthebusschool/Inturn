@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue'
 import ChipInput from '../ChipInput.vue'
+import ConfirmButton from '../common/ConfirmButton.vue'
 import { cloneDraft } from '../../lib/skillgap.js'
 
 const props = defineProps({
@@ -26,10 +27,6 @@ const setBullet = (kind, i, j, v) => edit((d) => { lists[kind](d)[i].bullets[j] 
 const addBullet = (kind, i) => edit((d) => lists[kind](d)[i].bullets.push(''))
 const removeBullet = (kind, i, j) => edit((d) => lists[kind](d)[i].bullets.splice(j, 1))
 
-function reset() {
-  if (window.confirm('Reset the draft to the original AI draft? Your edits will be lost.')) emit('reset')
-}
-
 // Textarea grows with its content instead of scrolling inside a tiny box.
 const fit = (el) => { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px` }
 const vAutosize = { mounted: fit, updated: fit }
@@ -53,12 +50,12 @@ const icon = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke
 <template>
   <div ref="root" class="card shadow-sm">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h2 class="h5 mb-0">Resume draft</h2>
           <p class="small text-body-secondary mb-0">Edit freely — the score updates a few seconds after you stop typing.</p>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" @click="reset">Reset to AI draft</button>
+        <ConfirmButton label="Reset to AI draft" trigger-class="btn btn-sm btn-outline-secondary" prompt="Reset to the original AI draft? Your edits will be lost." confirm-label="Reset draft" @confirm="emit('reset')" />
       </div>
 
       <div class="sg-field mb-4" data-field="summary">

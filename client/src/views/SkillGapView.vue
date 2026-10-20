@@ -2,8 +2,9 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { api } from '../lib/api.js'
 import {
-  BAND_META, rawBand, cloneDraft, draftKey, fieldIdForEvidence, applySuggestion, draftToText,
+  BAND_META, rawBand, cloneDraft, draftKey, fieldIdForEvidence, applySuggestion, draftToText, fmtDate,
 } from '../lib/skillgap.js'
+import SkillTodoCard from '../components/skillgap/SkillTodoCard.vue'
 import ScoreReport from '../components/skillgap/ScoreReport.vue'
 import DraftEditor from '../components/skillgap/DraftEditor.vue'
 import TailorChat from '../components/skillgap/TailorChat.vue'
@@ -14,7 +15,7 @@ const APPLY_MS = 1200 // an applied suggestion is a deliberate, discrete edit
 const MAX_FOCUS = 6 // server caps focus targets at 6
 
 // ---------- setup area (job form + history) ----------
-const job = ref({ title: '', company: '', description: '' })
+const job = ref({ title: '', company: '', description: '', applicationDeadline: '' })
 const touched = ref(false)
 const analyzing = ref(false)
 const elapsed = ref(0)
@@ -48,7 +49,6 @@ const titleInvalid = computed(() => touched.value && !job.value.title.trim())
 const descInvalid = computed(() => touched.value && !job.value.description.trim())
 const quota = (e) => e?.code === 'ai_daily_quota'
 const fail = (e, retry) => { err.value = { message: e.message, code: e.code, retry } }
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '')
 const stage = computed(() =>
   elapsed.value < 15 ? 'Reading the posting…' : elapsed.value < 60 ? 'Grading every requirement against your profile…' : 'Writing your tailored draft…')
 
@@ -67,6 +67,55 @@ async function loadHistory() {
     historyError.value = e.message
   } finally {
     historyLoading.value = false
+  }
+}
+
+const todos = ref([])
+const todosLoading = ref(true)
+const todosError = ref('')
+const todoActionError = ref('')
+const todoBusy = ref(null)
+
+async function loadTodos() {
+  try {
+    const { tasks } = await api('/api/learning-tasks')
+    todos.value = tasks || []
+    todosError.value = ''
+  } catch (e) {
+    todosError.value = e.message
+  } finally {
+    todosLoading.value = false
+  }
+}
+
+// Optimistic so the checkbox moves at once; the original row is restored if the PATCH fails.
+async function toggleTodo(t) {
+  todoActionError.value = ''
+  const next = t.status === 'done' ? 'pending' : 'done'
+  const swap = (row) => { todos.value = todos.value.map((x) => (x._id === t._id ? row : x)) }
+  swap({ ...t, status: next })
+  todoBusy.value = t._id
+  try {
+    const { task } = await api(`/api/learning-tasks/${t._id}`, { method: 'PATCH', body: { status: next } })
+    swap(task)
+  } catch (e) {
+    swap(t)
+    todoActionError.value = e.message
+  } finally {
+    todoBusy.value = null
+  }
+}
+
+async function removeTodo(t) {
+  todoActionError.value = ''
+  todoBusy.value = t._id
+  try {
+    await api(`/api/learning-tasks/${t._id}`, { method: 'DELETE' })
+    todos.value = todos.value.filter((x) => x._id !== t._id)
+  } catch (e) {
+    todoActionError.value = e.message
+  } finally {
+    todoBusy.value = null
   }
 }
 
@@ -231,12 +280,18 @@ async function analyze() {
     const { result: r } = await api('/api/skillgap', {
       method: 'POST',
       body: {
-        job: { title: job.value.title.trim(), company: job.value.company.trim(), description: job.value.description.trim() },
+        job: {
+          title: job.value.title.trim(),
+          company: job.value.company.trim(),
+          description: job.value.description.trim(),
+          applicationDeadline: job.value.applicationDeadline || undefined,
+        },
         ...(selectedResumeId.value && { resumeId: selectedResumeId.value }),
       },
     })
     openLoaded(r)
     loadHistory()
+    loadTodos() // the server just added this analysis's skills
   } catch (e) {
     fail(e, analyze)
   } finally {
@@ -328,6 +383,7 @@ async function copyText() {
 onMounted(() => {
   loadProfile()
   loadHistory()
+  loadTodos()
   loadResumes()
   window.addEventListener('keydown', onKey)
 })
@@ -385,6 +441,11 @@ onBeforeUnmount(() => {
               <textarea id="sg-desc" v-model="job.description" rows="9" class="form-control" :class="{ 'is-invalid': descInvalid }" required aria-required="true" placeholder="Paste the full job posting here" :disabled="analyzing"></textarea>
               <div class="invalid-feedback">Paste the job description.</div>
             </div>
+            <div class="mb-3">
+              <label for="sg-deadline" class="form-label">Application deadline <span class="text-body-secondary">(optional)</span></label>
+              <input id="sg-deadline" v-model="job.applicationDeadline" type="date" class="form-control" :disabled="analyzing" />
+              <div class="form-text">Used to set deadlines on your skill-gap to-do list.</div>
+            </div>
             <div v-if="resumes.length" class="mb-3">
               <label for="sg-resume" class="form-label">Resume to use</label>
               <select id="sg-resume" v-model="selectedResumeId" class="form-select" :disabled="analyzing">
@@ -400,8 +461,8 @@ onBeforeUnmount(() => {
         </form>
       </div>
 
-      <div v-if="!result || setupPanel === 'history'" class="col-12 col-lg-5">
-        <div class="card shadow-sm">
+      <div class="col-12 col-lg-5 d-flex flex-column gap-4">
+        <div v-if="!result || setupPanel === 'history'" class="card shadow-sm">
           <div class="card-body pb-2"><h2 class="h5 mb-0">History</h2></div>
           <div v-if="historyLoading" class="px-3 pb-3 text-body-secondary small" role="status">Loading…</div>
           <div v-else-if="historyError" class="px-3 pb-3 text-danger-emphasis small">{{ historyError }}</div>
@@ -425,6 +486,15 @@ onBeforeUnmount(() => {
             </button>
           </div>
         </div>
+        <SkillTodoCard
+          :tasks="todos"
+          :loading="todosLoading"
+          :error="todosError"
+          :action-error="todoActionError"
+          :busy-id="todoBusy"
+          @toggle="toggleTodo"
+          @remove="removeTodo"
+        />
       </div>
     </div>
 
@@ -459,7 +529,7 @@ onBeforeUnmount(() => {
           <div class="me-auto min-w-0">
             <h2 class="h5 mb-0">{{ result.job.title }}<template v-if="result.job.company"> · {{ result.job.company }}</template></h2>
             <small class="text-body-secondary">
-              Analyzed {{ fmtDate(result.createdAt) }}<template v-if="result.label"> · <span class="badge text-bg-light border fw-normal">{{ result.label }}</span></template>
+              Analyzed {{ fmtDate(result.createdAt) }}<template v-if="result.job?.applicationDeadline"> · Apply by {{ fmtDate(result.job.applicationDeadline) }}</template><template v-if="result.label"> · <span class="badge text-bg-light border fw-normal">{{ result.label }}</span></template>
             </small>
           </div>
           <div class="small" role="status" aria-live="polite">
@@ -546,6 +616,18 @@ onBeforeUnmount(() => {
       <!-- Always mounted (teleported to <body>), hidden on screen; the only thing window.print() shows -->
       <Teleport to="body"><ResumePaper print :draft="draft" :profile="profile" /></Teleport>
     </template>
+
+    <SkillTodoCard
+      v-if="result && !setupPanel"
+      class="mt-4"
+      :tasks="todos"
+      :loading="todosLoading"
+      :error="todosError"
+      :action-error="todoActionError"
+      :busy-id="todoBusy"
+      @toggle="toggleTodo"
+      @remove="removeTodo"
+    />
   </section>
 </template>
 

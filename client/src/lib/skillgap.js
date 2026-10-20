@@ -10,6 +10,8 @@ export const BAND_META = {
 // Same thresholds as the server's bandFor, without the must-have cap.
 export const rawBand = (score) => (score >= 75 ? 'strong' : score >= 50 ? 'moderate' : score >= 25 ? 'emerging' : 'low')
 
+export const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '')
+
 export function capInfo(score, band, requirements = []) {
   const capped = rawBand(score) === 'strong' && band === 'moderate'
   const blockers = capped

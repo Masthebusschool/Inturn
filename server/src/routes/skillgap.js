@@ -7,6 +7,7 @@ import SkillGapResult from '../models/SkillGapResult.js';
 import Resume from '../models/Resume.js';
 import { toProfile } from '../utils/profile.js';
 import { profileFromResume } from '../utils/resumeProfile.js';
+import { syncLearningTasksFromResult } from '../utils/learningTasks.js';
 import { cleanDraft, cleanOverrides, draftToProfile } from '../utils/tailorDraft.js';
 
 const router = Router();
@@ -16,6 +17,12 @@ const MAX_DESCRIPTION = 20000;
 const MAX_MESSAGE = 2000;
 const MAX_LABEL = 80;
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
+// Optional "apply by" date for the posting; invalid/missing input is silently dropped (feature degrades gracefully).
+const parseDeadline = (v) => {
+  if (!str(v)) return undefined;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+};
 
 // Express 5 forwards async errors to apiErrors (below), so handlers need no try/catch.
 
@@ -39,6 +46,7 @@ router.post('/', async (req, res) => {
     title: str(j.title),
     company: str(j.company),
     description: str(j.description).slice(0, MAX_DESCRIPTION),
+    applicationDeadline: parseDeadline(j.applicationDeadline),
   };
   if (!job.title || !job.description) {
     return res.status(400).json({ error: 'Job title and description are required.' });
@@ -74,6 +82,12 @@ router.post('/', async (req, res) => {
   const result = await SkillGapResult.create({
     user: req.user._id, job, ...gap, tailoredResume, ...(sourceResume && { sourceResume }),
   });
+  // The analysis is saved; a to-do sync failure must not turn it into a 500.
+  try {
+    await syncLearningTasksFromResult(req.user._id, result);
+  } catch (e) {
+    console.error('[skillgap] learning-task sync failed:', e);
+  }
   res.status(201).json({ result });
 });
 
@@ -82,7 +96,7 @@ router.get('/history', async (req, res) => {
   const results = await SkillGapResult.find({ user: req.user._id })
     .sort({ createdAt: -1 })
     .limit(50)
-    .select('job.title job.company atsScore band label forkedFrom draftScore.atsScore draftScore.band createdAt sourceResume.name')
+    .select('job.title job.company job.applicationDeadline atsScore band label forkedFrom draftScore.atsScore draftScore.band createdAt sourceResume.name')
     .lean();
   res.json({ results });
 });

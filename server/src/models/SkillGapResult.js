@@ -45,6 +45,7 @@ const skillGapResultSchema = new mongoose.Schema(
       title: String,
       company: String,
       description: String,
+      applicationDeadline: Date, // "apply by" date, typed in manually until the real job board exists
     },
     atsScore: { type: Number, min: 0, max: 100 },
     band: { type: String, enum: ['strong', 'moderate', 'emerging', 'low'] },

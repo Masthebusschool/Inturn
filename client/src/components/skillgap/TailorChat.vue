@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { api } from '../../lib/api.js'
 import { sectionLabel } from '../../lib/skillgap.js'
+import ConfirmButton from '../common/ConfirmButton.vue'
 
 const props = defineProps({
   resultId: { type: String, required: true },
@@ -40,12 +41,13 @@ async function send() {
 }
 
 async function clear() {
-  if (!window.confirm('Clear this conversation? Suggestions already applied to your draft stay.')) return
   try {
     await api(`/api/skillgap/${props.resultId}/tailor`, { method: 'DELETE' })
     emit('update:messages', [])
     dismissed.value = new Set()
     error.value = null
+    // The Clear trigger disables itself once the log is empty, so hand focus to the composer.
+    nextTick(() => document.getElementById('sg-chat-input')?.focus())
   } catch (e) {
     error.value = { message: e.message, code: e.code }
   }
@@ -119,9 +121,9 @@ watch(() => [props.messages.length, sending.value], async () => {
       </div>
       <label for="sg-chat-input" class="visually-hidden">Message to the tailoring assistant</label>
       <textarea id="sg-chat-input" v-model="input" class="form-control" rows="2" maxlength="2000" placeholder="Ask about your draft…" :disabled="sending" @keydown="onKey"></textarea>
-      <div class="d-flex justify-content-between align-items-center mt-2">
-        <button type="button" class="btn btn-link btn-sm text-danger p-0" :disabled="!messages.length || sending" @click="clear">Clear conversation</button>
-        <button type="button" class="btn btn-primary btn-sm px-3" :disabled="!input.trim() || sending" @click="send">Send</button>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+        <ConfirmButton label="Clear conversation" trigger-class="btn btn-link btn-sm text-danger p-0" prompt="Clear this conversation? Suggestions already applied to your draft stay." confirm-label="Clear" :disabled="!messages.length || sending" @confirm="clear" />
+        <button type="button" class="btn btn-primary btn-sm px-3 ms-auto" :disabled="!input.trim() || sending" @click="send">Send</button>
       </div>
       <div class="form-text">Enter to send, Shift+Enter for a new line.</div>
     </div>

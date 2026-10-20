@@ -15,6 +15,8 @@ export const CATEGORIES = ['technical', 'domain', 'soft_skill', 'responsibility'
 export const TIERS = ['required', 'preferred'];
 export const IMPORTANCES = ['high', 'medium', 'low'];
 export const VERDICTS = ['met', 'partial', 'missing'];
+// Categories that count as learnable skills (matched/missing lists, skill to-do list).
+export const SKILL_CATEGORIES = ['technical', 'domain', 'soft_skill'];
 
 const DEGREE_RE = /\b(degree|bachelor'?s?|master'?s?|ph\.?d|doctorate|diploma|b\.?sc|m\.?sc|b\.?eng|m\.?eng|field of study|major in)\b/i;
 
@@ -330,9 +332,8 @@ export function scoreRequirements(units, judged) {
 }
 
 export function summarizeGap(requirements) {
-  const skillCats = ['technical', 'domain', 'soft_skill'];
-  const matchedSkills = requirements.filter((r) => skillCats.includes(r.category) && r.verdict === 'met').map((r) => r.text);
-  const missingSkills = requirements.filter((r) => skillCats.includes(r.category) && r.verdict === 'missing').map((r) => r.text);
+  const matchedSkills = requirements.filter((r) => SKILL_CATEGORIES.includes(r.category) && r.verdict === 'met').map((r) => r.text);
+  const missingSkills = requirements.filter((r) => SKILL_CATEGORIES.includes(r.category) && r.verdict === 'missing').map((r) => r.text);
   const gaps = requirements
     .filter((r) => r.verdict !== 'met')
     .sort((a, b) => (b.mark - b.earned) - (a.mark - a.earned) || (a.tier === 'required' ? 0 : 1) - (b.tier === 'required' ? 0 : 1))

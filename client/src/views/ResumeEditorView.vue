@@ -3,6 +3,7 @@ import { reactive, ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../lib/api.js'
 import ResumePreview from '../components/resumes/ResumePreview.vue'
+import ConfirmButton from '../components/common/ConfirmButton.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -127,8 +128,7 @@ async function save() {
   }
 }
 
-function cancel() {
-  if (dirty.value && !window.confirm('Discard unsaved changes?')) return
+function leave() {
   router.push('/resumes')
 }
 
@@ -190,7 +190,16 @@ async function onFile(e) {
 
     <template v-if="!loading && !loadError">
       <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
-        <RouterLink to="/resumes" class="btn btn-outline-secondary btn-sm" aria-label="Back to My resumes">&larr;</RouterLink>
+        <ConfirmButton
+          label="←"
+          trigger-class="btn btn-outline-secondary btn-sm"
+          trigger-aria-label="Back to My resumes"
+          prompt="Discard unsaved changes?"
+          confirm-label="Discard"
+          cancel-label="Keep editing"
+          :skip="!dirty"
+          @confirm="leave"
+        />
         <div class="flex-grow-1 min-w-0">
           <input
             v-model="form.name"
@@ -201,12 +210,12 @@ async function onFile(e) {
           />
           <div class="text-body-secondary small">Resume details</div>
         </div>
-        <div class="d-flex gap-2 flex-shrink-0">
+        <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0 mw-100">
           <label class="btn btn-outline-secondary btn-sm mb-0">
             <span v-if="parsing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ parsing ? 'Parsing…' : 'Upload PDF' }}
             <input type="file" accept="application/pdf" class="d-none" :disabled="parsing" @change="onFile" />
           </label>
-          <button type="button" class="btn btn-outline-secondary btn-sm" @click="cancel">Cancel</button>
+          <ConfirmButton label="Cancel" trigger-class="btn btn-outline-secondary btn-sm" prompt="Discard unsaved changes?" confirm-label="Discard" cancel-label="Keep editing" :skip="!dirty" @confirm="leave" />
           <button type="button" class="btn btn-primary btn-sm" :disabled="saving" @click="save">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ saving ? 'Saving…' : 'Save' }}
           </button>

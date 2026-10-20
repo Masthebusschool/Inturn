@@ -11,6 +11,7 @@ import intelRouter from './routes/intel.js';
 import shortlistRouter from './routes/shortlist.js';
 import profileRouter from './routes/profile.js';
 import resumesRouter from './routes/resumes.js';
+import learningTasksRouter from './routes/learningTasks.js';
 
 // Imports are hoisted, so load .env here before reading any process.env value.
 dotenv.config({ quiet: true });
@@ -39,6 +40,7 @@ app.use('/api/intel', intelRouter);
 app.use('/api/shortlist', shortlistRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/resumes', resumesRouter);
+app.use('/api/learning-tasks', learningTasksRouter);
 
 // JSON 404 for unknown /api routes (no '*' wildcard: Express 5 rejects it).
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
