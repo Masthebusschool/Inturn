@@ -15,7 +15,7 @@ before(async () => {
 });
 
 after(async () => {
-  await Resume.deleteMany({ name: new RegExp(`^${NAME_PREFIX}`) });
+  await Resume.deleteMany({ name: new RegExp(`^(Copy of )?${NAME_PREFIX}`) });
   await close();
   await mongoose.disconnect();
 });
