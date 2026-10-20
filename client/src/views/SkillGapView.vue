@@ -31,6 +31,19 @@ const profile = ref(null)
 const profileError = ref('')
 const profileEmpty = computed(() => !!profile.value && !(profile.value.skills?.length || profile.value.experience?.length || profile.value.projects?.length))
 
+const resumes = ref([])
+const selectedResumeId = ref('')
+
+async function loadResumes() {
+  try {
+    const { resumes: r } = await api('/api/resumes')
+    resumes.value = r
+    if (!selectedResumeId.value && r.length) selectedResumeId.value = r[0]._id // already sorted updatedAt desc
+  } catch {
+    // Non-fatal: the form just falls back to "Use base Profile" if this fails.
+  }
+}
+
 const titleInvalid = computed(() => touched.value && !job.value.title.trim())
 const descInvalid = computed(() => touched.value && !job.value.description.trim())
 const quota = (e) => e?.code === 'ai_daily_quota'
@@ -217,7 +230,10 @@ async function analyze() {
   try {
     const { result: r } = await api('/api/skillgap', {
       method: 'POST',
-      body: { job: { title: job.value.title.trim(), company: job.value.company.trim(), description: job.value.description.trim() } },
+      body: {
+        job: { title: job.value.title.trim(), company: job.value.company.trim(), description: job.value.description.trim() },
+        ...(selectedResumeId.value && { resumeId: selectedResumeId.value }),
+      },
     })
     openLoaded(r)
     loadHistory()
@@ -312,6 +328,7 @@ async function copyText() {
 onMounted(() => {
   loadProfile()
   loadHistory()
+  loadResumes()
   window.addEventListener('keydown', onKey)
 })
 onBeforeUnmount(() => {
@@ -368,6 +385,13 @@ onBeforeUnmount(() => {
               <textarea id="sg-desc" v-model="job.description" rows="9" class="form-control" :class="{ 'is-invalid': descInvalid }" required aria-required="true" placeholder="Paste the full job posting here" :disabled="analyzing"></textarea>
               <div class="invalid-feedback">Paste the job description.</div>
             </div>
+            <div v-if="resumes.length" class="mb-3">
+              <label for="sg-resume" class="form-label">Resume to use</label>
+              <select id="sg-resume" v-model="selectedResumeId" class="form-select" :disabled="analyzing">
+                <option value="">Use base Profile</option>
+                <option v-for="r in resumes" :key="r._id" :value="r._id">{{ r.name }}</option>
+              </select>
+            </div>
             <button type="submit" class="btn btn-primary w-100" :disabled="analyzing">
               <span v-if="analyzing" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
               {{ analyzing ? 'Analyzing…' : 'Analyze' }}
@@ -395,7 +419,7 @@ onBeforeUnmount(() => {
             >
               <span class="text-truncate">
                 <span class="fw-semibold d-block text-truncate">{{ h.job?.title }}<template v-if="h.job?.company"> · {{ h.job.company }}</template></span>
-                <small :class="result && result._id === h._id ? '' : 'text-body-secondary'">{{ fmtDate(h.createdAt) }}<template v-if="h.label"> · {{ h.label }}</template></small>
+                <small :class="result && result._id === h._id ? '' : 'text-body-secondary'">{{ fmtDate(h.createdAt) }}<template v-if="h.sourceResume?.name"> · {{ h.sourceResume.name }}</template><template v-if="h.label"> · {{ h.label }}</template></small>
               </span>
               <span class="badge flex-shrink-0 border" :class="`text-bg-${histBadge(h).meta.variant}`">{{ histBadge(h).score }} · {{ histBadge(h).meta.label.replace(' match', '') }}</span>
             </button>
