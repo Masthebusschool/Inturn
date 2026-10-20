@@ -51,7 +51,7 @@ export async function parseResume(resumeText) {
 ${text}
 =====END RESUME=====`;
   const d = await callGemini({
-    model: modelFor('default'),
+    model: modelFor('resume'),
     contents: prompt,
     responseSchema: obj({
       summary: S,

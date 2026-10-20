@@ -45,6 +45,7 @@ export function modelFor(purpose = 'default') {
   const base = envStr('GEMINI_MODEL') || DEFAULT_MODEL;
   if (purpose === 'parse') return envStr('GEMINI_PARSE_MODEL') || base;
   if (purpose === 'judge') return envStr('GEMINI_JUDGE_MODEL') || base;
+  if (purpose === 'resume') return envStr('GEMINI_RESUME_MODEL') || base;
   return base;
 }
 
