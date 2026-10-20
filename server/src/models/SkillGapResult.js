@@ -62,6 +62,13 @@ const skillGapResultSchema = new mongoose.Schema(
       experience: [{ _id: false, title: String, company: String, bullets: [String] }],
       projects: [{ _id: false, name: String, bullets: [String] }],
     },
+    // Traceability snapshot: which saved Resume (and which version of it) seeded this analysis's
+    // tailored draft. Set only when the analysis was started from a resume rather than the base
+    // Profile; no live link back (see spec's "no save-back" decision).
+    sourceResume: new mongoose.Schema(
+      { resume: { type: mongoose.Schema.Types.ObjectId, ref: 'Resume' }, name: String, resumeUpdatedAt: Date },
+      { _id: false }
+    ),
     // Editable copy of the draft. Single-nested so it stays absent until first set.
     draftResume: draftSchema,
     // requirement key -> 'confirmed_have' | 'confirmed_missing' (validated in code)
