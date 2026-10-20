@@ -103,7 +103,9 @@ exactly as today — fully backward compatible. `GET /api/skillgap/history` adds
 - `client/src/views/ResumeEditorView.vue` (new) — the split-pane page from the reference
   screenshot:
   - Top bar: back-to-list arrow, editable resume name + "Resume details" subtitle,
-    Upload PDF / Cancel / Save. No dark-mode toggle here — that's already global in `App.vue`.
+    Upload PDF / Cancel / Save. No dark-mode toggle — correction from the original screenshot
+    read: Inturn has no theme toggle anywhere in the client today (`App.vue`'s navbar is just
+    hardcoded dark), so this page won't invent a one-off toggle that exists nowhere else.
   - Left pane: stacked form sections — Contact, Summary, Skills, Experience, Projects,
     Education — following the same field patterns as `ProfileView.vue`, plus the new Contact
     block (full name, phone, email, LinkedIn, GitHub, portfolio).
