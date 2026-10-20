@@ -86,6 +86,9 @@ test('PUT /:id replaces fields and bumps updatedAt', async () => {
     body: JSON.stringify({ name: `${NAME_PREFIX} put`, seed: 'blank' }),
   })).json();
 
+  // guard against same-millisecond timestamps when create+update run back-to-back
+  await new Promise((r) => setTimeout(r, 5));
+
   const res = await fetch(`${base}/${created.resume._id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -100,6 +103,10 @@ test('PUT /:id replaces fields and bumps updatedAt', async () => {
   assert.equal(resume.name, `${NAME_PREFIX} put-renamed`);
   assert.equal(resume.contact.fullName, 'Aiden Lim');
   assert.deepEqual(resume.skills, ['SQL']); // deduped case-insensitively, same as profile.js
+  assert.ok(
+    new Date(resume.updatedAt).getTime() > new Date(created.resume.updatedAt).getTime(),
+    'updatedAt should advance after PUT'
+  );
 });
 
 test('PUT /:id rejects an empty name', async () => {
