@@ -4,7 +4,9 @@ import { devUser } from '../middleware/devUser.js';
 import { apiErrors } from '../middleware/apiErrors.js';
 import { analyzeSkillGap, generateTailoredResume, rescoreDraft, tailorChatTurn, AIServiceError } from '../services/aiService.js';
 import SkillGapResult from '../models/SkillGapResult.js';
+import Resume from '../models/Resume.js';
 import { toProfile } from '../utils/profile.js';
+import { profileFromResume } from '../utils/resumeProfile.js';
 import { cleanDraft, cleanOverrides, draftToProfile } from '../utils/tailorDraft.js';
 
 const router = Router();
@@ -28,7 +30,7 @@ async function loadOwned(req, res, select = '') {
   return result;
 }
 
-// Analyze the user's full profile against one job, then build a tailored resume from it.
+// Analyze the user's profile (or a saved resume) against one job, then build a tailored resume from it.
 router.post('/', async (req, res) => {
   const j = req.body?.job || {};
   const job = {
@@ -41,11 +43,26 @@ router.post('/', async (req, res) => {
   if (!job.title || !job.description) {
     return res.status(400).json({ error: 'Job title and description are required.' });
   }
-  const profile = toProfile(req.user);
+
+  const resumeId = str(req.body?.resumeId);
+  let profile;
+  let sourceResume;
+  if (resumeId) {
+    const resumeDoc = mongoose.isValidObjectId(resumeId) ? await Resume.findById(resumeId) : null;
+    if (!resumeDoc || !resumeDoc.user.equals(req.user._id)) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+    profile = profileFromResume(resumeDoc);
+    sourceResume = { resume: resumeDoc._id, name: resumeDoc.name, resumeUpdatedAt: resumeDoc.updatedAt };
+  } else {
+    profile = toProfile(req.user);
+  }
   if (!profile.skills.length && !profile.experience.length && !profile.projects.length) {
-    return res
-      .status(400)
-      .json({ error: 'Your profile is empty — add skills or experience on the Profile page first.' });
+    return res.status(400).json({
+      error: resumeId
+        ? 'That resume is empty — add skills or experience to it first.'
+        : 'Your profile is empty — add skills or experience on the Profile page first.',
+    });
   }
   // Previous run for the same posting: anchors verdict stability across re-scores.
   const prior = await SkillGapResult.findOne({ user: req.user._id, 'job.title': job.title, 'job.company': job.company })
@@ -54,7 +71,9 @@ router.post('/', async (req, res) => {
     .lean();
   const gap = await analyzeSkillGap(profile, job, prior);
   const tailoredResume = await generateTailoredResume(profile, job, gap);
-  const result = await SkillGapResult.create({ user: req.user._id, job, ...gap, tailoredResume });
+  const result = await SkillGapResult.create({
+    user: req.user._id, job, ...gap, tailoredResume, ...(sourceResume && { sourceResume }),
+  });
   res.status(201).json({ result });
 });
 
@@ -63,7 +82,7 @@ router.get('/history', async (req, res) => {
   const results = await SkillGapResult.find({ user: req.user._id })
     .sort({ createdAt: -1 })
     .limit(50)
-    .select('job.title job.company atsScore band label forkedFrom draftScore.atsScore draftScore.band createdAt')
+    .select('job.title job.company atsScore band label forkedFrom draftScore.atsScore draftScore.band createdAt sourceResume.name')
     .lean();
   res.json({ results });
 });
