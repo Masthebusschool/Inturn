@@ -43,9 +43,9 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
 </script>
 
 <template>
-  <div class="d-flex flex-column gap-3">
+  <div class="d-flex flex-column gap-4">
     <section class="card shadow-sm" aria-labelledby="sg-score-h">
-      <div class="card-body">
+      <div class="card-body p-4">
         <h2 id="sg-score-h" class="sg-eyebrow mb-2">{{ isDraft ? 'Resume draft score' : 'Profile score' }}</h2>
         <div class="d-flex align-items-center gap-3">
           <div class="sg-big" :class="`sg-tone-${meta.variant}`" role="img" :aria-label="`Score ${score.atsScore} out of 100`">
@@ -79,7 +79,7 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
     </section>
 
     <section v-if="cats.length" class="card shadow-sm" aria-labelledby="sg-cat-h">
-      <div class="card-body">
+      <div class="card-body p-4">
         <h2 id="sg-cat-h" class="sg-eyebrow mb-2">By category</h2>
         <table class="table table-sm align-middle mb-0 sg-cats">
           <thead>
@@ -102,10 +102,10 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
 
     <template v-if="reqs.length">
       <section v-for="g in groups" :key="g.id" class="card shadow-sm">
-        <component :is="g.id === 'met' ? 'details' : 'div'" class="card-body">
+        <component :is="g.id === 'met' ? 'details' : 'div'" class="card-body p-4">
           <component :is="g.id === 'met' ? 'summary' : 'h2'" class="sg-eyebrow mb-0" :class="{ 'sg-summary': g.id === 'met' }">{{ g.title }}</component>
           <p v-if="!g.rows.length && g.empty" class="small text-body-secondary mt-2 mb-0">{{ g.empty }}</p>
-          <ul v-else class="list-unstyled mt-2 mb-0 d-flex flex-column gap-2">
+          <ul v-else class="list-unstyled mt-2 mb-0 d-flex flex-column gap-3">
             <li v-for="r in g.rows" :key="r.key" class="sg-row" :class="{ 'is-focused': focused(r.key) }">
               <component
                 :is="g.tailor ? 'button' : 'div'"
@@ -134,7 +134,7 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
     </template>
 
     <section v-if="eligibility.length" class="card shadow-sm" aria-labelledby="sg-elig-h">
-      <div class="card-body">
+      <div class="card-body p-4">
         <h2 id="sg-elig-h" class="sg-eyebrow mb-1">Eligibility checklist</h2>
         <p class="small text-body-secondary">Self-reported — not AI-graded and not saved. Recruiters often filter on these.</p>
         <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
@@ -168,12 +168,12 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
 .sg-note { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); border-left: 3px solid var(--bs-warning); border-radius: 0.25rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; }
 .sg-row { border: 1px solid var(--bs-border-color); border-radius: 0.5rem; background: var(--bs-body-bg); transition: border-color 0.15s, box-shadow 0.15s; }
 .sg-row.is-focused { border-color: var(--bs-primary); box-shadow: 0 0 0 0.15rem var(--bs-primary-bg-subtle); }
-.sg-row-main { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0.625rem 0.75rem; color: inherit; font-size: 0.9rem; border-radius: 0.5rem; }
+.sg-row-main { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 1rem; color: inherit; font-size: 0.9rem; line-height: 1.6; border-radius: 0.5rem; }
 button.sg-row-main { cursor: pointer; }
 button.sg-row-main:hover { background: var(--bs-tertiary-bg); }
 button.sg-row-main:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
 .sg-quote { border-left: 2px solid var(--bs-border-color); padding-left: 0.5rem; }
-.sg-ovr { margin: 0 0.75rem 0.625rem; }
+.sg-ovr { margin: 0 1rem 1rem; }
 .sg-ovr .btn { min-height: 2rem; }
 @media (prefers-reduced-motion: reduce) { .sg-bar .progress-bar, .sg-row { transition: none; } }
 </style>
