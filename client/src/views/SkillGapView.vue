@@ -665,7 +665,9 @@ onBeforeUnmount(() => {
 /* Page canvas: full-bleed (breaks out of App.vue's centered .container) so the workspace uses the
    whole screen width instead of leaving empty margins on wide monitors — light-gray surface so
    white cards still separate by contrast, not just borders. */
-.sg-page { background: var(--bs-tertiary-bg); width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding: 1.5rem; }
+/* App.vue's <main> is a fluid container now, so this page already gets the full width without
+   needing its own breakout — just a light-gray canvas so white cards separate by contrast. */
+.sg-page { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius-lg); padding: 1.5rem; }
 @media (max-width: 767.98px) { .sg-page { padding: 1rem; } }
 .min-w-0 { min-width: 0; }
 .sg-history { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }

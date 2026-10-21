@@ -176,7 +176,7 @@ const levelOptions = computed(() =>
 </script>
 
 <template>
-  <section class="pb-5">
+  <section class="pb-5 mx-auto" style="max-width: 56rem">
     <div class="mb-4">
       <h1 class="h3 mb-1">Your profile</h1>
       <p class="text-body-secondary mb-0">
