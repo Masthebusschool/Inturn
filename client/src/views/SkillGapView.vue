@@ -657,7 +657,7 @@ onBeforeUnmount(() => {
     /* Bootstrap makes .offcanvas-xxl transparent (!important) at xxl; keep the pane white on the gray canvas. */
     background-color: var(--bs-body-bg) !important;
     position: sticky; top: 1rem; height: calc(100dvh - 2rem);
-    border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius-lg);
+    border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius);
     box-shadow: var(--bs-box-shadow-sm); overflow: hidden;
   }
 }

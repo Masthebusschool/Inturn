@@ -106,11 +106,11 @@ const icon = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke
 </template>
 
 <style scoped>
-.sg-entry { border: 1px solid var(--bs-border-color); border-radius: 0.5rem; padding: 1rem; background: var(--bs-tertiary-bg); }
+.sg-entry { border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); padding: 1rem; background: var(--bs-tertiary-bg); }
 .sg-icon-btn { width: 2.25rem; height: 2.25rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .sg-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--bs-secondary-color); margin-top: 0.8rem; flex-shrink: 0; }
-textarea.form-control { resize: none; overflow: hidden; }
-.sg-field { border-radius: 0.5rem; }
+textarea.form-control { resize: none; overflow: hidden; line-height: 1.6; }
+.sg-field { border-radius: var(--bs-border-radius); }
 .sg-flash { animation: sg-flash 2s ease-out; }
 @keyframes sg-flash {
   0%, 60% { box-shadow: 0 0 0 0.25rem var(--bs-primary-bg-subtle), 0 0 0 0.3rem var(--bs-primary); }

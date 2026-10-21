@@ -165,10 +165,10 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
 .sg-bar .progress-bar { transition: width 0.3s ease-out; }
 .sg-mini { height: 0.25rem; margin-top: 0.25rem; }
 .sg-cats { font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-.sg-note { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); border-left: 3px solid var(--bs-warning); border-radius: 0.25rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; }
-.sg-row { border: 1px solid var(--bs-border-color); border-radius: 0.5rem; background: var(--bs-body-bg); transition: border-color 0.15s, box-shadow 0.15s; }
+.sg-note { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); border-left: 3px solid var(--bs-warning); border-radius: var(--bs-border-radius); padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+.sg-row { border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); background: var(--bs-body-bg); transition: border-color 0.15s, box-shadow 0.15s; }
 .sg-row.is-focused { border-color: var(--bs-primary); box-shadow: 0 0 0 0.15rem var(--bs-primary-bg-subtle); }
-.sg-row-main { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 1rem; color: inherit; font-size: 0.9rem; line-height: 1.6; border-radius: 0.5rem; }
+.sg-row-main { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 1rem; color: inherit; font-size: 0.9rem; line-height: 1.6; border-radius: var(--bs-border-radius); }
 button.sg-row-main { cursor: pointer; }
 button.sg-row-main:hover { background: var(--bs-tertiary-bg); }
 button.sg-row-main:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }

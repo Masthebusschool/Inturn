@@ -72,7 +72,7 @@ watch(() => [props.messages.length, sending.value], async () => {
 <template>
   <div class="sg-chat d-flex flex-column h-100">
     <div class="sg-focus px-3 py-2 border-bottom">
-      <div v-if="focus.length" class="d-flex flex-wrap align-items-center gap-1">
+      <div v-if="focus.length" class="d-flex flex-wrap align-items-center gap-2">
         <span class="small text-body-secondary me-1">Tailoring for:</span>
         <span v-for="r in focus" :key="r.key" class="badge rounded-pill text-bg-primary d-inline-flex align-items-center gap-1 fw-normal ps-2 pe-1">
           {{ r.text }}
@@ -97,7 +97,7 @@ watch(() => [props.messages.length, sending.value], async () => {
             <div class="small fw-semibold mb-1">{{ sectionLabel(draft, s.sectionId) }}</div>
             <div v-if="s.original" class="small text-body-secondary mb-1">Replaces: <s>{{ s.original }}</s></div>
             <div class="sg-text">{{ s.field === 'skills' ? 'Add: ' : '' }}{{ s.text }}</div>
-            <div v-if="s.requirementKeys?.length" class="d-flex flex-wrap gap-1 mt-1">
+            <div v-if="s.requirementKeys?.length" class="d-flex flex-wrap gap-2 mt-1">
               <span v-for="k in s.requirementKeys" :key="k" class="badge text-bg-light border fw-normal">{{ k.replace(/-/g, ' ') }}</span>
             </div>
             <div class="d-flex gap-2 mt-2">
@@ -136,10 +136,10 @@ watch(() => [props.messages.length, sending.value], async () => {
 .sg-msg { display: flex; flex-direction: column; gap: 0.5rem; max-width: 92%; }
 .sg-msg.is-user { align-self: flex-end; align-items: flex-end; }
 .sg-msg.is-bot { align-self: flex-start; align-items: stretch; }
-.sg-bubble { padding: 0.75rem 1rem; border-radius: 0.875rem; font-size: 0.9rem; }
-.is-user .sg-bubble { background: var(--bs-primary); color: #fff; border-bottom-right-radius: 0.25rem; }
-.is-bot .sg-bubble { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); border-bottom-left-radius: 0.25rem; }
-.sg-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sg-bubble { padding: 0.75rem 1rem; border-radius: var(--bs-border-radius-xl); font-size: 0.9rem; }
+.is-user .sg-bubble { background: var(--bs-primary); color: #fff; border-bottom-right-radius: var(--bs-border-radius-sm); }
+.is-bot .sg-bubble { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); border-bottom-left-radius: var(--bs-border-radius-sm); }
+.sg-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
 .sg-sugg { font-size: 0.9rem; border-left: 3px solid var(--bs-primary); }
 .sg-chip-x { font-size: 0.55rem; }
 </style>
