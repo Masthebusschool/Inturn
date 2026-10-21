@@ -359,11 +359,10 @@ const rightOpen = ref(false) // drawer below xxl
 const rightCollapsed = ref(true) // hidden column at xxl — Score + Resume draft show by default, not the panel
 const rightTab = ref('chat')
 const pane = ref(null)
-// The Preview tab wants real reading width for the resume; the chat tab doesn't need it.
-// The edge-tab strip is content-width (not a reserved column, see .sg-edge-col), so these two
-// plus the left column (col-xxl-3) sum to 12 on their own.
-const midColClass = computed(() => (rightCollapsed.value ? 'col-xxl-9' : rightTab.value === 'preview' ? 'col-xxl-3' : 'col-xxl-5'))
-const rightColClass = computed(() => (rightTab.value === 'preview' ? 'col-xxl-6' : 'col-xxl-4'))
+// Fixed widths regardless of which tab is open — switching Tailor chat <-> Preview must not
+// resize the draft editor out from under whatever the user is doing in it.
+const midColClass = computed(() => (rightCollapsed.value ? 'col-xxl-9' : 'col-xxl-5'))
+const rightColClass = 'col-xxl-4'
 
 function showPane(tab) {
   rightTab.value = tab
