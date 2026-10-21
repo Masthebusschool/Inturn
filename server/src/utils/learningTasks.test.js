@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { todoCandidates, compareTasks } from './learningTasks.js';
+import { todoCandidates, compareTasks, similarSkillKeys, resolveSkillKey } from './learningTasks.js';
 
 const req = (key, category, verdict, text = key) => ({ key, text, category, verdict });
 
@@ -39,6 +39,30 @@ test('todoCandidates dedupes (first wins) and tolerates non-arrays', () => {
   assert.equal(out.length, 1);
   assert.equal(out[0].skillText, 'REST APIs');
   assert.deepEqual(todoCandidates(undefined), []);
+});
+
+test('similarSkillKeys catches a shorter key fully contained in a longer one', () => {
+  // Real pair pulled from this app's own to-do data — same skill, different AI-generated slugs.
+  assert.equal(similarSkillKeys('docker', 'docker containers'), true);
+  assert.equal(similarSkillKeys('python', 'python'), true);
+  assert.equal(similarSkillKeys('docker containers', 'docker'), true); // order-independent
+});
+
+test('similarSkillKeys leaves genuinely distinct skills alone, even sharing a word', () => {
+  // Same shape as "cloud aws" vs "cloud platforms" (share one of two words) but are clearly
+  // different skills — proves the subset rule doesn't just degrade into loose overlap matching.
+  assert.equal(similarSkillKeys('python developer', 'java developer'), false);
+  assert.equal(similarSkillKeys('cloud aws', 'cloud platforms'), false);
+  assert.equal(similarSkillKeys('scalable architecture', 'scalable distributed systems'), false);
+  assert.equal(similarSkillKeys('exposure ai ml', 'ai assisted tools'), false);
+  assert.equal(similarSkillKeys('microservices', 'scalable distributed systems'), false);
+  assert.equal(similarSkillKeys('', 'docker'), false);
+});
+
+test('resolveSkillKey reuses a similar existing key, else returns the candidate unchanged', () => {
+  assert.equal(resolveSkillKey('docker containers', ['sql', 'docker', 'python']), 'docker');
+  assert.equal(resolveSkillKey('rust', ['sql', 'docker', 'python']), 'rust');
+  assert.equal(resolveSkillKey('cloud platforms', []), 'cloud platforms');
 });
 
 test('compareTasks orders pending first, earliest deadline first, no-deadline last, then createdAt', () => {
