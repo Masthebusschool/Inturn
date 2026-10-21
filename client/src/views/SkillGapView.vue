@@ -32,6 +32,24 @@ const profile = ref(null)
 const profileError = ref('')
 const profileEmpty = computed(() => !!profile.value && !(profile.value.skills?.length || profile.value.experience?.length || profile.value.projects?.length))
 
+// The resume this analysis was tailored from (if any) — its own contact/education, not the
+// account-wide base Profile's, is what the Preview paper should show.
+const sourceResumeDoc = ref(null)
+
+async function loadSourceResumeDoc(resumeId) {
+  if (!resumeId) { sourceResumeDoc.value = null; return }
+  try {
+    sourceResumeDoc.value = (await api(`/api/resumes/${resumeId}`)).resume
+  } catch {
+    sourceResumeDoc.value = null // e.g. resume since deleted — fall back to base profile
+  }
+}
+
+const paperProfile = computed(() => {
+  if (sourceResumeDoc.value) return { contact: sourceResumeDoc.value.contact, education: sourceResumeDoc.value.education }
+  return { contact: { fullName: profile.value?.name, email: profile.value?.email }, education: profile.value?.education }
+})
+
 const resumes = ref([])
 const selectedResumeId = ref('')
 
@@ -237,6 +255,7 @@ function stopWork() {
 function openLoaded(r) {
   stopWork()
   result.value = r
+  loadSourceResumeDoc(r.sourceResume?.resume)
   draft.value = cloneDraft(r.draftResume || r.tailoredResume)
   overrides.value = { ...(r.overrides || {}) }
   draftScore.value = r.draftScore || null
@@ -618,7 +637,7 @@ onBeforeUnmount(() => {
                   <button type="button" class="btn btn-sm btn-primary" @click="printResume">Print / Save as PDF</button>
                 </div>
                 <p class="small text-body-secondary">AI draft built only from your profile — review it before using.</p>
-                <ResumePaper :draft="draft" :profile="profile" />
+                <ResumePaper :draft="draft" :profile="paperProfile" />
               </div>
             </div>
           </aside>
@@ -643,7 +662,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Always mounted (teleported to <body>), hidden on screen; the only thing window.print() shows -->
-      <Teleport to="body"><ResumePaper print :draft="draft" :profile="profile" /></Teleport>
+      <Teleport to="body"><ResumePaper print :draft="draft" :profile="paperProfile" /></Teleport>
     </template>
 
     <SkillTodoCard
