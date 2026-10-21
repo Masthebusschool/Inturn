@@ -36,9 +36,9 @@ function sourceHint(t) {
 
 <template>
   <div class="card shadow-sm">
-    <div class="card-body pb-2">
+    <div class="card-body p-4 pb-2">
       <div class="d-flex align-items-center gap-2">
-        <h2 class="h5 mb-0">Skill to-do</h2>
+        <h2 class="h4 fw-semibold mb-0">Skill to-do</h2>
         <span v-if="pending.length" class="badge text-bg-primary">{{ pending.length }}</span>
       </div>
       <p class="small text-body-secondary mb-0">Missing and partial skills from all your analyses</p>
@@ -51,7 +51,7 @@ function sourceHint(t) {
         <p v-if="actionError" class="px-3 small text-danger-emphasis mb-2" role="alert">{{ actionError }}</p>
         <p v-if="!rows.length" class="px-3 pb-2 mb-0 text-body-secondary small">All caught up.</p>
         <ul v-else class="list-group list-group-flush sg-todo">
-          <li v-for="t in rows" :key="t._id" class="list-group-item d-flex align-items-start gap-2" :class="{ 'flex-wrap': armedId === t._id }">
+          <li v-for="t in rows" :key="t._id" class="list-group-item d-flex align-items-start gap-3" :class="{ 'flex-wrap': armedId === t._id }">
             <input :id="`todo-${t._id}`" type="checkbox" class="form-check-input mt-1 flex-shrink-0" :checked="t.status === 'done'" :disabled="busyId === t._id" @change="emit('toggle', t)" />
             <div class="min-w-0 flex-grow-1">
               <label :for="`todo-${t._id}`" class="fw-semibold d-block" :class="{ 'text-decoration-line-through text-body-secondary': t.status === 'done' }">{{ t.skillText || t.skillKey }}</label>
