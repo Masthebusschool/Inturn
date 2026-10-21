@@ -45,7 +45,7 @@ const jobText = (j) => `Title: ${j.title}\nCompany: ${j.company || ''}\nDescript
 
 export async function parseResume(resumeText) {
   const text = String(resumeText || '').slice(0, 30000);
-  const prompt = `Extract a structured profile from this resume. Extract EVERYTHING faithfully: every skill, every role and internship, every project, every school. Do not invent anything; use an empty string or empty array when information is absent. Set "current" true only for roles still ongoing. ${DELIM_NOTE}
+  const prompt = `Extract a structured profile from this resume. Extract EVERYTHING faithfully: the candidate's contact details (full name, phone, email, LinkedIn, GitHub, portfolio URL), every skill, every role and internship, every project, every school. Do not invent anything; use an empty string or empty array when information is absent. Set "current" true only for roles still ongoing. ${DELIM_NOTE}
 
 =====BEGIN RESUME=====
 ${text}
@@ -53,7 +53,9 @@ ${text}
   const d = await callGemini({
     model: modelFor('resume'),
     contents: prompt,
+    thinkingLevel: resumeThinkingLevel(),
     responseSchema: obj({
+      contact: obj({ fullName: S, phone: S, email: S, linkedin: S, github: S, portfolio: S }),
       summary: S,
       skills: strArr,
       experience: objArr({
@@ -64,6 +66,10 @@ ${text}
     }),
   });
   return {
+    contact: {
+      fullName: str(d.contact?.fullName), phone: str(d.contact?.phone), email: str(d.contact?.email),
+      linkedin: str(d.contact?.linkedin), github: str(d.contact?.github), portfolio: str(d.contact?.portfolio),
+    },
     summary: str(d.summary),
     skills: strs(d.skills),
     experience: list(d.experience).map((e) => ({
@@ -87,6 +93,7 @@ const JUDGE_PROMPT_VERSION = 'judge-v2';
 const thinkingLevel = (name) => (process.env[name] || '').trim().toUpperCase() || 'LOW';
 const judgeThinkingLevel = () => thinkingLevel('GEMINI_JUDGE_THINKING_LEVEL');
 const parseThinkingLevel = () => thinkingLevel('GEMINI_PARSE_THINKING_LEVEL');
+const resumeThinkingLevel = () => thinkingLevel('GEMINI_RESUME_THINKING_LEVEL');
 const PARSE_PROMPT_VERSION = 'jd-v1';
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
 
