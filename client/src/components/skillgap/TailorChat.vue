@@ -93,7 +93,7 @@ watch(() => [props.messages.length, sending.value], async () => {
           <div class="sg-text">{{ m.text }}</div>
         </div>
         <div v-for="s in visible(m)" :key="s.id" class="sg-sugg card">
-          <div class="card-body p-2">
+          <div class="card-body p-3">
             <div class="small fw-semibold mb-1">{{ sectionLabel(draft, s.sectionId) }}</div>
             <div v-if="s.original" class="small text-body-secondary mb-1">Replaces: <s>{{ s.original }}</s></div>
             <div class="sg-text">{{ s.field === 'skills' ? 'Add: ' : '' }}{{ s.text }}</div>
