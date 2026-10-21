@@ -425,8 +425,8 @@ onBeforeUnmount(() => {
     <div v-if="!result || setupPanel" class="row g-4 g-xl-5 mb-4">
       <div v-if="!result || setupPanel === 'form'" class="col-12 col-lg-7">
         <form class="card shadow-sm" novalidate @submit.prevent="analyze">
-          <div class="card-body">
-            <h2 class="h5 mb-3">Job posting</h2>
+          <div class="card-body p-4">
+            <h2 class="h4 fw-semibold mb-3">Job posting</h2>
             <div class="mb-3">
               <label for="sg-title" class="form-label">Job title <span class="text-danger" aria-hidden="true">*</span></label>
               <input id="sg-title" v-model="job.title" class="form-control" :class="{ 'is-invalid': titleInvalid }" required aria-required="true" :disabled="analyzing" />
@@ -463,7 +463,7 @@ onBeforeUnmount(() => {
 
       <div class="col-12 col-lg-5 d-flex flex-column gap-4">
         <div v-if="!result || setupPanel === 'history'" class="card shadow-sm">
-          <div class="card-body pb-2"><h2 class="h5 mb-0">History</h2></div>
+          <div class="card-body p-4 pb-2"><h2 class="h4 fw-semibold mb-0">History</h2></div>
           <div v-if="historyLoading" class="px-3 pb-3 text-body-secondary small" role="status">Loading…</div>
           <div v-else-if="historyError" class="px-3 pb-3 text-danger-emphasis small">{{ historyError }}</div>
           <p v-else-if="!history.length" class="px-3 pb-3 mb-0 text-body-secondary">No analyses yet.</p>
@@ -527,7 +527,7 @@ onBeforeUnmount(() => {
       <header class="sg-head card shadow-sm mb-3">
         <div class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
           <div class="me-auto min-w-0">
-            <h2 class="h5 mb-0">{{ result.job.title }}<template v-if="result.job.company"> · {{ result.job.company }}</template></h2>
+            <h2 class="h4 fw-semibold mb-0">{{ result.job.title }}<template v-if="result.job.company"> · {{ result.job.company }}</template></h2>
             <small class="text-body-secondary">
               Analyzed {{ fmtDate(result.createdAt) }}<template v-if="result.job?.applicationDeadline"> · Apply by {{ fmtDate(result.job.applicationDeadline) }}</template><template v-if="result.label"> · <span class="badge text-bg-light border fw-normal">{{ result.label }}</span></template>
             </small>
