@@ -49,7 +49,7 @@ const dates = (e) => [e.startDate, e.endDate].filter(Boolean).join(' – ')
 </template>
 
 <style scoped>
-.sg-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--bs-border-color); border-radius: 0.5rem; box-shadow: var(--bs-box-shadow-sm); }
+.sg-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.6; border: 1px solid var(--bs-border-color); border-radius: 0.5rem; box-shadow: var(--bs-box-shadow-sm); }
 .sg-print-area { display: none; }
 .sg-paper-head { border-bottom: 2px solid #212529; padding-bottom: 0.5rem; margin-bottom: 1rem; }
 .sg-paper-name { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
