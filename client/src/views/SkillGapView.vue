@@ -356,13 +356,13 @@ function resetDraft() {
 
 // ---------- right pane (chat / preview) ----------
 const rightOpen = ref(false) // drawer below xxl
-const rightCollapsed = ref(false) // hidden column at xxl
+const rightCollapsed = ref(true) // hidden column at xxl — Score + Resume draft show by default, not the panel
 const rightTab = ref('chat')
 const pane = ref(null)
 // The Preview tab wants real reading width for the resume; the chat tab doesn't need it.
-// One column unit is reserved for the always-visible edge-tab strip at xxl (col-xxl-1), so these
-// three plus the left column (col-xxl-3) plus the edge strip always sum to 12.
-const midColClass = computed(() => (rightCollapsed.value ? 'col-xxl-8' : rightTab.value === 'preview' ? 'col-xxl-2' : 'col-xxl-4'))
+// The edge-tab strip is content-width (not a reserved column, see .sg-edge-col), so these two
+// plus the left column (col-xxl-3) sum to 12 on their own.
+const midColClass = computed(() => (rightCollapsed.value ? 'col-xxl-9' : rightTab.value === 'preview' ? 'col-xxl-3' : 'col-xxl-5'))
 const rightColClass = computed(() => (rightTab.value === 'preview' ? 'col-xxl-6' : 'col-xxl-4'))
 
 function showPane(tab) {
@@ -625,8 +625,7 @@ onBeforeUnmount(() => {
           </aside>
         </div>
 
-        <div class="col-xxl-1 d-none d-xxl-flex sg-edge-col">
-          <div class="sg-edge-tabs">
+        <div class="d-none d-xxl-flex sg-edge-tabs">
             <button
               type="button"
               class="sg-edge-tab sg-edge-tab-chat"
@@ -641,7 +640,6 @@ onBeforeUnmount(() => {
               :aria-pressed="rightTab === 'preview' && !rightCollapsed"
               @click="toggleEdgeTab('preview')"
             >Preview</button>
-          </div>
         </div>
       </div>
 
@@ -702,9 +700,17 @@ onBeforeUnmount(() => {
 
 /* Edge tabs: always-visible vertical pills pinned to the far right at xxl, replacing the inline
    nav-tabs there. writing-mode + a 180deg flip reads bottom-to-top — text rotated 90deg
-   counterclockwise from horizontal — the standard CSS technique for this, verified live. */
-.sg-edge-col { align-items: flex-start; justify-content: flex-end; }
-.sg-edge-tabs { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+   counterclockwise from horizontal — the standard CSS technique for this, verified live.
+   position: fixed (not a grid column, not sticky) — genuinely outside the row's column-width
+   math and outside every column's own scroll, so it never reserves/wraps grid space and never
+   moves no matter what's scrolled. Vertically centered so it doesn't depend on page content height. */
+/* Bootstrap 5.3's ".row > *" sets width/max-width/padding on every direct row child regardless of
+   position — override them, since position:fixed is meant to shrink-wrap to the two pills' content. */
+.sg-edge-tabs {
+  position: fixed; top: 50%; right: 1.5rem; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 0.5rem; z-index: 1030;
+  width: auto; max-width: none; padding: 0; margin-top: 0;
+}
 .sg-edge-tab {
   writing-mode: vertical-rl; transform: rotate(180deg);
   border: none; border-radius: 999px; padding: 1.25rem 0.5rem;
