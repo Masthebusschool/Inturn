@@ -32,3 +32,10 @@
   </nav>
   <main class="container py-4"><RouterView /></main>
 </template>
+
+<style>
+/* Full-bleed sections (e.g. the Skill Gap workspace) break out of .container using 100vw, which is
+   always a few px wider than the true viewport once the scrollbar is counted — this is the standard,
+   safe guard against that causing a sliver of horizontal page scroll. */
+body { overflow-x: hidden; }
+</style>

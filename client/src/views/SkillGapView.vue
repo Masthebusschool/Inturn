@@ -359,12 +359,23 @@ const rightOpen = ref(false) // drawer below xxl
 const rightCollapsed = ref(false) // hidden column at xxl
 const rightTab = ref('chat')
 const pane = ref(null)
+// The Preview tab wants real reading width for the resume; the chat tab doesn't need it.
+// One column unit is reserved for the always-visible edge-tab strip at xxl (col-xxl-1), so these
+// three plus the left column (col-xxl-3) plus the edge strip always sum to 12.
+const midColClass = computed(() => (rightCollapsed.value ? 'col-xxl-8' : rightTab.value === 'preview' ? 'col-xxl-2' : 'col-xxl-4'))
+const rightColClass = computed(() => (rightTab.value === 'preview' ? 'col-xxl-6' : 'col-xxl-4'))
 
 function showPane(tab) {
   rightTab.value = tab
   rightOpen.value = true
   rightCollapsed.value = false
   nextTick(() => { if (rightOpen.value && !window.matchMedia('(min-width: 1400px)').matches) pane.value?.focus() })
+}
+
+// The xxl edge tabs toggle the in-grid panel directly (no offcanvas drawer involved at that width).
+function toggleEdgeTab(tab) {
+  if (rightTab.value === tab && !rightCollapsed.value) rightCollapsed.value = true
+  else { rightTab.value = tab; rightCollapsed.value = false }
 }
 const onKey = (e) => { if (e.key === 'Escape' && rightOpen.value) rightOpen.value = false }
 
@@ -546,9 +557,8 @@ onBeforeUnmount(() => {
             <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="savingCopy || !canRescore" @click="saveAsNew">
               <span v-if="savingCopy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Save as new version
             </button>
-            <button type="button" class="btn btn-sm btn-primary" @click="showPane('chat')">Tailor chat</button>
-            <button type="button" class="btn btn-sm btn-outline-primary" @click="showPane('preview')">Preview</button>
-            <button v-if="!rightCollapsed" type="button" class="btn btn-sm btn-outline-secondary d-none d-xxl-inline-flex" @click="rightCollapsed = true">Hide panel</button>
+            <button type="button" class="btn btn-sm btn-primary d-xxl-none" @click="showPane('chat')">Tailor chat</button>
+            <button type="button" class="btn btn-sm btn-outline-primary d-xxl-none" @click="showPane('preview')">Preview</button>
           </div>
         </div>
       </header>
@@ -573,19 +583,20 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div class="col-12 col-lg-8" :class="rightCollapsed ? 'col-xxl-9' : 'col-xxl-5'">
+        <div class="col-12 col-lg-8" :class="midColClass">
           <DraftEditor v-model="draft" :highlight="highlight" @reset="resetDraft" />
         </div>
 
-        <div class="sg-right-col col-xxl-4" :class="{ 'd-xxl-none': rightCollapsed }">
+        <div class="sg-right-col" :class="[rightColClass, { 'd-xxl-none': rightCollapsed }]">
           <div v-if="rightOpen" class="offcanvas-backdrop fade show d-xxl-none" @click="rightOpen = false"></div>
           <aside ref="pane" class="offcanvas-xxl offcanvas-end sg-right" :class="{ show: rightOpen }" tabindex="-1" aria-label="Tailor chat and preview">
             <div class="sg-pane-head d-flex align-items-center gap-2 px-3 pt-2 border-bottom">
-              <div class="nav nav-tabs border-0 flex-grow-1" role="tablist">
+              <div class="nav nav-tabs border-0 flex-grow-1 d-xxl-none" role="tablist">
                 <button id="sg-tab-chat" type="button" class="nav-link" :class="{ active: rightTab === 'chat' }" role="tab" :aria-selected="rightTab === 'chat'" aria-controls="sg-panel-chat" @click="rightTab = 'chat'">Tailor chat</button>
                 <button id="sg-tab-preview" type="button" class="nav-link" :class="{ active: rightTab === 'preview' }" role="tab" :aria-selected="rightTab === 'preview'" aria-controls="sg-panel-preview" @click="rightTab = 'preview'">Preview</button>
               </div>
-              <button type="button" class="btn-close d-xxl-none mb-2" aria-label="Close panel" @click="rightOpen = false"></button>
+              <strong class="d-none d-xxl-block flex-grow-1 ps-1">{{ rightTab === 'chat' ? 'Tailor chat' : 'Preview' }}</strong>
+              <button type="button" class="btn-close mb-2" aria-label="Close panel" @click="rightOpen = false; rightCollapsed = true"></button>
             </div>
             <div class="sg-pane-body">
               <div v-show="rightTab === 'chat'" id="sg-panel-chat" class="h-100" role="tabpanel" aria-labelledby="sg-tab-chat">
@@ -611,6 +622,25 @@ onBeforeUnmount(() => {
             </div>
           </aside>
         </div>
+
+        <div class="col-xxl-1 d-none d-xxl-flex sg-edge-col">
+          <div class="sg-edge-tabs">
+            <button
+              type="button"
+              class="sg-edge-tab sg-edge-tab-chat"
+              :class="{ active: rightTab === 'chat' && !rightCollapsed }"
+              :aria-pressed="rightTab === 'chat' && !rightCollapsed"
+              @click="toggleEdgeTab('chat')"
+            >Tailor chat</button>
+            <button
+              type="button"
+              class="sg-edge-tab sg-edge-tab-preview"
+              :class="{ active: rightTab === 'preview' && !rightCollapsed }"
+              :aria-pressed="rightTab === 'preview' && !rightCollapsed"
+              @click="toggleEdgeTab('preview')"
+            >Preview</button>
+          </div>
+        </div>
       </div>
 
       <!-- Always mounted (teleported to <body>), hidden on screen; the only thing window.print() shows -->
@@ -632,8 +662,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Page canvas: light-gray surface so white cards separate by contrast, not just borders. */
-.sg-page { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius-lg); padding: 1.5rem; }
+/* Page canvas: full-bleed (breaks out of App.vue's centered .container) so the workspace uses the
+   whole screen width instead of leaving empty margins on wide monitors — light-gray surface so
+   white cards still separate by contrast, not just borders. */
+.sg-page { background: var(--bs-tertiary-bg); width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding: 1.5rem; }
 @media (max-width: 767.98px) { .sg-page { padding: 1rem; } }
 .min-w-0 { min-width: 0; }
 .sg-history { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }
@@ -662,4 +694,22 @@ onBeforeUnmount(() => {
   }
 }
 @media (prefers-reduced-motion: reduce) { .sg-stale { transition: none; } }
+
+/* Edge tabs: always-visible vertical pills pinned to the far right at xxl, replacing the inline
+   nav-tabs there. writing-mode + a 180deg flip reads bottom-to-top — text rotated 90deg
+   counterclockwise from horizontal — the standard CSS technique for this, verified live. */
+.sg-edge-col { align-items: flex-start; justify-content: flex-end; }
+.sg-edge-tabs { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.sg-edge-tab {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  border: none; border-radius: 999px; padding: 1.25rem 0.5rem;
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: #fff; cursor: pointer; white-space: nowrap; transition: filter 0.15s, box-shadow 0.15s;
+}
+.sg-edge-tab:hover { filter: brightness(1.08); }
+.sg-edge-tab:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+.sg-edge-tab-chat { background: #0d9488; }
+.sg-edge-tab-chat.active { background: #0f766e; box-shadow: 0 0 0 2px #0d948866; }
+.sg-edge-tab-preview { background: #ea580c; }
+.sg-edge-tab-preview.active { background: #c2410c; box-shadow: 0 0 0 2px #ea580c66; }
 </style>

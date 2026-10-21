@@ -51,7 +51,9 @@ const dates = (e) => [e.startDate, e.endDate].filter(Boolean).join(' – ')
 <style scoped>
 .sg-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); box-shadow: var(--bs-box-shadow-sm); }
 .sg-print-area { display: none; }
-.sg-screen-paper { line-height: 1.6; /* screen-only; the print copy keeps .sg-paper's 1.5 */ }
+/* Realistic page width so it reads like the actual resume (and matches the print/PDF output's
+   proportions); height stays natural/flowing — no artificial single-page scroll box. */
+.sg-screen-paper { max-width: 650px; margin: 0 auto; line-height: 1.6; /* screen-only; the print copy keeps .sg-paper's 1.5 */ }
 .sg-paper-head { border-bottom: 2px solid #212529; padding-bottom: 0.5rem; margin-bottom: 1rem; }
 .sg-paper-name { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
 .sg-paper-contact { color: #495057; font-size: 0.85rem; }

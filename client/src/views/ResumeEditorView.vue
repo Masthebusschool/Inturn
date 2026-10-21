@@ -146,6 +146,11 @@ function dedupeCi(arr) {
 }
 
 function mergeDraft(d) {
+  // Contact fields overwrite (not merge-if-blank): a resume created via "Start from Profile" is
+  // pre-filled with your account identity, and an uploaded PDF's real contact info should win over that.
+  for (const k of ['fullName', 'phone', 'email', 'linkedin', 'github', 'portfolio']) {
+    if (d.contact?.[k]) form.contact[k] = d.contact[k]
+  }
   if (d.summary && !form.summary.trim()) form.summary = d.summary
   form.skills = dedupeCi([...form.skills, ...(d.skills || [])])
   const addNew = (list, incoming, keyOf, toForm) => {
@@ -173,6 +178,7 @@ async function onFile(e) {
     fd.append('resume', file)
     const { draft } = await api(`/api/resumes/${props.id}/parse`, { method: 'POST', body: fd })
     mergeDraft(draft || {})
+    await save() // merged fields autosave so a parse isn't lost if the user navigates away
   } catch (err) {
     parseError.value = err.message
   } finally {
@@ -409,7 +415,6 @@ async function onFile(e) {
 
         <div class="col-12 col-lg-6">
           <div class="sticky-top" style="top: 1rem">
-            <div class="text-body-secondary small mb-2">Live preview</div>
             <ResumePreview :form="previewData" />
           </div>
         </div>
