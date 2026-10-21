@@ -584,7 +584,9 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="col-12 col-lg-8" :class="midColClass">
-          <DraftEditor v-model="draft" :highlight="highlight" @reset="resetDraft" />
+          <div class="sg-mid">
+            <DraftEditor v-model="draft" :highlight="highlight" @reset="resetDraft" />
+          </div>
         </div>
 
         <div class="sg-right-col" :class="[rightColClass, { 'd-xxl-none': rightCollapsed }]">
@@ -673,9 +675,10 @@ onBeforeUnmount(() => {
 .sg-history { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }
 .sg-stale { opacity: 0.7; transition: opacity 0.15s; }
 
-/* Left pane: sticky with its own scroll once it sits beside the editor. */
+/* Left pane and draft editor: each sticky with its own independent scroll once side by side, so
+   scrolling one never moves the others — matching the right pane's own independent scroll below. */
 @media (min-width: 992px) {
-  .sg-left { position: sticky; top: 1rem; max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 2px; }
+  .sg-left, .sg-mid { position: sticky; top: 1rem; max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 2px; }
 }
 
 /* Right pane: slide-over drawer below xxl (Bootstrap offcanvas-xxl), in-grid sticky panel at xxl. */
