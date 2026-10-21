@@ -464,9 +464,9 @@ onBeforeUnmount(() => {
       <div class="col-12 col-lg-5 d-flex flex-column gap-4">
         <div v-if="!result || setupPanel === 'history'" class="card shadow-sm">
           <div class="card-body p-4 pb-2"><h2 class="h4 fw-semibold mb-0">History</h2></div>
-          <div v-if="historyLoading" class="px-3 pb-3 text-body-secondary small" role="status">Loading…</div>
-          <div v-else-if="historyError" class="px-3 pb-3 text-danger-emphasis small">{{ historyError }}</div>
-          <p v-else-if="!history.length" class="px-3 pb-3 mb-0 text-body-secondary">No analyses yet.</p>
+          <div v-if="historyLoading" class="px-4 pb-3 text-body-secondary small" role="status">Loading…</div>
+          <div v-else-if="historyError" class="px-4 pb-3 text-danger-emphasis small">{{ historyError }}</div>
+          <p v-else-if="!history.length" class="px-4 pb-3 mb-0 text-body-secondary">No analyses yet.</p>
           <div v-else class="list-group list-group-flush rounded-bottom sg-history">
             <button
               v-for="h in history"
@@ -524,8 +524,8 @@ onBeforeUnmount(() => {
 
     <!-- Workspace -->
     <template v-if="result && !analyzing">
-      <header class="sg-head card shadow-sm mb-3">
-        <div class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
+      <header class="sg-head card shadow-sm mb-4">
+        <div class="card-body py-3 px-4 d-flex flex-wrap align-items-center gap-3">
           <div class="me-auto min-w-0">
             <h2 class="h4 fw-semibold mb-0">{{ result.job.title }}<template v-if="result.job.company"> · {{ result.job.company }}</template></h2>
             <small class="text-body-secondary">
@@ -635,7 +635,7 @@ onBeforeUnmount(() => {
 /* Page canvas: light-gray surface so white cards separate by contrast, not just borders. */
 .sg-page { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius-lg); padding: 1.5rem; }
 .min-w-0 { min-width: 0; }
-.sg-history { max-height: 26rem; overflow-y: auto; }
+.sg-history { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }
 .sg-stale { opacity: 0.7; transition: opacity 0.15s; }
 
 /* Left pane: sticky with its own scroll once it sits beside the editor. */
@@ -653,6 +653,8 @@ onBeforeUnmount(() => {
 }
 @media (min-width: 1400px) {
   .sg-right {
+    /* Bootstrap makes .offcanvas-xxl transparent (!important) at xxl; keep the pane white on the gray canvas. */
+    background-color: var(--bs-body-bg) !important;
     position: sticky; top: 1rem; height: calc(100dvh - 2rem);
     border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius-lg);
     box-shadow: var(--bs-box-shadow-sm); overflow: hidden;

@@ -43,13 +43,13 @@ function sourceHint(t) {
       </div>
       <p class="small text-body-secondary mb-0">Missing and partial skills from all your analyses</p>
     </div>
-    <div v-if="loading" class="px-3 pb-3 text-body-secondary small" role="status">Loading…</div>
-    <div v-else-if="error" class="px-3 pb-3 text-danger-emphasis small">{{ error }}</div>
+    <div v-if="loading" class="px-4 pb-3 text-body-secondary small" role="status">Loading…</div>
+    <div v-else-if="error" class="px-4 pb-3 text-danger-emphasis small">{{ error }}</div>
     <template v-else>
-      <p v-if="!tasks.length" class="px-3 pb-3 mb-0 text-body-secondary">Nothing here yet — skills you're missing or only partly match in an analysis are added automatically.</p>
+      <p v-if="!tasks.length" class="px-4 pb-3 mb-0 text-body-secondary">Nothing here yet — skills you're missing or only partly match in an analysis are added automatically.</p>
       <template v-else>
-        <p v-if="actionError" class="px-3 small text-danger-emphasis mb-2" role="alert">{{ actionError }}</p>
-        <p v-if="!rows.length" class="px-3 pb-2 mb-0 text-body-secondary small">All caught up.</p>
+        <p v-if="actionError" class="px-4 small text-danger-emphasis mb-2" role="alert">{{ actionError }}</p>
+        <p v-if="!rows.length" class="px-4 pb-2 mb-0 text-body-secondary small">All caught up.</p>
         <ul v-else class="list-group list-group-flush sg-todo">
           <li v-for="t in rows" :key="t._id" class="list-group-item d-flex align-items-start gap-3" :class="{ 'flex-wrap': armedId === t._id }">
             <input :id="`todo-${t._id}`" type="checkbox" class="form-check-input mt-1 flex-shrink-0" :checked="t.status === 'done'" :disabled="busyId === t._id" @change="emit('toggle', t)" />
@@ -63,7 +63,7 @@ function sourceHint(t) {
             <ConfirmButton :class="armedId === t._id ? 'w-100' : 'ms-auto flex-shrink-0'" label="Remove" trigger-class="btn btn-sm btn-link text-body-secondary p-0" :trigger-aria-label="`Remove ${t.skillText || t.skillKey}`" prompt="Remove from your to-do list?" confirm-label="Remove" :disabled="busyId === t._id" @armed="(on) => { armedId = on ? t._id : (armedId === t._id ? '' : armedId) }" @confirm="emit('remove', t)" />
           </li>
         </ul>
-        <div v-if="done.length" class="px-3 py-2 border-top">
+        <div v-if="done.length" class="px-4 py-2 border-top">
           <button type="button" class="btn btn-sm btn-link p-0" :aria-expanded="showDone" @click="showDone = !showDone">{{ showDone ? 'Hide' : 'Show' }} completed ({{ done.length }})</button>
         </div>
       </template>
@@ -73,5 +73,5 @@ function sourceHint(t) {
 
 <style scoped>
 .min-w-0 { min-width: 0; }
-.sg-todo { max-height: 26rem; overflow-y: auto; }
+.sg-todo { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }
 </style>

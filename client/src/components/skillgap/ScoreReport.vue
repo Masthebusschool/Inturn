@@ -137,7 +137,7 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
       <div class="card-body p-4">
         <h2 id="sg-elig-h" class="sg-eyebrow mb-1">Eligibility checklist</h2>
         <p class="small text-body-secondary">Self-reported — not AI-graded and not saved. Recruiters often filter on these.</p>
-        <ul class="list-unstyled mb-0 d-flex flex-column gap-2">
+        <ul class="list-unstyled mb-0 d-flex flex-column gap-3">
           <li v-for="e in eligibility" :key="e.key">
             <div :id="`sg-el-${e.key}`" class="small mb-1">{{ e.text }}</div>
             <div class="btn-group btn-group-sm" role="group" :aria-labelledby="`sg-el-${e.key}`">
