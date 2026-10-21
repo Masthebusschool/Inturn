@@ -49,10 +49,10 @@ const icon = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke
 
 <template>
   <div ref="root" class="card shadow-sm">
-    <div class="card-body">
+    <div class="card-body p-4">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div>
-          <h2 class="h5 mb-0">Resume draft</h2>
+          <h2 class="h4 fw-semibold mb-0">Resume draft</h2>
           <p class="small text-body-secondary mb-0">Edit freely — the score updates a few seconds after you stop typing.</p>
         </div>
         <ConfirmButton label="Reset to AI draft" trigger-class="btn btn-sm btn-outline-secondary" prompt="Reset to the original AI draft? Your edits will be lost." confirm-label="Reset draft" @confirm="emit('reset')" />
@@ -106,7 +106,7 @@ const icon = { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke
 </template>
 
 <style scoped>
-.sg-entry { border: 1px solid var(--bs-border-color); border-radius: 0.5rem; padding: 0.75rem; background: var(--bs-tertiary-bg); }
+.sg-entry { border: 1px solid var(--bs-border-color); border-radius: 0.5rem; padding: 1rem; background: var(--bs-tertiary-bg); }
 .sg-icon-btn { width: 2.25rem; height: 2.25rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .sg-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--bs-secondary-color); margin-top: 0.8rem; flex-shrink: 0; }
 textarea.form-control { resize: none; overflow: hidden; }
