@@ -395,7 +395,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section>
+  <section class="sg-page">
     <div class="mb-3">
       <h1 class="h3 mb-1">Skill Gap Analysis</h1>
       <p class="text-body-secondary mb-0">
@@ -422,7 +422,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="!result || setupPanel" class="row g-4 mb-4">
+    <div v-if="!result || setupPanel" class="row g-4 g-xl-5 mb-4">
       <div v-if="!result || setupPanel === 'form'" class="col-12 col-lg-7">
         <form class="card shadow-sm" novalidate @submit.prevent="analyze">
           <div class="card-body">
@@ -555,7 +555,7 @@ onBeforeUnmount(() => {
 
       <p v-if="applyNote" class="alert alert-info py-2 small" role="status">{{ applyNote }}</p>
 
-      <div class="row g-3">
+      <div class="row g-4 g-xl-5">
         <div class="col-12 col-lg-4 col-xxl-3">
           <div class="sg-left" tabindex="0" role="region" aria-label="Score report" :aria-busy="dirty || rescoring">
             <ScoreReport
@@ -632,6 +632,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Page canvas: light-gray surface so white cards separate by contrast, not just borders. */
+.sg-page { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius-lg); padding: 1.5rem; }
 .min-w-0 { min-width: 0; }
 .sg-history { max-height: 26rem; overflow-y: auto; }
 .sg-stale { opacity: 0.7; transition: opacity 0.15s; }
