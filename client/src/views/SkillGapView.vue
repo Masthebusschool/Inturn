@@ -397,7 +397,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="sg-page">
     <div class="mb-3">
-      <h1 class="h3 mb-1">Skill Gap Analysis</h1>
+      <h1 class="h3 fw-semibold mb-1">Skill Gap Analysis</h1>
       <p class="text-body-secondary mb-0">
         Paste a job posting to see how your profile scores, then tailor a resume draft and watch its score move.
       </p>
@@ -555,7 +555,7 @@ onBeforeUnmount(() => {
 
       <p v-if="applyNote" class="alert alert-info py-2 small" role="status">{{ applyNote }}</p>
 
-      <div class="row g-4 g-xl-5">
+      <div class="row g-4 g-xl-5 g-xxl-4">
         <div class="col-12 col-lg-4 col-xxl-3">
           <div class="sg-left" tabindex="0" role="region" aria-label="Score report" :aria-busy="dirty || rescoring">
             <ScoreReport
@@ -634,6 +634,7 @@ onBeforeUnmount(() => {
 <style scoped>
 /* Page canvas: light-gray surface so white cards separate by contrast, not just borders. */
 .sg-page { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius-lg); padding: 1.5rem; }
+@media (max-width: 767.98px) { .sg-page { padding: 1rem; } }
 .min-w-0 { min-width: 0; }
 .sg-history { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }
 .sg-stale { opacity: 0.7; transition: opacity 0.15s; }

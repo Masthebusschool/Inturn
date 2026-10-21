@@ -93,7 +93,7 @@ watch(() => [props.messages.length, sending.value], async () => {
           <div class="sg-text">{{ m.text }}</div>
         </div>
         <div v-for="s in visible(m)" :key="s.id" class="sg-sugg card">
-          <div class="card-body p-3">
+          <div class="card-body p-2">
             <div class="small fw-semibold mb-1">{{ sectionLabel(draft, s.sectionId) }}</div>
             <div v-if="s.original" class="small text-body-secondary mb-1">Replaces: <s>{{ s.original }}</s></div>
             <div class="sg-text">{{ s.field === 'skills' ? 'Add: ' : '' }}{{ s.text }}</div>
@@ -136,7 +136,7 @@ watch(() => [props.messages.length, sending.value], async () => {
 .sg-msg { display: flex; flex-direction: column; gap: 0.5rem; max-width: 92%; }
 .sg-msg.is-user { align-self: flex-end; align-items: flex-end; }
 .sg-msg.is-bot { align-self: flex-start; align-items: stretch; }
-.sg-bubble { padding: 0.5rem 0.75rem; border-radius: 0.875rem; font-size: 0.9rem; }
+.sg-bubble { padding: 0.75rem 1rem; border-radius: 0.875rem; font-size: 0.9rem; }
 .is-user .sg-bubble { background: var(--bs-primary); color: #fff; border-bottom-right-radius: 0.25rem; }
 .is-bot .sg-bubble { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); border-bottom-left-radius: 0.25rem; }
 .sg-text { white-space: pre-wrap; overflow-wrap: anywhere; }
