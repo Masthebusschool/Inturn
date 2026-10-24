@@ -1,8 +1,17 @@
 <template>
   <section class="jobs-view">
-    <!-- Filter screen -->
+    <JobsSelect
+      v-if="selectedJob"
+      :key="selectedJob.uuid"
+      :job="selectedJob"
+      :resume-skills="resumeSkills"
+      :saved="isSaved(selectedJob.uuid)"
+      @close="selectedJob = null"
+      @save="toggleSaved"
+    />
+
     <JobsFilter
-      v-if="showFilters"
+      v-else-if="showFilters"
       :model-value="filters"
       :jobs="jobs"
       :result-count="filteredJobs.length"
@@ -10,7 +19,6 @@
       @close="showFilters = false"
     />
 
-    <!-- Main search screen -->
     <div v-else>
       <h1 class="h3">Jobs</h1>
 
@@ -111,7 +119,15 @@
             >
               <div class="job-header">
                 <div class="job-heading">
-                  <h3>{{ job.title }}</h3>
+                  <h3>
+                    <button
+                      class="job-title-button"
+                      type="button"
+                      @click="selectJob(job)"
+                    >
+                      {{ job.title }}
+                    </button>
+                  </h3>
 
                   <p class="company-name">{{ getCompany(job) }}</p>
 
@@ -209,7 +225,8 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
-import JobsFilter from "../views/JobsFilter.vue";
+import JobsFilter from "./JobsFilter.vue";
+import JobsSelect from "./JobsSelect.vue";
 
 const apiUrl = "/api/mcf/v2/jobs";
 const storageKey = "inturn-saved-job-ids";
@@ -222,6 +239,15 @@ const total = ref(0);
 const page = ref(0);
 const loading = ref(false);
 const error = ref("");
+
+const selectedJob = ref(null);
+
+// Populate this with actual extracted or user-confirmed resume skills.
+const resumeSkills = ref([]);
+
+function selectJob(job) {
+  selectedJob.value = job;
+}
 
 const savedJobs = ref([]);
 const saveMessage = ref("");
@@ -870,5 +896,20 @@ button:disabled {
   margin-top: 14px;
   color: #075b46;
   font-size: 13px;
+}
+
+.job-title-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #2459ce;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.job-title-button:hover {
+  text-decoration: underline;
 }
 </style>
