@@ -152,7 +152,7 @@
     </section>
 
     <footer class="filter-footer">
-      <p>Options and counts reflect the current results page.</p>
+      <p>Search results are reflected from the filters chosen.</p>
 
       <button
         class="show-results"

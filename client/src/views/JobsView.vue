@@ -72,6 +72,14 @@
               {{ filteredJobs.length }} matches on this page ·
               {{ total }} jobs found by keyword
             </p>
+
+            <p v-if="!loading && !error && resumeSkills.length > 0">
+              Ranked by resume skill matches within this results page.
+            </p>
+
+            <p v-else-if="!loading && !error">
+              Connect your resume skills to rank jobs by match.
+            </p>
           </div>
 
           <span class="source-label">MyCareersFuture</span>
@@ -144,6 +152,10 @@
                   {{ isSaved(job.uuid) ? "Saved" : "Save" }}
                 </button>
               </div>
+
+              <p v-if="resumeSkills.length > 0" class="resume-match">
+                {{ getMatchCount(job) }} resume skills matched
+              </p>
 
               <div class="job-info">
                 <span>{{ getEmployment(job) }}</span>
@@ -277,7 +289,6 @@ const activeFilterCount = computed(() => {
   return count;
 });
 
-// Filter the current page of raw API jobs.
 const filteredJobs = computed(() => {
   const results = [];
 
@@ -285,7 +296,7 @@ const filteredJobs = computed(() => {
     const job = jobs.value[i];
     let matches = true;
 
-    // Location
+    // Location filter
     if (filters.value.location !== "") {
       let locationMatches = false;
 
@@ -308,7 +319,7 @@ const filteredJobs = computed(() => {
       }
     }
 
-    // Category
+    // Category filter
     if (filters.value.category !== "") {
       let categoryMatches = false;
 
@@ -327,7 +338,7 @@ const filteredJobs = computed(() => {
       }
     }
 
-    // Every selected skill must be present.
+    // Job must include every skill selected in JobsFilter.
     for (let j = 0; j < filters.value.skills.length; j++) {
       let skillMatches = false;
 
@@ -347,6 +358,26 @@ const filteredJobs = computed(() => {
     if (matches) {
       results.push(job);
     }
+  }
+
+  // Rank the filtered jobs by resume skill matches.
+  // Higher counts appear first.
+  // Jobs with equal counts keep their original API order.
+  for (let i = 1; i < results.length; i++) {
+    const currentJob = results[i];
+    const currentCount = getMatchCount(currentJob);
+
+    let position = i - 1;
+
+    while (
+      position >= 0 &&
+      getMatchCount(results[position]) < currentCount
+    ) {
+      results[position + 1] = results[position];
+      position--;
+    }
+
+    results[position + 1] = currentJob;
   }
 
   return results;
@@ -530,6 +561,34 @@ function getExperience(job) {
   }
 
   return years + " years experience";
+}
+
+function getMatchCount(job) {
+  if (!job.skills || resumeSkills.value.length === 0) {
+    return 0;
+  }
+
+  const matchedSkills = [];
+
+  for (let i = 0; i < job.skills.length; i++) {
+    const jobSkill = job.skills[i].skill;
+
+    if (typeof jobSkill === "string") {
+      const skillName = jobSkill.trim().toLowerCase();
+
+      for (let j = 0; j < resumeSkills.value.length; j++) {
+        const resumeSkill = resumeSkills.value[i];
+
+        if (typeof resumeSkill === "string" && resumeSkill.trim().toLowerCase() === skillName
+        && !matchedSkills.includes(skillName)) {
+          matchedSkills.push(skillName);
+        }
+      }
+    }
+  }
+
+  return matchedSkills.length;
+
 }
 
 function isSaved(jobId) {
@@ -911,5 +970,16 @@ button:disabled {
 
 .job-title-button:hover {
   text-decoration: underline;
+}
+
+.resume-match {
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #ccf7e7;
+  color: #075b46;
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>
