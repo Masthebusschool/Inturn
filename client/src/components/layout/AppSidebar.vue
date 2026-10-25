@@ -1,0 +1,291 @@
+<script setup>
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { authStore } from '../../stores/auth.js'
+import { notificationStore } from '../../stores/notifications.js'
+import NotificationBell from './NotificationBell.vue'
+
+const route = useRoute()
+const router = useRouter()
+
+// Small screens only: the menu is hidden behind the hamburger button
+const menuOpen = ref(false)
+const notificationsOpen = ref(false)
+
+// Only one of the two drop-downs is open at a time
+watch(menuOpen, (isOpen) => { if (isOpen) notificationsOpen.value = false })
+watch(notificationsOpen, (isOpen) => { if (isOpen) menuOpen.value = false })
+
+// Close both after moving to another page
+watch(() => route.fullPath, () => {
+  menuOpen.value = false
+  notificationsOpen.value = false
+})
+
+function closeOnEscape(event) {
+  if (event.key !== 'Escape') return
+  menuOpen.value = false
+  notificationsOpen.value = false
+}
+onMounted(() => document.addEventListener('keydown', closeOnEscape))
+onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape))
+
+// Site-wide navigation. Each icon is a 16x16 outline path drawn in white.
+const links = [
+  { to: '/jobs', label: 'Job Discovery', icon: 'M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM1.5 8h13M8 1.5c-2 2-2.8 4-2.8 6.5S6 12.5 8 14.5M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5' },
+  { to: '/shortlist', label: 'Tracker Board', icon: 'M5.5 2h5v1.5h-5zM4 3H3v11.5h10V3h-1M5.5 7.5h5M5.5 10h5M5.5 12.5h3' },
+  { to: '/intel', label: 'Interview Intel', icon: 'M1.5 2.5h13v8h-13zM8 10.5v3M5 14.5h6M4 5h4M4 7.5h7' },
+  { to: '/mock-interview', label: 'Mock Interview', icon: 'M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2ZM3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5' },
+  { to: '/skill-gap', label: 'Skill Gap Analysis', icon: 'M3 1.5h7l3 3v10H3zM10 1.5v3h3M5.5 8h5M5.5 10.5h5M5.5 13h3' },
+  { to: '/resumes', label: 'My Resumes', icon: 'M5 3.5h5.5l2.5 2.5v8.5H5zM10.5 3.5V6H13M3 12V1.5h6' },
+  { to: '/profile', label: 'Profile', icon: 'M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.5 6.5c0-2.6 2.5-4.5 5.5-4.5s5.5 1.9 5.5 4.5' },
+]
+
+async function handleLogout() {
+  menuOpen.value = false
+  await authStore.logout()
+  notificationStore.clear()
+  router.push({ name: 'login' })
+}
+</script>
+
+<template>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <span >
+          <img src="../../assets/logogogo.jpg" class="brand-logo">
+        </span>
+        <span class="brand-name">Inturn</span>
+      </div>
+
+      <!-- Next to "Inturn" on large screens; next to the hamburger on small screens -->
+      <NotificationBell v-if="authStore.isLoggedIn" v-model:open="notificationsOpen" class="header-bell" />
+
+      <!-- Hamburger: only shown on small screens -->
+      <button
+        type="button"
+        class="menu-toggle"
+        aria-controls="sidebar-menu"
+        :aria-expanded="menuOpen"
+        :aria-label="menuOpen ? 'Close menu' : 'Open menu'"
+        @click="menuOpen = !menuOpen"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path v-if="menuOpen" d="M6 6l12 12M18 6 6 18" />
+          <path v-else d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Always visible on large screens; opened by the hamburger on small screens -->
+    <div id="sidebar-menu" class="sidebar-menu" :class="{ open: menuOpen }">
+      <nav aria-label="Main">
+        <ul class="nav-list">
+          <li v-for="link in links" :key="link.to">
+            <RouterLink :to="link.to" class="nav-item" active-class="active">
+              <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path :d="link.icon" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>{{ link.label }}</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button v-if="authStore.isLoggedIn" type="button" class="nav-item footer-button" @click="handleLogout">
+          <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 2.5H3v11h3M10.5 5l3 3-3 3M13.5 8H6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Log out</span>
+        </button>
+        <RouterLink v-else-if="authStore.checked" :to="{ name: 'login' }" class="nav-item">
+          <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M10 2.5h3v11h-3M2.5 8h7.5M7 5l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>Log in</span>
+        </RouterLink>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<style scoped>
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  background: white;
+  color:black;
+  border-right: 1px solid rgb(221, 219, 219);
+  padding:12px;
+}
+
+/* Large screens: brand with the bell right next to it */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.75rem 3rem 1.25rem;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+/* Hidden on large screens; see the media query below */
+.menu-toggle {
+  display: none;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.brand-logo {
+  height:32px;
+  width:auto;
+}
+
+.brand-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  color: black;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: #f1f5fd;
+}
+
+.nav-item.active {
+  background: #e3ecfb;
+  color: #2f5f9e; 
+  font-weight: 600;
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid #4e8be6;
+  outline-offset: -2px;
+}
+
+.nav-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-bottom: 1rem;
+}
+
+/* Small screens: a bar across the top with a hamburger that opens the menu */
+@media (max-width: 767.98px) {
+  .sidebar {
+    width: 100%;
+    min-height: 0;
+    z-index: 1020;
+    /* A top bar now, so the divider goes underneath instead of on the right */
+    border-right: none;
+    border-bottom: 1px solid rgb(221, 219, 219);
+  }
+
+  .sidebar-header {
+    gap: 0.25rem;
+    padding: 0.4rem 0.5rem 0.4rem 1rem;
+  }
+
+  /* Push the bell and hamburger to the right (works with or without the bell) */
+  .brand {
+    margin-right: auto;
+  }
+
+  .brand-name {
+    font-size: 1.25rem;
+  }
+
+  .menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: black;
+    background: none;
+    border: none;
+    border-radius: 8px;
+  }
+
+  .menu-toggle:hover {
+    background: #f1f5fd;
+  }
+
+  .menu-toggle:focus-visible {
+    outline: 2px solid #4e8be6;
+  }
+
+  .menu-toggle svg {
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .sidebar-menu {
+    display: none;
+    position: sticky;
+    top: calc(100% + 8px);
+    left: 16px;
+    right: 16px;
+    padding: 0.5rem;
+    background: #fff;
+    border: 1px solid #eef0f3;
+    border-radius: 16px;
+    box-shadow: 0 30px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .sidebar-menu.open {
+    display: block;
+  }
+
+  .nav-item {
+    padding: 0.75rem 1rem;
+  }
+
+  .sidebar-footer {
+    padding-bottom: 0;
+    border-top: 1px solid rgb(221, 219, 219);
+  }
+}
+</style>
