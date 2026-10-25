@@ -50,8 +50,13 @@ const userSchema = new mongoose.Schema(
       validate: [(arr) => arr.length <= 10, 'You can add at most 10 industries'],
     },
     targetRoles: [String], // From the team scaffold; not asked in the UI yet.
-    // True once educationLevel and at least one skill are filled in.
-    profileComplete: { type: Boolean, default: false },
+    resume:{
+      fileName: String,
+      pageCount:Number,
+      wordCount:Number,
+      text:String,
+      uploadedAt:Date,
+    }
   },
   { timestamps: true }
 );
@@ -70,7 +75,6 @@ export function toPublicUser(user) {
     fieldOfStudy: user.fieldOfStudy,
     skills: user.skills,
     targetIndustries: user.targetIndustries,
-    profileComplete: user.profileComplete,
   };
 }
 

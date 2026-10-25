@@ -1,11 +1,14 @@
 // Shared fetch wrapper for the Express API (Vite proxies /api to the server).
 // Throws an Error with `status` and an `errors` list when the response is not OK.
+// `body` is sent as JSON, except FormData (file uploads), which is sent as is.
 export async function request(path, { method = 'GET', body } = {}) {
+  // The browser sets the multipart Content-Type for FormData itself
+  const isJson = body !== undefined && !(body instanceof FormData)
   const res = await fetch(`/api${path}`, {
     method,
     credentials: 'include', // send the session cookie
-    headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers: isJson ? { 'Content-Type': 'application/json' } : undefined,
+    body: isJson ? JSON.stringify(body) : body,
   })
 
   const data = await res.json().catch(() => ({}))

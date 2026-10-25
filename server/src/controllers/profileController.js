@@ -49,7 +49,7 @@ export const getProfile = async (req, res) => {
 // Used by both onboarding and edit profile.
 export const updateProfile = async (req, res) => {
   const body = req.body ?? {};
-  // Only these fields can be changed here: never email, password or profileComplete
+  // Only these fields can be changed here: never email or password
   const data = {
     educationLevel: String(body.educationLevel ?? '').trim(),
     institution: String(body.institution ?? '').trim(),
@@ -64,8 +64,7 @@ export const updateProfile = async (req, res) => {
     if (errors.length > 0)
       return res.status(400).json({ errors });
 
-    // Passing validation means the required parts are filled in
-    const user = await User.updateUser(req.session.user.id, { ...data, profileComplete: true });
+    const user = await User.updateUser(req.session.user.id, data);
     if (!user)
       return res.status(404).json({ error: 'User not found' });
     return res.json({ user: User.toPublicUser(user) });

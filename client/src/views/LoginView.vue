@@ -27,18 +27,14 @@ function validate() {
 async function handleLogin() {
   info.value = ''
   errors.value = validate()
-  if (errors.value.length > 0) return
-
-  submitting.value = true
   try {
     const user = await authStore.login({ ...form, email: form.email.trim() })
     form.password = ''
-    router.push({ name: user.profileComplete ? 'profile' : 'onboarding' })
+    // Education level is required in onboarding, so no education level means onboarding is not done yet
+    router.push(user.educationLevel ? '/jobs' : '/onboarding')
   } catch (err) {
     errors.value = err.errors ?? [err.message]
-  } finally {
-    submitting.value = false
-  }
+  } 
 }
 
 async function handleLogout() {
@@ -46,10 +42,6 @@ async function handleLogout() {
   form.password = ''
 }
 
-function showForgotPassword() {
-  errors.value = []
-  info.value = 'Password reset is not available yet.'
-}
 </script>
 
 <template>
@@ -102,12 +94,11 @@ function showForgotPassword() {
           <input id="login-remember" v-model="form.rememberMe" type="checkbox" class="form-check-input" />
           <label for="login-remember" class="form-check-label">Remember me</label>
         </div>
-        <a href="#" class="link-dark text-decoration-none" @click.prevent="showForgotPassword">Forgot password?</a>
       </div>
 
       <div class="text-center">
         <button type="submit" class="btn-primary-inturn" :disabled="submitting">
-          {{ submitting ? 'Logging in...' : 'Log in' }}
+          Log in
         </button>
         <p class="mt-3 mb-0 small text-body-secondary">
           Don't have an account? <RouterLink to="/signup">Sign up</RouterLink>

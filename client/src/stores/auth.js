@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import * as authApi from '../api/auth.js'
 import * as profileApi from '../api/profile.js'
+import { resumeStore } from './resume.js'
 
 // Who is logged in, shared by every page. Usage:
 //   import { authStore } from '../stores/auth.js'
@@ -55,6 +56,8 @@ export const authStore = reactive({
     await authApi.logout()
     authVersion++
     this.user = null
+    // So the next person to log in on this browser does not see this resume
+    resumeStore.clear()
   },
 
   // Saves education, skills and target industries; keeps the stored user in sync.

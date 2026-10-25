@@ -6,6 +6,7 @@ import { connectDB } from './config/db.js';
 import { createSessionMiddleware } from './config/session.js';
 import authRouter from './routes/auth.js';
 import profileRouter from './routes/profile.js';
+import resumeRouter from './routes/resume.js';
 import jobsRouter from './routes/jobs.js';
 import skillgapRouter from './routes/skillgap.js';
 import interviewRouter from './routes/interview.js';
@@ -34,6 +35,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
+app.use('/api/resume', resumeRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/skillgap', skillgapRouter);
 app.use('/api/interview', interviewRouter);

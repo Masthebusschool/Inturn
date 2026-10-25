@@ -1,18 +1,33 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import HomeView from '../views/HomeView.vue'
+import JobsView from '../views/JobsView.vue'
+import SkillGapView from '../views/SkillGapView.vue'
+import MockInterviewView from '../views/MockInterviewView.vue'
+import IntelFeedView from '../views/IntelFeedView.vue'
+import ShortlistView from '../views/ShortlistView.vue'
+import LoginView from '../views/LoginView.vue'
+import SignupView from '../views/SignupView.vue'
+import OnboardingView from '../views/OnboardingView.vue'
+import ProfileView from '../views/ProfileView.vue'
+import ResumeAnalysisView from '../views/ResumeAnalysisView.vue'
+
 const routes = [
-  { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
-  { path: '/jobs', name: 'jobs', component: () => import('../views/JobsView.vue') },
-  { path: '/skill-gap', name: 'skill-gap', component: () => import('../views/SkillGapView.vue') },
-  { path: '/mock-interview', name: 'mock-interview', component: () => import('../views/MockInterviewView.vue') },
-  { path: '/intel', name: 'intel', component: () => import('../views/IntelFeedView.vue') },
-  { path: '/shortlist', name: 'shortlist', component: () => import('../views/ShortlistView.vue') },
-  // meta.fullPage: shown without the sidebar (see App.vue)
-  { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { fullPage: true } },
-  { path: '/signup', name: 'signup', component: () => import('../views/SignupView.vue'), meta: { fullPage: true } },
-  { path: '/onboarding', name: 'onboarding', component: () => import('../views/OnboardingView.vue'), meta: { fullPage: true } },
-  { path: '/profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
-  { path: '/:pathMatch(.*)*', redirect: '/' },
+  { path: '/', component: HomeView },
+  { path: '/jobs', component: JobsView },
+  { path: '/skill-gap', component: SkillGapView },
+  { path: '/mock-interview', component: MockInterviewView },
+  { path: '/intel', component: IntelFeedView },
+  { path: '/shortlist', component: ShortlistView },
+// meta.fullPage: shown without the sidebar (see App.vue)
+  { path: '/login', component: LoginView, meta: { fullPage: true } },
+  { path: '/signup', component: SignupView, meta: { fullPage: true } },
+  { path: '/onboarding', component: OnboardingView, meta: { fullPage: true } },
+
+  { path: '/profile', component: ProfileView },
+  { path: '/profile/resume-analysis', component: ResumeAnalysisView },
+
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })

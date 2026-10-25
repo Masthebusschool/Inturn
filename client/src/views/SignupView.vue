@@ -1,10 +1,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { isValidEmail, PASSWORD_RULES } from '../utils/validators.js'
 
-const router = useRouter()
 const form = reactive({ name: '', email: '', password: '', confirmPassword: '' })
 const errors = ref([])
 const submitting = ref(false)
@@ -46,11 +44,6 @@ async function handleSignup() {
   }
 }
 
-// Pass the email in history state (not the URL) so the login form can prefill it.
-function goToLogin() {
-  router.push({ name: 'login', state: { email: createdUser.value.email } })
-}
-
 async function handleLogout() {
   await authStore.logout()
 }
@@ -58,14 +51,15 @@ async function handleLogout() {
 
 <template>
   <section class="signup-page">
-    <h1 class="brand">Inturn</h1>
+    <img src="../assets/logogogo.jpg" class="brand-logo">
 
     <div v-if="createdUser" class="signup-card text-center">
       <h2 class="welcome">Account created</h2>
       <p class="subtitle mb-1">{{ createdUser.name }}</p>
       <p class="subtitle">{{ createdUser.email }}</p>
       <p class="small text-body-secondary">Log in to complete your profile.</p>
-      <button type="button" class="btn-primary-inturn" @click="goToLogin">Log in</button>
+      <!-- The email goes in history state (not the URL) so the login form can prefill it -->
+      <RouterLink :to="{ path: '/login', state: { email: createdUser.email } }" class="btn-primary-inturn">Log in</RouterLink>
     </div>
 
     <!-- Temporary: someone already logged in opened /signup -->
@@ -152,6 +146,12 @@ async function handleLogout() {
 </template>
 
 <style scoped>
+.brand-logo{
+  height:120px;
+  width: auto;
+  padding:1rem 0;
+}
+
 .signup-page {
   display: flex;
   flex-direction: column;
@@ -219,6 +219,16 @@ async function handleLogout() {
 
 .btn-primary-inturn:disabled {
   opacity: 0.7;
+}
+
+/* The "Log in" RouterLink on the Account created card, styled as the button */
+a.btn-primary-inturn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+a.btn-primary-inturn:hover {
+  color: #fff;
 }
 
 @media (max-width: 576px) {

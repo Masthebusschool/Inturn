@@ -1,14 +1,17 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
+import { resumeStore } from '../stores/resume.js'
+import { analyzeResume } from '../api/resume.js'
 import TagInput from '../components/profile/TagInput.vue'
+import ResumeUploadBox from '../components/profile/ResumeUploadBox.vue'
 import { EDUCATION_LEVELS, SKILL_SUGGESTIONS, INDUSTRY_OPTIONS, PROFILE_LIMITS } from '../utils/profileOptions.js'
 
 const router = useRouter()
-const STEPS = ['Education', 'Skills', 'Target industries']
+const STEP_LABELS = { resume: 'Resume', education: 'Education', skills: 'Skills', industries: 'Target industries' }
 
-const step = ref(1)
+const stepIndex = ref(0)
 const form = reactive({
   educationLevel: '',
   institution: '',
@@ -22,13 +25,24 @@ const ready = ref(false)
 // Temporary: "Edit profile" reuses these steps until a dedicated edit page exists
 const isEditing = ref(false)
 
+// The optional resume step only appears for new users; the profile page has its own upload
+const steps = computed(() =>
+  isEditing.value ? ['education', 'skills', 'industries'] : ['education', 'skills', 'industries','resume',]
+)
+const currentStep = computed(() => steps.value[stepIndex.value])
+const isLastStep = computed(() => stepIndex.value === steps.value.length - 1)
+
+// What the resume step found, shown under the upload box
+const resumeNote = ref('')
+
 onMounted(async () => {
   if (!authStore.checked) await authStore.fetchMe()
-  if (!authStore.isLoggedIn) return router.replace({ name: 'login' })
+  if (!authStore.isLoggedIn) return router.replace('/login')
 
   // Start from whatever the user already saved (e.g. coming back to finish later)
   const user = authStore.user
-  isEditing.value = user.profileComplete
+  // Already has an education level: they finished onboarding before, so this is "Edit profile"
+  isEditing.value = Boolean(user.educationLevel)
   form.educationLevel = user.educationLevel ?? ''
   form.institution = user.institution ?? ''
   form.fieldOfStudy = user.fieldOfStudy ?? ''
@@ -37,28 +51,28 @@ onMounted(async () => {
   ready.value = true
 })
 
-// Education level is required, at least one skill; industries can be skipped.
+// Resume is optional; education level is required, at least one skill; industries can be skipped.
 function validateStep() {
   const list = []
-  if (step.value === 1) {
+  if (currentStep.value === 'education') {
     if (!form.educationLevel) list.push('Please choose your education level')
     if (form.institution.trim().length > PROFILE_LIMITS.textLength)
       list.push(`Institution must not exceed ${PROFILE_LIMITS.textLength} characters`)
     if (form.fieldOfStudy.trim().length > PROFILE_LIMITS.textLength)
       list.push(`Field of study must not exceed ${PROFILE_LIMITS.textLength} characters`)
   }
-  if (step.value === 2 && form.skills.length === 0) list.push('Add at least one skill')
+  if (currentStep.value === 'skills' && form.skills.length === 0) list.push('Add at least one skill')
   return list
 }
 
 function next() {
   errors.value = validateStep()
-  if (errors.value.length === 0) step.value++
+  if (errors.value.length === 0) stepIndex.value++
 }
 
 function back() {
   errors.value = []
-  step.value--
+  stepIndex.value--
 }
 
 async function finish(skipIndustries = false) {
@@ -71,7 +85,7 @@ async function finish(skipIndustries = false) {
       fieldOfStudy: form.fieldOfStudy.trim(),
       targetIndustries: skipIndustries ? [] : form.targetIndustries,
     })
-    router.push({ name: 'profile' })
+    router.push('/jobs')
   } catch (err) {
     errors.value = err.errors ?? [err.message]
   } finally {
@@ -82,7 +96,10 @@ async function finish(skipIndustries = false) {
 
 <template>
   <section class="onboarding-page">
-    <h1 class="brand">Inturn</h1>
+   
+    
+    <img src="../assets/logogogo.jpg" class="brand-logo">
+        
 
     <div v-if="ready" class="onboarding-card">
       <h2 class="welcome text-center">{{ isEditing ? 'Edit your profile' : 'Complete your profile' }}</h2>
@@ -90,13 +107,13 @@ async function finish(skipIndustries = false) {
 
       <ol class="stepper" aria-label="Progress">
         <li
-          v-for="(label, index) in STEPS"
-          :key="label"
-          :class="{ active: step === index + 1, complete: step > index + 1 }"
-          :aria-current="step === index + 1 ? 'step' : undefined"
+          v-for="(key, index) in steps"
+          :key="key"
+          :class="{ active: stepIndex === index, complete: stepIndex > index }"
+          :aria-current="stepIndex === index ? 'step' : undefined"
         >
-          <span class="dot">{{ step > index + 1 ? '✓' : index + 1 }}</span>
-          <span class="label">{{ label }}</span>
+          <span class="dot">{{ stepIndex > index ? '✓' : index + 1 }}</span>
+          <span class="label">{{ STEP_LABELS[key] }}</span>
         </li>
       </ol>
 
@@ -104,8 +121,16 @@ async function finish(skipIndustries = false) {
         <div v-for="error in errors" :key="error">{{ error }}</div>
       </div>
 
-      <!-- Step 1: Education -->
-      <div v-if="step === 1">
+      <!-- Resume (optional, new users only) -->
+      <div v-if="currentStep === 'resume'" class="mb-3">
+        <p class="form-label mb-1">Upload your resume <span class="optional">(optional)</span></p>
+        <p class="form-text mt-0">You can also skip this and upload it later from My Profile.</p>
+        <ResumeUploadBox />
+        <p v-if="resumeNote" class="resume-note" role="status">{{ resumeNote }}</p>
+      </div>
+
+      <!-- Education -->
+      <div v-else-if="currentStep === 'education'">
         <fieldset class="mb-3">
           <legend class="form-label fs-6">Education level <span class="required">*</span></legend>
           <div class="level-options">
@@ -139,8 +164,8 @@ async function finish(skipIndustries = false) {
         </div>
       </div>
 
-      <!-- Step 2: Skills -->
-      <div v-else-if="step === 2" class="mb-3">
+      <!-- Skills -->
+      <div v-else-if="currentStep === 'skills'" class="mb-3">
         <label for="onboarding-skills" class="form-label">Your skills <span class="required">*</span></label>
         <p class="form-text mt-0">Add at least one. Type a skill and press Enter, or pick from the suggestions.</p>
         <TagInput
@@ -153,7 +178,7 @@ async function finish(skipIndustries = false) {
         />
       </div>
 
-      <!-- Step 3: Target industries -->
+      <!-- Target industries -->
       <div v-else class="mb-3">
         <label for="onboarding-industries" class="form-label">Target industries <span class="optional">(optional)</span></label>
         <p class="form-text mt-0">Which industries are you aiming for? You can skip this and add them later.</p>
@@ -168,11 +193,12 @@ async function finish(skipIndustries = false) {
       </div>
 
       <div class="actions">
-        <button v-if="step > 1" type="button" class="btn-outline-inturn" :disabled="saving" @click="back">Back</button>
-        <RouterLink v-else-if="isEditing" :to="{ name: 'profile' }" class="link-secondary">Cancel</RouterLink>
+        <button v-if="stepIndex > 0" type="button" class="btn-outline-inturn" :disabled="saving" @click="back">Back</button>
+        <RouterLink v-else-if="isEditing" to="/profile" class="link-secondary">Cancel</RouterLink>
         <span v-else></span>
 
-        <button v-if="step < 3" type="button" class="btn-primary-inturn" @click="next">Next</button>
+        
+        <button v-if="!isLastStep" type="button" class="btn-primary-inturn" @click="next">Next</button>
         <div v-else class="d-flex align-items-center gap-3">
           <button v-if="!isEditing" type="button" class="btn btn-link link-secondary p-0" :disabled="saving" @click="finish(true)">Skip for now</button>
           <button type="button" class="btn-primary-inturn" :disabled="saving" @click="finish()">
@@ -185,6 +211,11 @@ async function finish(skipIndustries = false) {
 </template>
 
 <style scoped>
+.brand-logo{
+  height:120px;
+  width: auto;
+  padding:1rem 0;
+}
 .onboarding-page {
   display: flex;
   flex-direction: column;
@@ -192,11 +223,6 @@ async function finish(skipIndustries = false) {
   padding: 2rem 0;
 }
 
-.brand {
-  font-size: 3rem;
-  font-weight: 400;
-  margin-bottom: 2rem;
-}
 
 .onboarding-card {
   width: 100%;
@@ -294,6 +320,15 @@ async function finish(skipIndustries = false) {
 .optional {
   color: #6c757d;
   font-size: 0.85rem;
+}
+
+.resume-note {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.85rem;
+  background: #e3ecfb;
+  color: #3c70b3;
+  border-radius: 8px;
+  font-size: 0.9rem;
 }
 
 .level-options {

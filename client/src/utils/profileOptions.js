@@ -1,7 +1,7 @@
 // Choices and limits for the profile form. Keep in sync with the server
 // (EDUCATION_LEVELS in server/src/models/User.js, limits in profileController.js).
 
-export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate']
+export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate','PHD']
 
 export const SKILL_SUGGESTIONS = [
   'Python', 'Java', 'JavaScript', 'SQL', 'HTML/CSS', 'Excel',
@@ -20,4 +20,5 @@ export const PROFILE_LIMITS = {
   tagLength: 50,
   skills: 30,
   industries: 10,
+  resumeMB: 2, // MAX_RESUME_SIZE in server/src/middleware/uploadMiddleware.js
 }
