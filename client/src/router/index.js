@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
+  //{ path: '/', name: 'home', component: () => import('../views/HomeView.vue') },
+  { path: '/', name: 'home', component: () => import('../views/ApplicationTrackingBoard/KanbanView.vue') },
   { path: '/jobs', name: 'jobs', component: () => import('../views/JobsView.vue') },
   { path: '/skill-gap', name: 'skill-gap', component: () => import('../views/SkillGapView.vue') },
   { path: '/mock-interview', name: 'mock-interview', component: () => import('../views/MockInterviewView.vue') },
