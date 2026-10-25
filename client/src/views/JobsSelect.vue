@@ -513,7 +513,6 @@ onMounted(() => {
   max-width: 900px;
   margin: 0 auto;
   color: #17234b;
-  font-family: Arial, sans-serif;
 }
 
 .jobs-select,

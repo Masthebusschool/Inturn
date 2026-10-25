@@ -11,16 +11,16 @@ const TEST_EMAIL = 'dev@inturn.local';
 
 // Boots a real HTTP server wrapping `router` behind express.json() and a fake login, on an ephemeral port.
 // Tests hit it with fetch(`${base}/...`). Mirrors how index.js wires a router, minus logging.
-export async function startTestServer(mountPath, router) {
+export async function startTestServer(mountPath, router, { email = TEST_EMAIL } = {}) {
   const app = express();
   app.use(express.json());
   app.use(async (req, res, next) => {
     const user = await User.findOneAndUpdate(
-      { email: TEST_EMAIL },
-      { $setOnInsert: { email: TEST_EMAIL, name: 'Dev Student' } },
+      { email },
+      { $setOnInsert: { email, name: 'Dev Student' } },
       { upsert: true, returnDocument: 'after' }
     );
-    req.session = { user: { id: user.id } };
+    req.session = { user: { id: user.id }, destroy: (cb) => cb() };
     next();
   });
   app.use(mountPath, router);

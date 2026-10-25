@@ -99,8 +99,8 @@ async function startDeepAnalysis() {
 
     <!-- Opened directly or after a refresh: the uploaded resume is no longer in memory -->
     <article v-if="!resume" class="panel text-center">
-      <p class="mb-3">Upload your resume on your profile first, then analyze it here.</p>
-      <RouterLink to="/profile" class="btn-primary-inturn">Go to my profile</RouterLink>
+      <p class="mb-3">No uploaded resume in this session. Manage your resumes in My Resumes, or compare one against a job in Skill Gap Analysis.</p>
+      <RouterLink to="/resumes" class="btn-primary-inturn">Go to My Resumes</RouterLink>
     </article>
 
     <template v-else>

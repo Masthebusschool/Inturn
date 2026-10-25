@@ -6,5 +6,7 @@ const router = Router();
 
 router.get('/', isLoggedIn, profileController.getProfile);
 router.put('/', isLoggedIn, profileController.updateProfile);
+router.get('/activity', isLoggedIn, profileController.getActivity);
+router.delete('/', isLoggedIn, profileController.deleteAccount);
 
 export default router;

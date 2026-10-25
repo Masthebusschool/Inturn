@@ -20,12 +20,15 @@
     />
 
     <div v-else>
-      <h1 class="h3">Jobs</h1>
-
-      <p class="text-body-secondary">
-        Live internship and job listings from public job boards, searchable by
-        keyword, role, and location.
-      </p>
+      <header class="page-header">
+        <div>
+          <h1 class="header-title">Job Discovery</h1>
+          <p class="header-subtitle">
+            Live internship and job listings from public job boards, searchable by
+            keyword, role, and location.
+          </p>
+        </div>
+      </header>
 
       <form class="search-bar" @submit.prevent="searchJobs">
         <label for="job-search">Search jobs</label>
@@ -642,10 +645,7 @@ onMounted(() => {
 .jobs-view {
   width: 100%;
   min-width: 0;
-  padding: 24px;
-  background: #f6f8ff;
-  color: #17234b;
-  font-family: Arial, sans-serif;
+  max-width: 1100px;
 }
 
 .jobs-view,
@@ -653,18 +653,34 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.h3 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  font-weight: 600;
-  line-height: 1.3;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
 }
 
-.text-body-secondary {
-  margin: 0 0 24px;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.6;
+.header-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.header-subtitle {
+  font-size: 0.8rem;
+  margin-bottom: 0;
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 button,
@@ -690,7 +706,7 @@ button:disabled {
   margin-bottom: 24px;
   padding: 14px;
   border: 1px solid #dce3f0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: white;
 }
 
@@ -744,9 +760,8 @@ button:disabled {
 
 .results-panel {
   width: 100%;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  background: white;
+  border-radius: 16px;
+  background: #f3f3f3;
 }
 
 .results-header {

@@ -11,3 +11,12 @@ export function updateProfile({ educationLevel, institution, fieldOfStudy, skill
     body: { educationLevel, institution, fieldOfStudy, skills, targetIndustries },
   })
 }
+
+export function getActivity() {
+  return request('/profile/activity')
+}
+
+// Permanently deletes the account; the server checks the typed email.
+export function deleteAccount(confirmEmail) {
+  return request('/profile', { method: 'DELETE', body: { confirmEmail } })
+}

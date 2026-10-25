@@ -55,7 +55,8 @@ function startSession(req, user, rememberMe) {
     // New session id on every login, so an old cookie cannot be reused
     req.session.regenerate((err) => {
       if (err) return reject(err);
-      req.session.user = { id: user.id, name: user.name, email: user.email };
+      // previousLoginAt: the login before this one, shown as "Last login" on the profile
+      req.session.user = { id: user.id, name: user.name, email: user.email, previousLoginAt: user.lastLoginAt ?? null };
       if (rememberMe)
         req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE;
       req.session.save((err) => (err ? reject(err) : resolve()));
@@ -122,6 +123,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ errors: ['Email or password is incorrect'] });
 
     await startSession(req, user, Boolean(body.rememberMe));
+    await User.recordLogin(user.id);
     return res.json({ user: User.toPublicUser(user) });
   }
   catch (e) {

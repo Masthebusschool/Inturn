@@ -2,11 +2,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
-import { resumeStore } from '../stores/resume.js'
-import { analyzeResume } from '../api/resume.js'
+import { createResumeFromText } from '../api/resume.js'
 import TagInput from '../components/profile/TagInput.vue'
+import ComboboxInput from '../components/profile/ComboboxInput.vue'
 import ResumeUploadBox from '../components/profile/ResumeUploadBox.vue'
-import { EDUCATION_LEVELS, SKILL_SUGGESTIONS, INDUSTRY_OPTIONS, PROFILE_LIMITS } from '../utils/profileOptions.js'
+import { EDUCATION_LEVELS, INDUSTRY_OPTIONS, PROFILE_LIMITS } from '../utils/profileOptions.js'
+import { FIELD_OF_STUDY_NAMES, findFieldOfStudy, skillSuggestionsFor } from '../utils/fieldsOfStudy.js'
 
 const router = useRouter()
 const STEP_LABELS = { resume: 'Resume', education: 'Education', skills: 'Skills', industries: 'Target industries' }
@@ -34,6 +35,30 @@ const isLastStep = computed(() => stepIndex.value === steps.value.length - 1)
 
 // What the resume step found, shown under the upload box
 const resumeNote = ref('')
+const resumeError = ref('')
+const parsing = ref(false)
+
+const skillSuggestions = computed(() => skillSuggestionsFor(form.fieldOfStudy))
+const matchedField = computed(() => findFieldOfStudy(form.fieldOfStudy))
+
+// The upload box only extracts text; the AI parser turns it into a saved resume in My Resumes.
+// Not awaited by Finish/Skip: the request keeps running after navigation.
+async function handleResumeUploaded(resume) {
+  parsing.value = true
+  resumeNote.value = ''
+  resumeError.value = ''
+  try {
+    const name = resume.fileName.replace(/\.pdf$/i, '')
+    const { resume: saved } = await createResumeFromText({ name, text: resume.text })
+    const count = (list, noun) => `${list?.length ?? 0} ${noun}`
+    resumeNote.value = `Saved to My Resumes as "${saved?.name ?? name}" — found ${count(saved?.skills, 'skills')}, ${count(saved?.education, 'education')} and ${count(saved?.experience, 'experience')} entries.`
+  } catch (err) {
+    const reason = err.errors?.[0] ?? err.message
+    resumeError.value = `Your file was read, but AI parsing failed (${reason}). You can import it later from My Resumes.`
+  } finally {
+    parsing.value = false
+  }
+}
 
 onMounted(async () => {
   if (!authStore.checked) await authStore.fetchMe()
@@ -124,9 +149,13 @@ async function finish(skipIndustries = false) {
       <!-- Resume (optional, new users only) -->
       <div v-if="currentStep === 'resume'" class="mb-3">
         <p class="form-label mb-1">Upload your resume <span class="optional">(optional)</span></p>
-        <p class="form-text mt-0">You can also skip this and upload it later from My Profile.</p>
-        <ResumeUploadBox />
+        <p class="form-text mt-0">You can also skip this and add it later from My Resumes.</p>
+        <ResumeUploadBox @uploaded="handleResumeUploaded" />
+        <p v-if="parsing" class="resume-note" role="status">
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Parsing your resume with AI… you can press Finish; it will still be saved to My Resumes.
+        </p>
         <p v-if="resumeNote" class="resume-note" role="status">{{ resumeNote }}</p>
+        <div v-if="resumeError" class="alert alert-warning py-2 mt-3 mb-0" role="status">{{ resumeError }}</div>
       </div>
 
       <!-- Education -->
@@ -153,25 +182,28 @@ async function finish(skipIndustries = false) {
         </div>
         <div class="mb-3">
           <label for="onboarding-field" class="form-label">Field of study <span class="optional">(optional)</span></label>
-          <input
-            id="onboarding-field"
+          <ComboboxInput
             v-model="form.fieldOfStudy"
-            type="text"
-            class="form-control input-inturn"
-            placeholder="e.g. Software Engineering"
-            :maxlength="PROFILE_LIMITS.textLength"
+            input-id="onboarding-field"
+            :options="FIELD_OF_STUDY_NAMES"
+            :max-length="PROFILE_LIMITS.textLength"
+            placeholder="Search or type your own, e.g. Computer Science"
           />
+          <div class="form-text">Pick from the list or type your own.</div>
         </div>
       </div>
 
       <!-- Skills -->
       <div v-else-if="currentStep === 'skills'" class="mb-3">
         <label for="onboarding-skills" class="form-label">Your skills <span class="required">*</span></label>
-        <p class="form-text mt-0">Add at least one. Type a skill and press Enter, or pick from the suggestions.</p>
+        <p class="form-text mt-0">
+          Add at least one. Type a skill and press Enter, or pick from the suggestions.
+          <template v-if="matchedField">Suggestions are based on {{ matchedField.name }}.</template>
+        </p>
         <TagInput
           v-model="form.skills"
           input-id="onboarding-skills"
-          :suggestions="SKILL_SUGGESTIONS"
+          :suggestions="skillSuggestions"
           :max="PROFILE_LIMITS.skills"
           :max-length="PROFILE_LIMITS.tagLength"
           placeholder="e.g. Python"
@@ -333,7 +365,7 @@ async function finish(skipIndustries = false) {
 
 .level-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.6rem;
 }
 
@@ -402,7 +434,7 @@ async function finish(skipIndustries = false) {
   }
 
   .level-options {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

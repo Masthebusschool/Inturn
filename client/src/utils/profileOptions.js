@@ -1,7 +1,7 @@
 // Choices and limits for the profile form. Keep in sync with the server
 // (EDUCATION_LEVELS in server/src/models/User.js, limits in profileController.js).
 
-export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate','PHD']
+export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate', 'PhD']
 
 export const SKILL_SUGGESTIONS = [
   'Python', 'Java', 'JavaScript', 'SQL', 'HTML/CSS', 'Excel',

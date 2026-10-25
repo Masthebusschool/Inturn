@@ -60,6 +60,14 @@ export const authStore = reactive({
     resumeStore.clear()
   },
 
+  // Hard-deletes the account (the server ends the session), then mirrors logout().
+  async deleteAccount(confirmEmail) {
+    await profileApi.deleteAccount(confirmEmail)
+    authVersion++
+    this.user = null
+    resumeStore.clear()
+  },
+
   // Saves education, skills and target industries; keeps the stored user in sync.
   async updateProfile(details) {
     const { user } = await profileApi.updateProfile(details)

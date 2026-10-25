@@ -4,9 +4,11 @@ import SkillGapResult from './SkillGapResult.js';
 import IntelPost from './IntelPost.js';
 import Resume from './Resume.js';
 import LearningTask from './LearningTask.js';
+import Application from './Application.js';
 
-// Inturn targets polytechnic and university students.
-export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate'];
+// Inturn targets polytechnic and university students. Keep in sync with
+// EDUCATION_LEVELS in client/src/utils/profileOptions.js.
+export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate', 'PhD'];
 
 const userSchema = new mongoose.Schema(
   {
@@ -27,6 +29,9 @@ const userSchema = new mongoose.Schema(
     },
     // Hidden by default: only login reads it, via retrieveUserWithPassword().
     passwordHash: { type: String, required: true, select: false },
+
+    // Set on each successful login; older accounts simply lack it until they next log in.
+    lastLoginAt: Date,
 
     // Profile: filled during onboarding, editable later
     educationLevel: {
@@ -117,12 +122,17 @@ export function updateUser(userId, updateValues) {
   return User.findByIdAndUpdate(userId, updateValues, { returnDocument: 'after', runValidators: true });
 }
 
+export function recordLogin(userId) {
+  return User.updateOne({ _id: userId }, { $set: { lastLoginAt: new Date() } });
+}
+
 export async function deleteUser(userId) {
   // Cascade delete: private data belongs only to this user
   await Shortlist.deleteMany({ user: userId });
   await SkillGapResult.deleteMany({ user: userId });
   await Resume.deleteMany({ user: userId });
   await LearningTask.deleteMany({ user: userId });
+  await Application.deleteMany({ user: userId });
   // Keep community intel posts, but detach them from the deleted user
   await IntelPost.updateMany({ author: userId }, { author: null });
   await IntelPost.updateMany(

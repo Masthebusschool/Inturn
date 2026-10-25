@@ -1,4 +1,8 @@
 import * as User from '../models/User.js';
+import Application from '../models/Application.js';
+import { STATUS, STATUSES } from '../models/constants/statuses.js';
+
+const HEATMAP_DAYS = 400;
 
 // Trims each item, drops empty ones and removes duplicates (ignoring case).
 function cleanList(value) {
@@ -72,6 +76,70 @@ export const updateProfile = async (req, res) => {
   catch (e) {
     if (e.name === 'ValidationError')
       return res.status(400).json({ errors: Object.values(e.errors).map((err) => err.message) });
+    console.error(e);
+    return res.status(500).json({ error: 'An internal error occurred' });
+  }
+};
+
+// Account dates plus tracked-application counts for the profile's Activity card.
+export const getActivity = async (req, res) => {
+  try {
+    const user = await User.retrieveUserById(req.session.user.id);
+    if (!user)
+      return res.status(404).json({ error: 'User not found' });
+
+    const applications = await Application.find({ user: req.session.user.id })
+      .select('status createdAt')
+      .lean();
+
+    const byStatus = Object.fromEntries(STATUSES.map((s) => [s, 0]));
+    for (const app of applications)
+      if (app.status in byStatus) byStatus[app.status]++;
+
+    const cutoff = Date.now() - HEATMAP_DAYS * 24 * 60 * 60 * 1000;
+    const applicationDates = applications
+      .filter((app) => app.createdAt && app.createdAt.getTime() >= cutoff)
+      .map((app) => app.createdAt.toISOString());
+
+    return res.json({
+      joinedAt: user.createdAt,
+      lastLoginAt: req.session.user.previousLoginAt ?? null,
+      stats: {
+        total: applications.length,
+        submitted: applications.filter((app) => app.status !== STATUS.SAVED).length,
+        byStatus,
+      },
+      applicationDates,
+    });
+  }
+  catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'An internal error occurred' });
+  }
+};
+
+// Hard delete, on purpose. The user must type their own email to confirm.
+export const deleteAccount = async (req, res) => {
+  const body = req.body ?? {};
+  const confirmEmail = String(body.confirmEmail ?? '').trim().toLowerCase();
+
+  try {
+    const user = await User.retrieveUserById(req.session.user.id);
+    if (!user)
+      return res.status(404).json({ error: 'User not found' });
+    if (confirmEmail !== user.email)
+      return res.status(400).json({ errors: ['Type your email exactly to confirm'] });
+
+    await User.deleteUser(user.id);
+
+    // The data is already gone, so a failed session cleanup still counts as success
+    return req.session.destroy((err) => {
+      if (err) console.error(err);
+      res.clearCookie('inturn.sid');
+      res.json({ message: 'Account deleted' });
+    });
+  }
+  catch (e) {
     console.error(e);
     return res.status(500).json({ error: 'An internal error occurred' });
   }

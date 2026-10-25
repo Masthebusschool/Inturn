@@ -399,7 +399,6 @@ function resetFilters() {
   border-radius: 20px;
   background: #f6f8ff;
   color: #17234b;
-  font-family: Arial, sans-serif;
 }
 
 .filter-panel,
