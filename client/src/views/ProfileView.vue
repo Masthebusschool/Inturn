@@ -167,6 +167,8 @@ function editProfile() {
           Edit profile
         </button>
       </div>
+
+      
     </article>
   </section>
 </template>

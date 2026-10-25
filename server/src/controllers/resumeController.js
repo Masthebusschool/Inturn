@@ -1,55 +1,17 @@
-import { PDFParse } from 'pdf-parse';
+import * as User from '../models/User.js';
 import * as resumeAnalyzer from '../services/resumeAnalyzer.js';
-
-// Far longer than any real resume; stops very large bodies being analyzed
-const MAX_TEXT_LENGTH = 50000;
-
-// Collapses runs of spaces and blank lines, keeping one line per line of the resume.
-function cleanText(text) {
-  return text
-    .split('\n')
-    .map((line) => line.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-    .join('\n');
-}
+import { readResumePdf, MAX_TEXT_LENGTH } from '../services/resumeText.js';
 
 export const uploadResume = async (req, res) => {
-  if (!req.file)
-    return res.status(400).json({ errors: ['Choose a PDF file to upload'] });
-
-  // The browser's file type can be faked, so check the file really starts like a PDF
-  if (req.file.buffer.subarray(0, 5).toString() !== '%PDF-')
-    return res.status(400).json({ errors: ['Resume must be a PDF file'] });
-
-  const parser = new PDFParse({ data: req.file.buffer });
   try {
-    // No "-- 1 of 2 --" page markers: they would end up in the resume text
-    const result = await parser.getText({ pageJoiner: '' });
-    const text = cleanText(result.text);
-
-    // Scanned resumes are images, so there is no text to read
-    if (!text)
-      return res.status(400).json({ errors: ['No text found in this PDF. Upload a text-based PDF, not a scanned one'] });
-
-    return res.json({
-      resume: {
-        fileName: req.file.originalname,
-        pageCount: result.total,
-        wordCount: text.split(/\s+/).length,
-        text,
-      },
-    });
+    const { resume, errors } = await readResumePdf(req.file);
+    if (errors)
+      return res.status(400).json({ errors });
+    return res.json({ resume });
   }
   catch (e) {
-    if (e.name === 'PasswordException')
-      return res.status(400).json({ errors: ['This PDF is password protected. Remove the password and try again'] });
-    if (e.name === 'InvalidPDFException' || e.name === 'FormatError')
-      return res.status(400).json({ errors: ['This PDF could not be read. It may be damaged'] });
     console.error(e);
     return res.status(500).json({ error: 'An internal error occurred' });
-  }
-  finally {
-    await parser.destroy();
   }
 };
 
