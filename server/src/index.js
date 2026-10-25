@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import { connectDB } from './config/db.js';
+import { connectDB, applyWindowsDnsWorkaroundIfNeeded } from './config/db.js';
 import { createSessionMiddleware } from './config/session.js';
 import authRouter from './routes/auth.js';
 import profileRouter from './routes/profile.js';
@@ -19,6 +19,10 @@ import applicationsRouter from './routes/applications.js';
 
 // Imports are hoisted, so load .env here before reading any process.env value.
 dotenv.config({ quiet: true });
+
+// Must run before createSessionMiddleware() (its MongoStore opens its own MongoClient)
+// and before connectDB() — see server/src/config/db.js for why.
+await applyWindowsDnsWorkaroundIfNeeded(process.env.MONGODB_URI);
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
