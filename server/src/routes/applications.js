@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
+import { isLoggedIn } from '../middleware/authMiddleware.js';
 import * as applcationController from '../controllers/applicationController.js';
 
 const router = Router();
 
-router.get('/', applcationController.getApplications);
-router.post('/', applcationController.addApplication);
-router.patch('/:id', applcationController.updateStatus);
-router.patch('/:id/interview', applcationController.updateInterviewDate);
-router.delete('/:id', applcationController.deleteSavedApplication);
+router.get('/', isLoggedIn, applcationController.getApplications);
+router.post('/', isLoggedIn, applcationController.addApplication);
+router.patch('/:id', isLoggedIn, applcationController.updateStatus);
+router.patch('/:id/interview', isLoggedIn, applcationController.updateInterviewDate);
+router.delete('/:id', isLoggedIn, applcationController.deleteSavedApplication);
 
 export default router;

@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
-import { 
-    getApplicationsByUser, 
+import {
+    getApplicationsByUser,
     createApplication,
     updateApplicationStatusById,
     updateApplicationInterviewDateById,
@@ -8,19 +7,16 @@ import {
 } from "../models/Application.js";
 import { toCard } from "../models/Application.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
-
-const uid = '6ad683ea1daea21097c3dffe'; // FOR TESTING
+import * as User from "../models/User.js";
 
 // Get All Apps By Uid
 export async function getApplications (req, res, next) {
     try {
-        // get session id -> verify it with ruirong
+        const uid = req.session.user.id;
         const applications = await getApplicationsByUser(uid);
-        const user = await mongoose.connection.collection('users').findOne({ // FOR TESTING REPLACE WITH ACT USER GET METHOD
-            _id: new mongoose.Types.ObjectId(uid)
-        });
+        const user = await User.retrieveUserById(uid);
 
-        // get user's skills 
+        // get user's skills
         let skills = [];
         if (user && user.skills) {
             user.skills.forEach(skill => {
@@ -46,11 +42,12 @@ export async function getApplications (req, res, next) {
 
 export async function addApplication(req, res, next) {
     try {
+        const uid = req.session.user.id;
         const job = req.body.job;
         let details;
 
         if (job) { // if from mycareersfuture
-            details = jobFromMcf(job); 
+            details = jobFromMcf(job);
         } else { // if manually entered
             details = jobFromForm(req.body);
         }
@@ -67,6 +64,7 @@ export async function addApplication(req, res, next) {
 // Update status of application card
 export async function updateStatus(req, res, next) {
     try {
+        const uid = req.session.user.id;
         const status = req.body.status;
         const application = await updateApplicationStatusById(req.params.id, uid, status);
 
@@ -81,6 +79,7 @@ export async function updateStatus(req, res, next) {
 // Update interviewDate of application
 export async function updateInterviewDate(req, res, next) {
     try {
+        const uid = req.session.user.id;
         let interviewAt = req.body.interviewAt;
         if(!interviewAt) interviewAt = null;
 
@@ -96,6 +95,7 @@ export async function updateInterviewDate(req, res, next) {
 // delete application card from trackboard
 export async function deleteSavedApplication (req, res, next) {
     try {
+        const uid = req.session.user.id;
         const application = await deleteApplicationById(req.params.id, uid);
         return res.json(application);
 
