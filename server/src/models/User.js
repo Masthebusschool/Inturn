@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Shortlist from './Shortlist.js';
 import SkillGapResult from './SkillGapResult.js';
 import IntelPost from './IntelPost.js';
+import Resume from './Resume.js';
+import LearningTask from './LearningTask.js';
 
 // Inturn targets polytechnic and university students.
 export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate'];
@@ -56,7 +58,23 @@ const userSchema = new mongoose.Schema(
       wordCount:Number,
       text:String,
       uploadedAt:Date,
-    }
+    },
+    // Resume profile from the Skill Gap feature (Mas). Read by toProfile() in utils/profile.js;
+    // no page edits these on the User yet. Dates are free text ("Jan 2024", "Present").
+    summary: String,
+    experience: [
+      {
+        title: String,
+        company: String,
+        startDate: String,
+        endDate: String,
+        current: { type: Boolean, default: false },
+        bullets: [String],
+        skills: [String],
+      },
+    ],
+    projects: [{ name: String, bullets: [String], skills: [String], url: String }],
+    education: [{ school: String, degree: String, field: String, startDate: String, endDate: String }],
   },
   { timestamps: true }
 );
@@ -103,6 +121,8 @@ export async function deleteUser(userId) {
   // Cascade delete: private data belongs only to this user
   await Shortlist.deleteMany({ user: userId });
   await SkillGapResult.deleteMany({ user: userId });
+  await Resume.deleteMany({ user: userId });
+  await LearningTask.deleteMany({ user: userId });
   // Keep community intel posts, but detach them from the deleted user
   await IntelPost.updateMany({ author: userId }, { author: null });
   await IntelPost.updateMany(

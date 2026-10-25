@@ -37,6 +37,7 @@ const links = [
   { to: '/intel', label: 'Interview Intel', icon: 'M1.5 2.5h13v8h-13zM8 10.5v3M5 14.5h6M4 5h4M4 7.5h7' },
   { to: '/mock-interview', label: 'Mock Interview', icon: 'M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2ZM3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5' },
   { to: '/skill-gap', label: 'Skill Gap Analysis', icon: 'M3 1.5h7l3 3v10H3zM10 1.5v3h3M5.5 8h5M5.5 10.5h5M5.5 13h3' },
+  { to: '/resumes', label: 'My Resumes', icon: 'M5 3.5h5.5l2.5 2.5v8.5H5zM10.5 3.5V6H13M3 12V1.5h6' },
   { to: '/profile', label: 'Profile', icon: 'M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.5 6.5c0-2.6 2.5-4.5 5.5-4.5s5.5 1.9 5.5 4.5' },
 ]
 

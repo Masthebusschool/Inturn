@@ -11,3 +11,9 @@ export function uploadResume(file) {
 export function analyzeResume(text) {
   return request('/resume/analyze', { method: 'POST', body: { text } })
 }
+
+// "AI deep analysis": the Skill Gap feature's AI turns the extracted text into a named resume
+// (POST /api/resumes/from-text), so the PDF does not have to be uploaded again. Replies with { resume }.
+export function createResumeFromText({ name, text }) {
+  return request('/resumes/from-text', { method: 'POST', body: { name, text } })
+}

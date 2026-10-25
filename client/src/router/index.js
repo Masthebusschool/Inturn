@@ -11,6 +11,8 @@ import SignupView from '../views/SignupView.vue'
 import OnboardingView from '../views/OnboardingView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import ResumeAnalysisView from '../views/ResumeAnalysisView.vue'
+import ResumesView from '../views/ResumesView.vue'
+import ResumeEditorView from '../views/ResumeEditorView.vue'
 
 const routes = [
   { path: '/', component: HomeView },
@@ -26,6 +28,8 @@ const routes = [
 
   { path: '/profile', component: ProfileView },
   { path: '/profile/resume-analysis', component: ResumeAnalysisView },
+  { path: '/resumes', component: ResumesView },
+  { path: '/resumes/:id', component: ResumeEditorView, props: true },
 
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]

@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { resumeStore } from '../stores/resume.js'
-import { analyzeResume } from '../api/resume.js'
+import { analyzeResume, createResumeFromText } from '../api/resume.js'
 
 const router = useRouter()
 const ready = ref(false)
@@ -62,23 +62,26 @@ async function runAnalysis() {
 
 // ---------------------------------------------------------------------------
 // Step 2: AI deep analysis. This is the Skill Gap feature (owned by Mas);
-// this page only does the basic rule-based review, then hands the resume over.
-//
-// What the Skill Gap page receives (in resumeStore, memory only, never in the URL):
-//   resumeStore.resume = { fileName, pageCount, wordCount, text }  text is already extracted
-//   resumeStore.review = { score, checks }                         result of the basic review
-//
-// TODO(Mas): in SkillGapView, when route.query.from === 'resume-review' and resumeStore.resume is set:
-//   1. Send resumeStore.resume.text to the server, so the user does not upload the PDF again.
-//      e.g. a new POST /api/resumes/parse-text that runs aiService.parseResume(text)
-//      and saves the draft as a Resume for req.user.
-//   2. Preselect that resume (resumeId), so the user only has to pick a job.
-//   3. Optional: skip or mention problems resumeStore.review already found (e.g. no email).
-// After a refresh resumeStore is empty again, so fall back to the normal Skill Gap page.
+// this page only does the basic rule-based review, then hands the resume over:
+// Mas's AI turns the extracted text into a named resume, and Skill Gap opens with it
+// selected (?resumeId=...), so the user does not upload the PDF again.
 // ---------------------------------------------------------------------------
-function startDeepAnalysis() {
-  resumeStore.review = review.value
-  router.push('/skill-gap?from=resume-review')
+const preparing = ref(false)
+const deepErrors = ref([])
+
+async function startDeepAnalysis() {
+  deepErrors.value = []
+  preparing.value = true
+  try {
+    resumeStore.review = review.value
+    const name = resume.value.fileName.replace(/\.pdf$/i, '')
+    const { resume: saved } = await createResumeFromText({ name, text: resume.value.text })
+    router.push({ path: '/skill-gap', query: { resumeId: saved._id } })
+  } catch (e) {
+    deepErrors.value = e.errors ?? [e.message]
+  } finally {
+    preparing.value = false
+  }
 }
 </script>
 
@@ -164,10 +167,14 @@ function startDeepAnalysis() {
             <h2 class="section-title mb-1">AI deep analysis</h2>
             <p class="muted mb-0">Compare this resume with a job posting to find missing skills and how to tailor it.</p>
           </div>
-          <button type="button" class="btn-primary-inturn" @click="startDeepAnalysis">
-            AI deep analysis
+          <button type="button" class="btn-primary-inturn" :disabled="preparing" @click="startDeepAnalysis">
+            <span v-if="preparing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+            {{ preparing ? 'Reading your resume...' : 'AI deep analysis' }}
           </button>
         </article>
+        <div v-if="deepErrors.length" class="alert alert-danger py-2" role="alert">
+          <div v-for="error in deepErrors" :key="error">{{ error }}</div>
+        </div>
 
         <!-- TODO(skills step): show "Skills found" here once extractSkills is written -->
       </template>
