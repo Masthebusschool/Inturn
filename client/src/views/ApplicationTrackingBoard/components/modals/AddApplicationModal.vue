@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from 'vue';
 
+// error from the page if saving to the backend fails
+defineProps({ errorMessage: { type: String, default: '' } });
+
 const emit = defineEmits(['submit', 'cancel']);
 
 const statuses = ['Saved', 'Applied', 'Interview', 'Offered'];
@@ -19,26 +22,26 @@ const errors = ref({}); // e.g. { title: 'Please enter the job title.' }
 
 // check the fields, return true if everything is ok
 function validate() {
-    const errors = {};
+    const newErrors = {};
 
-    if (title.value.trim() === '') errors.title = 'Please enter the job title.';
-    if (companyName.value.trim() === '') errors.companyName = 'Please enter the company name.';
+    if (title.value.trim() === '') newErrors.title = 'Please enter the job title.';
+    if (companyName.value.trim() === '') newErrors.companyName = 'Please enter the company name.';
 
     if (expiryDate.value === '') {
-      errors.expiryDate = 'Please pick the application deadline.';
+      newErrors.expiryDate = 'Please pick the application deadline.';
     }
     else if (expiryDate.value < today) {
-      errors.expiryDate = 'The deadline can\'t be in the past.';
+      newErrors.expiryDate = 'The deadline can\'t be in the past.';
     }
 
     const link = jobDetailsUrl.value.trim();
     if (link !== '' && !link.startsWith('http://') && !link.startsWith('https://')) {
-        errors.jobDetailsUrl = 'Link must start with http:// or https://';
+        newErrors.jobDetailsUrl = 'Link must start with http:// or https://';
     }
 
-    errors.value = errors;
-    const hasErrors = Object.keys(errors).length === 0 // if 0 then no errors
-    return hasErrors; 
+    errors.value = newErrors; // update the ref so the messages show
+    const isValid = Object.keys(newErrors).length === 0 // if 0 then no errors
+    return isValid; 
 }
 
 function submitApplication() {
@@ -72,6 +75,9 @@ function cancel() { emit('cancel'); }
         </div>
 
         <div class="modal-body">
+          <!-- backend error (only shows if saving failed) -->
+          <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+
           <div class="mb-3">
             <label class="form-label">Job title *</label>
             <input v-model="title" class="form-control" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" maxlength="100" />
@@ -119,6 +125,7 @@ function cancel() { emit('cancel'); }
 
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" v-on:click="cancel">Cancel</button>
+          <!-- type="submit" already runs submitApplication through the form, no v-on:click needed -->
           <button type="submit" class="btn btn-primary">Add</button>
         </div>
       </form>

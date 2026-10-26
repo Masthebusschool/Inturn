@@ -2,8 +2,13 @@ import mongoose from "mongoose";
 import { 
     getApplicationsByUser, 
     createApplication,
+    findDuplicateApplication,
     updateApplicationStatusById,
     updateApplicationInterviewDateById,
+    updateApplicationFavouriteById,
+    addApplicationTaskById,
+    updateApplicationTaskById,
+    deleteApplicationTaskById,
     deleteApplicationById
 } from "../models/Application.js";
 import { toCard } from "../models/Application.js";
@@ -55,10 +60,20 @@ export async function addApplication(req, res, next) {
             details = jobFromForm(req.body);
         }
 
+        // stop duplicates: same title + company already on this user's board
+        const existing = await findDuplicateApplication(uid, details.title, details.companyName);
+        if (existing) {
+            return res.status(409).json({ error: 'You already have this application on your board.' });
+        }
+
         const application = await createApplication(uid, details);
-        return res.json(application);
+        return res.status(201).json(application);
 
     } catch (err) {
+        // same MCF job saved twice (blocked by the unique index)
+        if (err.code === 11000) {
+            return res.status(409).json({ error: 'You already have this application on your board.' });
+        }
         console.log("Err at create app controller: " + err);
         next(err);
     }
@@ -89,6 +104,70 @@ export async function updateInterviewDate(req, res, next) {
 
     } catch (err) {
         console.log("Err at update interview date app controller: " + err);
+        next(err);
+    }
+}
+
+// Favourite / unfavourite an application card
+export async function updateFavourite(req, res, next) {
+    try {
+        const isFavourite = req.body.isFavourite === true; // anything else counts as false
+        const application = await updateApplicationFavouriteById(req.params.id, uid, isFavourite);
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+        return res.json(application);
+
+    } catch (err) {
+        console.log("Err at update favourite app controller: " + err);
+        next(err);
+    }
+}
+
+// Checklist: add a task to the card
+export async function addTask(req, res, next) {
+    try {
+        let text = req.body.text;
+        if (typeof text !== 'string' || text.trim() === '') {
+            return res.status(400).json({ error: 'Task text is required' });
+        }
+        text = text.trim();
+
+        const application = await addApplicationTaskById(req.params.id, uid, text);
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+        return res.status(201).json(application);
+
+    } catch (err) {
+        console.log("Err at add task app controller: " + err);
+        next(err);
+    }
+}
+
+// Checklist: tick / untick a task
+export async function updateTask(req, res, next) {
+    try {
+        const done = req.body.done === true; // anything else counts as false
+        const application = await updateApplicationTaskById(req.params.id, uid, req.params.taskId, done);
+
+        if (!application) return res.status(404).json({ error: 'Task not found' });
+        return res.json(application);
+
+    } catch (err) {
+        console.log("Err at update task app controller: " + err);
+        next(err);
+    }
+}
+
+// Checklist: remove a task
+export async function deleteTask(req, res, next) {
+    try {
+        const application = await deleteApplicationTaskById(req.params.id, uid, req.params.taskId);
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+        return res.json(application);
+
+    } catch (err) {
+        console.log("Err at delete task app controller: " + err);
         next(err);
     }
 }

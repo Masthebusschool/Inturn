@@ -1,52 +1,84 @@
-// Picks the job details we need out of one MyCareersFuture API job.
-// The result is spread straight into a new Application.
+// Picks the job details we need out of one MyCareersFuture API job
+// The result is spread straight into a new Application
 export function jobFromMcf(mcfJob) {
-  // MCF has two companies: 1. the one hiring, 2. the agency who posted job.
-  // Use the hiring company -> if there isn't one, use the poster -> if neither, an empty object.
-  let company = {};
+  // MCF has two companies, the one actually hiring and the agency that posted the job
+  // use the hiring company, if there isn't one use the poster, if neither use an empty object
+  let company;
   if (mcfJob.hiringCompany) {
     company = mcfJob.hiringCompany;
   } else if (mcfJob.postedCompany) {
     company = mcfJob.postedCompany;
+  } else {
+    company = {};
   }
+
+  // MCF gives [{ skill: 'Python', uuid: '...' }], we only keep the names ['Python']
+  const skills = [];
+  if (mcfJob.skills) {
+    mcfJob.skills.forEach(s => {
+      skills.push(s.skill);
+    });
+  }
+
+  // salary and metadata might be missing, so use empty objects instead
+  let salary = {};
+  if (mcfJob.salary) salary = mcfJob.salary;
+
+  let metadata = {}; // MCF keeps the dates and job link inside metadata
+  if (mcfJob.metadata) metadata = mcfJob.metadata;
 
   return {
     mcfUuid: mcfJob.uuid,
     title: mcfJob.title,
     companyName: company.name,
     companyLogoUrl: company.logoUploadPath,
-
-    // MCF: [{ skill: 'Python', uuid: '...' }]  ->  ours: ['Python']
-    skills: (mcfJob.skills ?? []).map((s) => s.skill),
-
-    salaryMin: mcfJob.salary?.minimum,
-    salaryMax: mcfJob.salary?.maximum,
-
-    // MCF keeps dates and the job link inside `metadata`
-    expiryDate: mcfJob.metadata?.expiryDate,
-    jobDetailsUrl: mcfJob.metadata?.jobDetailsUrl,
+    skills: skills,
+    salaryMin: salary.minimum,
+    salaryMax: salary.maximum,
+    expiryDate: metadata.expiryDate,
+    jobDetailsUrl: metadata.jobDetailsUrl,
   };
 }
 
-// Picks the job details out of a form the student filled in by hand (e.g. a LinkedIn posting).
-// Only these fields are taken, so the form can't set status, mcfUuid, etc.
+// Picks the job details out of a form the student filled in by hand, e.g. a LinkedIn posting
+// Only these fields are taken, so the form can't set mcfUuid, user etc
 export function jobFromForm(form) {
-  let skills = [];
-      for (const skill of form.skills ?? []) {
-      const cleaned = skill.trim(); // remove spaces at the start/end
-      if (cleaned === '') continue; // skip blanks
-      if (skills.includes(cleaned)) continue; // skip duplicates
-      skills.push(cleaned);
-  }
+  // clean up the skills the student typed in
+  const skills = [];
+  let formSkills = [];
+  if (form.skills) formSkills = form.skills;
 
-  let job = {
+  formSkills.forEach(skill => {
+    const cleaned = skill.trim(); // remove spaces at the start and end
+    if (cleaned === '') return; // skip blanks
+    if (skills.includes(cleaned)) return; // skip duplicates
+    skills.push(cleaned);
+  });
+
+  const details = {
     title: form.title,
     companyName: form.companyName,
     jobDetailsUrl: form.jobDetailsUrl,
     expiryDate: form.expiryDate,
     salaryMin: form.salaryMin,
     salaryMax: form.salaryMax,
+    skills: skills,
   };
 
-  return job;
+  // which column it starts in, the schema's enum rejects anything else
+  if (form.status) {
+    details.status = form.status;
+
+    // if it's past Saved, they've already applied
+    if (form.status !== 'Saved') {
+      details.appliedDate = new Date();
+    }
+  }
+
+  // interview date only makes sense for Interview cards
+  if (form.status === 'Interview' && form.interviewAt) {
+    details.interviewAt = form.interviewAt;
+  }
+
+  return details;
 }

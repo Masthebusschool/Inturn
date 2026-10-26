@@ -22,7 +22,7 @@ function skipInterviewDate() {
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h2 class="modal-title h5">When is the interview?</h2>
+          <h2 class="modal-title h5">Please set the interview date.</h2>
           <button class="btn-close" v-on:click="skipInterviewDate"></button>
         </div>
         <div class="modal-body">

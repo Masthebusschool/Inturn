@@ -36,8 +36,8 @@ const applicationSchema = new mongoose.Schema(
 // ensures user cannot save the same job twice
 // partialFilterExp -> stops dupe MCF jobs and lets students add self-sourced jobs
 applicationSchema.index(
-    { user: 1, 'job.mcfluid': 1 },
-    { unique: true, partialFilterExpression: { 'job.mcfUuid': { $type: 'string' }}}
+    { user: 1, mcfUuid: 1 },
+    { unique: true, partialFilterExpression: { mcfUuid: { $type: 'string' }}}
 );
 
 const Application = mongoose.model('Application', applicationSchema);
@@ -66,9 +66,11 @@ export function toCard(application, skills) {
         expiryDate: application.expiryDate,
         appliedDate: application.appliedDate,
         interviewAt: application.interviewAt,
+        isFavourite: application.isFavourite,
+        tasks: application.tasks, // [{ _id, text, done }] for the checklist modal
         prep: `${completedTasks} / ${application.tasks.length}`,
-        skillsMatched: skillsMatched,
-        totalSkills: application.skills.length
+        matched: skillsMatched,
+        total: application.skills.length
     };
 
     return card;
@@ -103,10 +105,35 @@ export function updateApplicationInterviewDateById(id, uid, interviewAt) {
     );
 }
 
+// find a card with the same title + company for this user (strength 2 = ignores capitals)
+export function findDuplicateApplication(userId, title, companyName) {
+    return Application.findOne({ user: userId, title: title, companyName: companyName })
+        .collation({ locale: 'en', strength: 2 });
+}
+
+// favourite or unfavourite a card
+export function updateApplicationFavouriteById(id, userId, isFavourite) {
+    return Application.findOneAndUpdate({ _id: id, user: userId }, { isFavourite: isFavourite }, { after: true, runValidators: true });
+}
+
+// add a (note checklist) to the card's checklist
+export function addApplicationTaskById(id, userId, text) {
+    return Application.findOneAndUpdate({ _id: id, user: userId }, { $push: { tasks: { text: text } } }, { after: true, runValidators: true });
+}
+
+// tick / untick one task ('tasks.$' = the task that matched tasks._id)
+export function updateApplicationTaskById(id, userId, taskId, done) {
+    return Application.findOneAndUpdate({ _id: id, user: userId, 'tasks._id': taskId }, { $set: { 'tasks.$.done': done } }, { after: true, runValidators: true });
+}
+
+// remove one task from the checklist
+export function deleteApplicationTaskById(id, userId, taskId) {
+    return Application.findOneAndUpdate({ _id: id, user: userId }, { $pull: { tasks: { _id: taskId } } }, { after: true });
+}
+
 // delete application from trackboard
 export function deleteApplicationById(id, uid) {
     return Application.findOneAndDelete({ _id: id, user: uid });
 }
 
 export default Application;
-
