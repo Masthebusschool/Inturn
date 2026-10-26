@@ -5,7 +5,7 @@ import { ref } from 'vue';
 defineProps({ isFavourite: Boolean });
 
 // tells the page which option was picked
-const emit = defineEmits(['remove', 'favourite', 'checklist']);
+const emit = defineEmits(['delete', 'favourite', 'checklist']);
 
 const isOpen = ref(false);
 
@@ -33,8 +33,8 @@ function pick (option) {
       <button type="button" class="dropdown-item rounded-2 px-2 py-2" v-on:click="pick('favourite')">
         <span class="text-warning me-2">&#9733;</span> {{ isFavourite ? 'Unfavourite' : 'Favourite' }}
       </button>
-      <button type="button" class="dropdown-item rounded-2 px-2 py-2 text-danger" v-on:click="pick('remove')">
-        <span class="me-2">&#10005;</span> Remove Card
+      <button type="button" class="dropdown-item rounded-2 px-2 py-2 text-danger" v-on:click="pick('delete')">
+        <span class="me-2">&#10005;</span> Delete Card
       </button>
     </div>
   </div>

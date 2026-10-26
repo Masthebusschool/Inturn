@@ -118,17 +118,17 @@ export function updateApplicationFavouriteById(id, userId, isFavourite) {
 
 // add a (note checklist) to the card's checklist
 export function addApplicationTaskById(id, userId, text) {
-    return Application.findOneAndUpdate({ _id: id, user: userId }, { $push: { tasks: { text: text } } }, { after: true, runValidators: true });
+    return Application.findOneAndUpdate({ _id: id, user: userId }, { $push: { tasks: { text: text } } }, { returnDocument: 'after', runValidators: true });
 }
 
-// tick / untick one task ('tasks.$' = the task that matched tasks._id)
+// tick or untick one task ('tasks.$' is the task that matched tasks._id)
 export function updateApplicationTaskById(id, userId, taskId, done) {
-    return Application.findOneAndUpdate({ _id: id, user: userId, 'tasks._id': taskId }, { $set: { 'tasks.$.done': done } }, { after: true, runValidators: true });
+    return Application.findOneAndUpdate({ _id: id, user: userId, 'tasks._id': taskId }, { $set: { 'tasks.$.done': done } }, { returnDocument: 'after', runValidators: true });
 }
 
 // remove one task from the checklist
 export function deleteApplicationTaskById(id, userId, taskId) {
-    return Application.findOneAndUpdate({ _id: id, user: userId }, { $pull: { tasks: { _id: taskId } } }, { after: true });
+    return Application.findOneAndUpdate({ _id: id, user: userId }, { $pull: { tasks: { _id: taskId } } }, { returnDocument: 'after' });
 }
 
 // delete application from trackboard

@@ -40,8 +40,8 @@ function addTask () {
 
           <p v-if="card.tasks.length === 0" class="small text-secondary">No tasks yet. Add one below.</p>
 
-          <!-- one row per task with a checkbox, the text and a remove button -->
-          <!-- a task has no _id until the backend saves it, so it can't be ticked or removed yet -->
+          <!-- one row per task with a checkbox, the text and a delete button -->
+          <!-- a task has no _id until the backend saves it, so it can't be ticked or deleted yet -->
           <ul class="list-group mb-3">
             <li v-for="(task, index) in card.tasks" :key="index" class="list-group-item d-flex align-items-center gap-2">
               <input type="checkbox" class="form-check-input mt-0" :checked="task.done" :disabled="!task._id" v-on:change="emit('toggle', task)" />
