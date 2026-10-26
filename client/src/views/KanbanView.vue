@@ -1,13 +1,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import ApplicationCard from './components/ApplicationCard.vue'
-import CardMenu from './components/CardMenu.vue';
-import { getApplications } from '../../services/applicationsApi.js';
-import InterviewDateModel from './components/modals/InterviewDateModel.vue';
-import AddApplicationModal from './components/modals/AddApplicationModal.vue';
-import AddChecklistModal from './components/modals/AddChecklistModal.vue';
-import DeleteCardModal from './components/modals/DeleteCardModal.vue';
-import { authStore } from '../../stores/auth.js';
+import ApplicationCard from '../components/apptrackingboard/ApplicationCard.vue'
+import CardMenu from '../components/apptrackingboard/CardMenu.vue';
+import { getApplications } from '../services/applicationsApi.js';
+import InterviewDateModel from '../components/apptrackingboard/modals/InterviewDateModel.vue';
+import AddApplicationModal from '../components/apptrackingboard/modals/AddApplicationModal.vue';
+import AddChecklistModal from '../components/apptrackingboard/modals/AddChecklistModal.vue';
+import DeleteCardModal from '../components/apptrackingboard/modals/DeleteCardModal.vue';
+import { authStore } from '../stores/auth.js';
 import {
   isMobileScreen,
   applicationsInColumn,
@@ -22,7 +22,7 @@ import {
   addChecklistTask,
   toggleChecklistTask,
   deleteChecklistTask
-} from './helpers/KanbanViewHelper.js';
+} from '../helpers/apptrackingboard/KanbanViewHelper.js';
 
 const user = computed(() => authStore.user);
 const kanbanColumns = ['Saved', 'Applied', 'Interview', 'Offered'];

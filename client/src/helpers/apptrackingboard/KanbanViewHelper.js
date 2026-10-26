@@ -8,7 +8,7 @@ import {
     updateTask,
     deleteTask,
     deleteApplication
-} from '../../../services/applicationsApi.js'
+} from '../../services/applicationsApi.js'
 
 const mobileWidth = 768; // fixed breakpt for mobile
 
