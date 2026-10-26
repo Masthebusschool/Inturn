@@ -4,7 +4,7 @@ import JobsView from '../views/JobsView.vue'
 import SkillGapView from '../views/SkillGapView.vue'
 import MockInterviewView from '../views/MockInterviewView.vue'
 import IntelFeedView from '../views/IntelFeedView.vue'
-import ShortlistView from '../views/ShortlistView.vue'
+import KanbanView from '../views/KanbanView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import OnboardingView from '../views/OnboardingView.vue'
@@ -14,12 +14,11 @@ import ResumesView from '../views/ResumesView.vue'
 import ResumeEditorView from '../views/ResumeEditorView.vue'
 
 const routes = [
-  { path: '/', name: 'home', component: () => import('../views/ApplicationTrackingBoard/KanbanView.vue') },
+  { path: '/', name: 'home', component: KanbanView },
   { path: '/jobs', name: 'jobs', component: JobsView },
   { path: '/skill-gap', name: 'skill-gap', component: SkillGapView },
   { path: '/mock-interview', name: 'mock-interview', component: MockInterviewView },
   { path: '/intel', name: 'intel', component: IntelFeedView },
-  { path: '/shortlist', name: 'shortlist', component: ShortlistView },
 // meta.fullPage: shown without the sidebar (see App.vue)
   { path: '/login', name: 'login', component: LoginView, meta: { fullPage: true } },
   { path: '/signup', name: 'signup', component: SignupView, meta: { fullPage: true } },

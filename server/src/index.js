@@ -11,7 +11,6 @@ import jobsRouter from './routes/jobs.js';
 import skillgapRouter from './routes/skillgap.js';
 import interviewRouter from './routes/interview.js';
 import intelRouter from './routes/intel.js';
-import shortlistRouter from './routes/shortlist.js';
 import applicationsRouter from './routes/applications.js';
 import resumesRouter from './routes/resumes.js';
 import learningTasksRouter from './routes/learningTasks.js';

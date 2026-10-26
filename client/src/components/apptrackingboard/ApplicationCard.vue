@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { formatDate } from '../helpers/KanbanViewHelper';
+import { formatDate } from '../../helpers/apptrackingboard/KanbanViewHelper';
 
 const props = defineProps({ app: Object });
 
