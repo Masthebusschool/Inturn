@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ApplicationCard from './components/ApplicationCard.vue'
 import CardMenu from './components/CardMenu.vue';
 import { getApplications } from '../../services/applicationsApi.js';
@@ -7,10 +7,11 @@ import InterviewDateModel from './components/modals/InterviewDateModel.vue';
 import AddApplicationModal from './components/modals/AddApplicationModal.vue';
 import AddChecklistModal from './components/modals/AddChecklistModal.vue';
 import DeleteCardModal from './components/modals/DeleteCardModal.vue';
-
+import { authStore } from '../../stores/auth.js';
 import {
   isMobileScreen,
   applicationsInColumn,
+  searchApplications,
   updateMousePosition,
   moveCard,
   saveInterviewDate,
@@ -20,13 +21,21 @@ import {
   toggleFavourite,
   addChecklistTask,
   toggleChecklistTask,
-  removeChecklistTask
+  deleteChecklistTask
 } from './helpers/KanbanViewHelper.js';
 
+const user = computed(() => authStore.user);
 const kanbanColumns = ['Saved', 'Applied', 'Interview', 'Offered'];
 
 // loaded from the backend in onMounted
 const applications = ref([]);
+const isLoading = ref(true); // true while the apps are being fetched, shows the spinner instead of the page
+const loadFailed = ref(false); // true if fetching the apps failed, shows the try again button
+
+const searchText = ref(''); // text in the search box
+
+// the cards that match the search, the columns show these instead of every app
+const visibleApplications = computed(() => searchApplications(applications.value, searchText.value));
 
 const draggedCard = ref(null);
 const selectedColumn = ref(null);
@@ -38,10 +47,24 @@ const checklistCard = ref(null); // the card whose checklist is open, null means
 const deletedCard = ref(null); // the card which is being deleted, null means modal closed
 
 const showAddModal = ref(false); 
-const addStatus = ref(''); // which column the add form starts in, set by each column's + button
+const addStatus = ref('Saved'); // which column the add form starts in, Saved from the top button or the column from its + button
 const errorMessage = ref(''); // shown in the open modal, or at the top of the page if no modal is open
 
 function checkScreen () { isMobile.value = isMobileScreen(); }
+
+// fetch the apps, the spinner shows while waiting and the try again button shows if it fails
+async function loadApplications () {
+  isLoading.value = true;
+  loadFailed.value = false;
+
+  try {
+    applications.value = await getApplications();
+  } catch (err) {
+    loadFailed.value = true;
+  }
+
+  isLoading.value = false;
+}
 
 // true if any modal is open, so the page alert stays hidden behind it
 function isModalOpen () {
@@ -134,7 +157,7 @@ async function onDeleteCard () {
     applications.value = applications.value.filter(app => app._id !== card._id); // update the apps on the page
     closeDeleteCardModal();
   } catch (err) {
-    errorMessage.value = 'Could not remove the card. Please try again.'; // modal stays open with the error
+    errorMessage.value = 'Could not delete the card. Please try again.'; // modal stays open with the error
   }
 }
 
@@ -158,7 +181,7 @@ function closeChecklist () {
   errorMessage.value = '';
 }
 
-// checklist add, tick or remove a task, errors show inside the checklist
+// checklist add, tick or delete a task, errors show inside the checklist
 async function onAddTask (text) {
   try {
     await addChecklistTask(checklistCard.value, text);
@@ -177,16 +200,16 @@ async function onToggleTask (task) {
 
 async function onDeleteTask (task) {
   try {
-    await removeChecklistTask(checklistCard.value, task);
+    await deleteChecklistTask(checklistCard.value, task);
   } catch (err) {
     errorMessage.value = 'Could not delete the task. Please refresh the page.';
   }
 }
 
 onMounted(async () => {
-  checkScreen(); // set the real value on load
+  checkScreen(); 
   window.addEventListener('resize', checkScreen);
-  applications.value = await getApplications();
+  await loadApplications();
 })
 
 onUnmounted(() => {
@@ -197,85 +220,114 @@ onUnmounted(() => {
 
 <template>
 <div class="bg-light min-vh-100 p-3 p-md-4">
-  <!-- Top Area -->
-  <div class="bg-white border rounded-4 d-flex flex-wrap gap-3 justify-content-between align-items-center p-3 p-md-4 mb-3">
-    <div>
-      <h1 class="h5 fw-semibold mb-1">Applications</h1>
-      <p class="small text-secondary mb-0">{{ applications.length }} internships tracked</p>
-    </div>
-
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-      <!-- Application Search, Filter and Sort options -->
-      <input type="search" class="form-control rounded-3 w-auto" placeholder="Search applications..."/>
-      <button class="btn btn-dark rounded-3" v-on:click="openAddModal('Saved')">
-        Add Application +
-      </button>
-    </div>
+  <!-- spinner in the page area while the apps are being fetched, the nav stays visible -->
+  <div v-if="isLoading" class="d-flex flex-column justify-content-center align-items-center text-secondary" style="min-height: 70vh">
+    <div class="spinner-border text-primary mb-3" role="status"></div>
+    <p class="mb-0">Loading your applications...</p>
   </div>
 
-  <!-- Error message, only shows if something failed and no modal is open -->
-  <div v-if="errorMessage && !isModalOpen()" class="alert alert-danger">{{ errorMessage }}</div>
+  <!-- the apps cannot be fetched -->
+  <div v-else-if="loadFailed" class="d-flex flex-column justify-content-center align-items-center text-center" style="min-height: 70vh">
+    <p class="mb-3">Could not load your applications. Please check your connection.</p>
+    <button class="btn btn-dark rounded-3" v-on:click="loadApplications">Try again</button>
+  </div>
+  <!-- no user in auth store -->
+  <div v-else-if="!user">
+      <p class="mb-3 text-danger">User not found. Please login!</p>
+  </div>
 
-  <!-- Application Tracking Boards -->
-  <!-- on mobile the columns sit in one row you can swipe sideways, from md up they wrap into the grid -->
-  <div
-    class="row g-3 align-items-start flex-nowrap flex-md-wrap overflow-x-auto pb-2"
-    v-on:pointermove="updateMousePosition(mousePosition, $event)"
-    v-on:pointerup="dropCard"
-  >
-    <!-- outer loop which loads the individual columns -->
+  <!-- the whole page, only shows once the apps are loaded -->
+  <template v-else>
+    <!-- Top Area -->
+    <div class="bg-white border rounded-4 d-flex flex-wrap gap-3 justify-content-between align-items-center p-3 p-md-4 mb-3">
+      <div>
+        <h1 class="h5 fw-semibold mb-1">{{user.name}}'s Applications</h1>
+        <p class="small text-secondary mb-0">{{ applications.length }} internships tracked</p>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <!-- search by job title or company, filters the board as you type -->
+        <input v-model="searchText" type="search" class="form-control rounded-3 w-auto" placeholder="Search applications..."/>
+        <!-- top button always starts in Saved -->
+        <button class="btn btn-dark rounded-3" v-on:click="openAddModal('Saved')">
+          Add Application +
+        </button>
+      </div>
+    </div>
+
+    <!-- Error message, only shows if something failed and no modal is open -->
+    <div v-if="errorMessage && !isModalOpen()" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <!-- nothing matches the search -->
+    <p v-if="searchText.trim() !== '' && visibleApplications.length === 0" class="text-secondary">
+      No applications match "{{ searchText }}".
+    </p>
+    <p v-else-if="searchText.trim() !== ''">
+      {{ visibleApplications.length }} search results found.
+    </p>
+
+    <!-- Application Tracking Boards -->
+    <!-- on mobile the columns sit in one row you can swipe sideways, from md up they wrap into the grid -->
     <div
-    v-for="col in kanbanColumns"
-    :key="col"
-    class="col-10 col-sm-8 col-md-6 col-lg-3"
-    v-on:pointerenter="setSelectedColumn(col)"
-    v-on:pointerleave="setSelectedColumn(null)"
+      class="row g-3 align-items-start flex-nowrap flex-md-wrap overflow-x-auto pb-2"
+      v-on:pointermove="updateMousePosition(mousePosition, $event)"
+      v-on:pointerup="dropCard"
     >
-      <!-- border-primary highlights the column the dragged card is over -->
-      <div class="bg-white border rounded-4 p-3" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
-        <!-- column header -->
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-          <h2 class="h6 fw-semibold mb-0">
-            {{ col }}
-            <span class="text-secondary fw-normal">({{ applicationsInColumn(applications, col).length }})</span>
-          </h2>
-          <button class="btn btn-dark btn-sm rounded-3 px-3" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
-        </div>
+      <!-- outer loop which loads the individual columns -->
+      <div
+      v-for="col in kanbanColumns"
+      :key="col"
+      class="col-10 col-sm-8 col-md-6 col-lg-3"
+      v-on:pointerenter="setSelectedColumn(col)"
+      v-on:pointerleave="setSelectedColumn(null)"
+      >
+        <!-- border-primary highlights the column the dragged card is over -->
+        <div class="bg-white border rounded-4 p-3" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+          <!-- column header, the count only includes cards that match the search -->
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+            <h2 class="h6 fw-semibold mb-0">
+              {{ col }}
+              <span class="text-secondary fw-normal">({{ applicationsInColumn(visibleApplications, col).length }})</span>
+            </h2>
+            <!-- column + button starts the form in this column -->
+            <button class="btn btn-dark btn-sm rounded-3 px-3" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
+          </div>
 
-        <!-- handle card dragging -->
-        <!-- (inner loop) only shows applications which match the status of the current looped column -->
-        <div
-            v-for="app in applicationsInColumn(applications, col)" 
-            :key="app._id"
-            class="mb-3 user-select-none cursor-grab position-relative"
-            :style="{ opacity: draggedCard == app ? 0.5 : 1 }"
-            v-on:pointerdown="startDrag($event, app)"
-        >
-            <ApplicationCard :app="app">
-              <select v-if="isMobile" 
-                :value="app.status" 
-                v-on:change="onMoveCard(app, $event.target.value)" 
-                v-on:pointerdown.stop
-                class="form-select form-select-sm mt-3">
-                <option v-for="col in kanbanColumns" :key="col" :value="col">Move to {{ col }}</option>
-              </select>
-            </ApplicationCard>
+          <!-- handle card dragging -->
+          <!-- (inner loop) only shows applications which match the status of the current looped column and the search -->
+          <div
+              v-for="app in applicationsInColumn(visibleApplications, col)" 
+              :key="app._id"
+              class="mb-3 user-select-none cursor-grab position-relative"
+              :style="{ opacity: draggedCard == app ? 0.5 : 1 }"
+              v-on:pointerdown="startDrag($event, app)"
+          >
+              <ApplicationCard :app="app">
+                <select v-if="isMobile" 
+                  :value="app.status" 
+                  v-on:change="onMoveCard(app, $event.target.value)" 
+                  v-on:pointerdown.stop
+                  class="form-select form-select-sm mt-3">
+                  <option v-for="col in kanbanColumns" :key="col" :value="col">Move to {{ col }}</option>
+                </select>
+              </ApplicationCard>
 
-            <!-- 3 dot menu on the top right of the card -->
-            <CardMenu
-              :isFavourite="app.isFavourite"
-              v-on:remove="openDeleteCardModal(app)"
-              v-on:favourite="onToggleFavourite(app)"
-              v-on:checklist="openChecklist(app)"
-            />
-        </div>
+              <!-- 3 dot menu on the top right of the card -->
+              <CardMenu
+                :isFavourite="app.isFavourite"
+                v-on:delete="openDeleteCardModal(app)"
+                v-on:favourite="onToggleFavourite(app)"
+                v-on:checklist="openChecklist(app)"
+              />
+          </div>
 
-        <div v-if="!isMobile" class="border-dashed rounded-4 p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
-            <p class="small text-secondary mb-0">Drag card here</p>
+          <div v-if="!isMobile" class="border-dashed rounded-4 p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+              <p class="small text-secondary mb-0">Drag card here</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </template>
 </div>
   <!-- draggedCard -->
   <div
@@ -295,18 +347,18 @@ onUnmounted(() => {
     v-on:skip="closeInterviewModal"
    />
 
-  <!-- Checklist Modal -->
+  <!-- Checklist Modal, v-on:delete matches the delete emit in AddChecklistModal -->
   <AddChecklistModal
     v-if="checklistCard"
     :card="checklistCard"
     :errorMessage="errorMessage"
     v-on:add="onAddTask"
     v-on:toggle="onToggleTask"
-    v-on:remove="onDeleteTask"
+    v-on:delete="onDeleteTask"
     v-on:close="closeChecklist"
   />
 
-  <!-- Add Application Modal -->
+  <!-- Add Application Modal, startStatus picks which column the form starts in -->
   <AddApplicationModal
     v-if="showAddModal"
     :errorMessage="errorMessage"
@@ -341,6 +393,6 @@ onUnmounted(() => {
       width: 260px;
       transform: translate(-50%, -50%); /* center on the mouse */
       pointer-events: none; /* so the column underneath still notices the mouse */
-      z-index: 1000;
+      z-index: 1; /* on drag card is above column */
   }
 </style>

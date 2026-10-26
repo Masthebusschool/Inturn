@@ -10,15 +10,23 @@ import {
     deleteApplication
 } from '../../../services/applicationsApi.js'
 
-const mobileWidth = 768; // breakpt in px fixed for mobile
+const mobileWidth = 768; // fixed breakpt for mobile
 
-export function isMobileScreen () { 
-  return window.innerWidth < mobileWidth; 
-}
+export function isMobileScreen () { return window.innerWidth < mobileWidth; }
 
 // only the applications that belong in this column
 export function applicationsInColumn (applications, col) {
   return applications.filter(app => app.status == col);
+}
+
+// only the applications whose title or company has the search text in it, ignores capitals
+export function searchApplications (applications, searchText) {
+  const text = searchText.trim().toLowerCase();
+  if (text === '') return applications; // empty search shows every card
+
+  return applications.filter(app =>
+    app.title.toLowerCase().includes(text) || app.company.toLowerCase().includes(text)
+  );
 }
 
 // copy the mouse position from the event into mp, which is { xPos, yPos }
@@ -71,7 +79,7 @@ export async function addNewApplication (details) {
   return await getApplications();
 }
 
-// delete a card
+// delete a card, named deleteApplicationCard so it doesn't clash with deleteApplication from the api
 export async function deleteApplicationCard (card) {
   await deleteApplication(card._id);
 }
@@ -109,9 +117,9 @@ export async function toggleChecklistTask (card, task) {
   await updateTask(card._id, task._id, task.done);
 }
 
-// remove a task from the checklist
-export async function removeChecklistTask (card, task) {
-  card.tasks = card.tasks.filter(t => t._id !== task._id); // remove it straight away
+// delete a task from the checklist
+export async function deleteChecklistTask (card, task) {
+  card.tasks = card.tasks.filter(t => t._id !== task._id); // delete it straight away
   countPrep(card);
 
   await deleteTask(card._id, task._id);

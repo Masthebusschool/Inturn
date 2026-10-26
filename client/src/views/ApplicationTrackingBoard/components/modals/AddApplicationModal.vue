@@ -79,25 +79,25 @@ function cancel() { emit('cancel'); }
           <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
 
           <div class="mb-3">
-            <label class="form-label">Job title *</label>
+            <label class="form-label">Job title <span class="text-danger">*</span></label>
             <input v-model="title" class="form-control" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" maxlength="100" />
             <div class="invalid-feedback">{{ errors.title }}</div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Company *</label>
+            <label class="form-label">Company <span class="text-danger">*</span></label>
             <input v-model="companyName" class="form-control" :class="{ 'is-invalid': errors.companyName }" placeholder="e.g. Grab" maxlength="100" />
             <div class="invalid-feedback">{{ errors.companyName }}</div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Application deadline *</label>
+            <label class="form-label">Application deadline <span class="text-danger">*</span></label>
             <input v-model="expiryDate" type="date" class="form-control" :class="{ 'is-invalid': errors.expiryDate }" :min="today" />
             <div class="invalid-feedback">{{ errors.expiryDate }}</div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Status *</label>
+            <label class="form-label">Status <span class="text-danger">*</span></label>
             <select v-model="status" class="form-select">
               <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
             </select>

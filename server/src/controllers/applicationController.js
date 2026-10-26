@@ -57,7 +57,7 @@ export async function addApplication(req, res, next) {
             details = jobFromForm(req.body);
         }
 
-        // stop duplicates: same title + company already on this user's board
+        // stop duplicates, same title and company already on this user's board
         const existing = await findDuplicateApplication(uid, details.title, details.companyName);
         if (existing) {
             return res.status(409).json({ error: 'You already have this application on your board.' });
@@ -67,7 +67,7 @@ export async function addApplication(req, res, next) {
         return res.status(201).json(application);
 
     } catch (err) {
-        // same MCF job saved twice (blocked by the unique index)
+        // same MCF job saved twice, blocked by the unique index
         if (err.code === 11000) {
             return res.status(409).json({ error: 'You already have this application on your board.' });
         }
@@ -107,9 +107,10 @@ export async function updateInterviewDate(req, res, next) {
     }
 }
 
-// Favourite / unfavourite an application card
+// Favourite or unfavourite an application card
 export async function updateFavourite(req, res, next) {
     try {
+        const uid = req.session.user.id;
         const isFavourite = req.body.isFavourite === true; // anything else counts as false
         const application = await updateApplicationFavouriteById(req.params.id, uid, isFavourite);
 
@@ -122,9 +123,10 @@ export async function updateFavourite(req, res, next) {
     }
 }
 
-// Checklist: add a task to the card
+// Checklist where add a task to the card
 export async function addTask(req, res, next) {
     try {
+        const uid = req.session.user.id;
         let text = req.body.text;
         if (typeof text !== 'string' || text.trim() === '') {
             return res.status(400).json({ error: 'Task text is required' });
@@ -142,9 +144,10 @@ export async function addTask(req, res, next) {
     }
 }
 
-// Checklist: tick / untick a task
+// Checklist, tick or untick a task
 export async function updateTask(req, res, next) {
     try {
+        const uid = req.session.user.id;
         const done = req.body.done === true; // anything else counts as false
         const application = await updateApplicationTaskById(req.params.id, uid, req.params.taskId, done);
 
@@ -157,9 +160,10 @@ export async function updateTask(req, res, next) {
     }
 }
 
-// Checklist: remove a task
+// Checklist, remove a task
 export async function deleteTask(req, res, next) {
     try {
+        const uid = req.session.user.id;
         const application = await deleteApplicationTaskById(req.params.id, uid, req.params.taskId);
 
         if (!application) return res.status(404).json({ error: 'Application not found' });

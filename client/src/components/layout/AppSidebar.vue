@@ -33,7 +33,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape))
 // Site-wide navigation. Each icon is a 16x16 outline path drawn in white.
 const links = [
   { to: '/jobs', label: 'Job Discovery', icon: 'M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM1.5 8h13M8 1.5c-2 2-2.8 4-2.8 6.5S6 12.5 8 14.5M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5' },
-  { to: '/shortlist', label: 'Tracker Board', icon: 'M5.5 2h5v1.5h-5zM4 3H3v11.5h10V3h-1M5.5 7.5h5M5.5 10h5M5.5 12.5h3' },
+  { to: '/applications', label: 'Tracker Board', icon: 'M5.5 2h5v1.5h-5zM4 3H3v11.5h10V3h-1M5.5 7.5h5M5.5 10h5M5.5 12.5h3' },
   { to: '/intel', label: 'Interview Intel', icon: 'M1.5 2.5h13v8h-13zM8 10.5v3M5 14.5h6M4 5h4M4 7.5h7' },
   { to: '/mock-interview', label: 'Mock Interview', icon: 'M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2ZM3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5' },
   { to: '/skill-gap', label: 'Skill Gap Analysis', icon: 'M3 1.5h7l3 3v10H3zM10 1.5v3h3M5.5 8h5M5.5 10.5h5M5.5 13h3' },
