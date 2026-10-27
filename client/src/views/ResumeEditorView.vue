@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api } from '../lib/api.js'
 import ResumePreview from '../components/resumes/ResumePreview.vue'
 import ConfirmButton from '../components/common/ConfirmButton.vue'
+import { setMatchingResume } from "../stores/jobMatch.js";
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -60,6 +61,7 @@ function applyResume(r = {}) {
   form.experience = (r.experience || []).map(expToForm)
   form.projects = (r.projects || []).map(projToForm)
   form.education = (r.education || []).map(eduToForm)
+  updateJobMatchingSkills();
   dirty.value = false
   nextTick(() => { loaded = true })
 }
@@ -184,6 +186,36 @@ async function onFile(e) {
   } finally {
     parsing.value = false
   }
+}
+
+function updateJobMatchingSkills() {
+  const resume = payload();
+  const skills = [];
+
+  // Main resume skills
+  for (let i = 0; i < resume.skills.length; i++) {
+    skills.push(resume.skills[i]);
+  }
+
+  // Experience skills
+  for (let i = 0; i < resume.experience.length; i++) {
+    const experienceSkills = resume.experience[i].skills || [];
+
+    for (let j = 0; j < experienceSkills.length; j++) {
+      skills.push(experienceSkills[j]);
+    }
+  }
+
+  // Project skills
+  for (let i = 0; i < resume.projects.length; i++) {
+    const projectSkills = resume.projects[i].skills || [];
+
+    for (let j = 0; j < projectSkills.length; j++) {
+      skills.push(projectSkills[j]);
+    }
+  }
+
+  setMatchingResume(resume.name, skills);
 }
 </script>
 

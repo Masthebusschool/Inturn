@@ -62,6 +62,32 @@
         </button>
       </form>
 
+      <p v-if="matchingResumeName" class="matching-source">
+        Matching against: {{ matchingResumeName }}
+      </p>
+
+      <div v-if="activeFilters.length > 0" class="active-filter-tags">
+        <button
+          v-for="filter in activeFilters"
+          :key="filter.key"
+          class="active-filter-tag"
+          type="button"
+          :aria-label="'Remove filter: ' + filter.label"
+          @click="removeSearchFilter(filter)"
+        >
+          {{ filter.label }}
+          <span aria-hidden="true">×</span>
+        </button>
+
+        <button
+          class="clear-filters"
+          type="button"
+          @click="clearSearchFilters"
+        >
+          Clear all
+        </button>
+      </div>
+
       <section class="results-panel">
         <header class="results-header">
           <div>
@@ -76,14 +102,28 @@
               {{ total }} jobs found by keyword
             </p>
 
-            <p v-if="!loading && !error && resumeSkills.length > 0">
-              Ranked by resume skill matches within this results page.
+            <p v-if="!loading && !error">
+              Sort and filters apply to the results.
             </p>
 
-            <p v-else-if="!loading && !error">
-              Connect your resume skills to rank jobs by match.
+            <p v-else-if="!loading && !error && resumeSkills.length === 0"">
+              Upload your resume to rank jobs by match.
             </p>
           </div>
+
+          <div class="sort-control">
+          <label for="job-sort">Sort by</label>
+
+          <select id="job-sort" v-model="sortBy">
+            <option value="skills">Best Skill Match</option>
+            <option value="closing-earliest">Closing Date: Earliest first</option>
+            <option value="closing-latest">Closing Date: Latest first</option>
+            <option value="pay-highest">Monthly Pay: Highest first</option>
+            <option value="pay-lowest">Monthly Pay: Lowest first</option>
+            <option value="company-az">Company Name: A-Z</option>
+            <option value="company-za">Company Name: Z-A</option>
+          </select>
+        </div>
 
           <span class="source-label">MyCareersFuture</span>
         </header>
@@ -156,9 +196,35 @@
                 </button>
               </div>
 
-              <p v-if="resumeSkills.length > 0" class="resume-match">
-                {{ getMatchCount(job) }} resume skills matched
+              <!-- filters skill match -->
+              <p
+                v-if="filters.skills.length > 0"
+                class="resume-match"
+              >
+                {{ getSelectedSkillMatchCount(job) }} of
+                {{ filters.skills.length }} selected skills matched
               </p>
+
+              <!-- resume skill match -->
+              <div
+                v-if="resumeSkills.length > 0"
+                class="resume-match"
+              >
+                <template v-if="getMatchPercentage(job) !== null">
+                  <strong>
+                    {{ getMatchPercentage(job) }}% skills matched
+                  </strong>
+
+                  <span>
+                    {{ getMatchCount(job) }} of
+                    {{ getJobSkillNames(job).length }} listed skills
+                  </span>
+                </template>
+
+                <span v-else>
+                  No listed skills available for comparison
+                </span>
+              </div>
 
               <div class="job-info">
                 <span>{{ getEmployment(job) }}</span>
@@ -203,6 +269,13 @@
           </div>
         </div>
 
+        <p
+          v-if="!loading && !error && !hasNextPage"
+          class="message"
+        >
+          You have reached the end of the available search results.
+        </p>
+
         <nav
           v-if="!loading && !error && totalPages > 1"
           class="page-controls"
@@ -219,10 +292,29 @@
 
           <span>Page {{ page + 1 }} of {{ totalPages }}</span>
 
+          <form class="page-jump" @submit.prevent="goToPage">
+            <label for="page-number">Go to page</label>
+
+            <input
+              id="page-number"
+              v-model="pageInput"
+              type="number"
+              min="1"
+              :max="totalPages"
+              step="1"
+              placeholder="Page"
+              required
+            />
+
+            <button class="page-button" type="submit">
+              Go
+            </button>
+          </form>
+
           <button
             class="page-button"
             type="button"
-            :disabled="page + 1 >= totalPages"
+            :disabled="loading || !hasNextPage"
             @click="changePage(page + 1)"
           >
             Next
@@ -257,8 +349,10 @@ const error = ref("");
 
 const selectedJob = ref(null);
 
-// Populate this with actual extracted or user-confirmed resume skills.
-const resumeSkills = ref([]);
+import {
+  resumeSkills,
+  matchingResumeName,
+} from "../stores/jobMatch.js";
 
 function selectJob(job) {
   selectedJob.value = job;
@@ -272,41 +366,131 @@ const filters = ref({
   location: "",
   category: "",
   skills: [],
+  minSalary: "",
+  maxSalary: "",
 });
+
+const sortBy = ref("skills");
 
 const totalPages = computed(() => {
   return Math.max(1, Math.ceil(total.value / jobsPerPage));
 });
 
-const activeFilterCount = computed(() => {
-  let count = filters.value.skills.length;
+const activeFilters = computed(() => {
+  const tags = [];
 
   if (filters.value.location !== "") {
-    count++;
+    tags.push({
+      key: "location",
+      type: "location",
+      label: filters.value.location,
+    });
   }
 
   if (filters.value.category !== "") {
-    count++;
+    tags.push({
+      key: "category",
+      type: "category",
+      label: filters.value.category,
+    });
   }
 
-  return count;
+  for (let i = 0; i < filters.value.skills.length; i++) {
+    const skill = filters.value.skills[i];
+
+    tags.push({
+      key: "skill-" + skill,
+      type: "skill",
+      value: skill,
+      label: skill,
+    });
+  }
+
+  if (hasPayValue(filters.value.minSalary)) {
+  tags.push({
+    key: "minSalary",
+    type: "minSalary",
+    label: "Minimum S$" + filters.value.minSalary + "/month",
+  });
+}
+
+if (hasPayValue(filters.value.maxSalary)) {
+  tags.push({
+    key: "maxSalary",
+    type: "maxSalary",
+    label: "Maximum S$" + filters.value.maxSalary + "/month",
+  });
+}
+
+  return tags;
 });
+
+const activeFilterCount = computed(() => {
+  return activeFilters.value.length;
+});
+
+function removeSearchFilter(filter) {
+  if (filter.type === "skill") {
+    const index = filters.value.skills.indexOf(filter.value);
+
+    if (index !== -1) {
+      filters.value.skills.splice(index, 1);
+    }
+  } else {
+    filters.value[filter.type] = "";
+  }
+
+  restartFromFirstPage();
+}
+
+function clearSearchFilters() {
+  filters.value = {
+    location: "",
+    category: "",
+    skills: [],
+    minSalary: "",
+    maxSalary: "",
+  };
+
+  restartFromFirstPage();
+}
 
 const filteredJobs = computed(() => {
   const results = [];
+
+  const minimumPay = hasPayValue(filters.value.minSalary)
+  ? Number(filters.value.minSalary)
+  : null;
+
+const maximumPay = hasPayValue(filters.value.maxSalary)
+  ? Number(filters.value.maxSalary)
+  : null;
+
+  // Invalid pay ranges produce no results.
+  if (
+    (minimumPay !== null &&
+      (!Number.isFinite(minimumPay) || minimumPay < 0)) ||
+    (maximumPay !== null &&
+      (!Number.isFinite(maximumPay) || maximumPay < 0)) ||
+    (minimumPay !== null &&
+      maximumPay !== null &&
+      minimumPay > maximumPay)
+  ) {
+    return results;
+  }
 
   for (let i = 0; i < jobs.value.length; i++) {
     const job = jobs.value[i];
     let matches = true;
 
-    // Location filter
+    // Location
     if (filters.value.location !== "") {
       let locationMatches = false;
 
-      const addressHidden =
+      const hidden =
         job.metadata && job.metadata.isHideCompanyAddress;
 
-      if (!addressHidden && job.address && job.address.districts) {
+      if (!hidden && job.address && job.address.districts) {
         for (let j = 0; j < job.address.districts.length; j++) {
           if (
             job.address.districts[j].region ===
@@ -322,14 +506,15 @@ const filteredJobs = computed(() => {
       }
     }
 
-    // Category filter
+    // Category
     if (filters.value.category !== "") {
       let categoryMatches = false;
 
       if (job.categories) {
         for (let j = 0; j < job.categories.length; j++) {
           if (
-            job.categories[j].category === filters.value.category
+            job.categories[j].category ===
+            filters.value.category
           ) {
             categoryMatches = true;
           }
@@ -341,20 +526,35 @@ const filteredJobs = computed(() => {
       }
     }
 
-    // Job must include every skill selected in JobsFilter.
-    for (let j = 0; j < filters.value.skills.length; j++) {
-      let skillMatches = false;
+    // Match at least one selected skill.
+    // No selected skills means no skill restriction.
+    if (
+      filters.value.skills.length > 0 &&
+      getSelectedSkillMatchCount(job) === 0
+    ) {
+      matches = false;
+    }
 
-      if (job.skills) {
-        for (let k = 0; k < job.skills.length; k++) {
-          if (job.skills[k].skill === filters.value.skills[j]) {
-            skillMatches = true;
-          }
-        }
-      }
+    // Pay: advertised range must overlap the selected range.
+    if (minimumPay !== null || maximumPay !== null) {
+      const pay = getMonthlyPay(job);
 
-      if (!skillMatches) {
+      if (!pay) {
         matches = false;
+      } else {
+        if (
+          minimumPay !== null &&
+          pay.maximum < minimumPay
+        ) {
+          matches = false;
+        }
+
+        if (
+          maximumPay !== null &&
+          pay.minimum > maximumPay
+        ) {
+          matches = false;
+        }
       }
     }
 
@@ -363,31 +563,120 @@ const filteredJobs = computed(() => {
     }
   }
 
-  // Rank the filtered jobs by resume skill matches.
-  // Higher counts appear first.
-  // Jobs with equal counts keep their original API order.
-  for (let i = 1; i < results.length; i++) {
-    const currentJob = results[i];
-    const currentCount = getMatchCount(currentJob);
+  // Sort this separate results array.
+  results.sort((first, second) => {
+    // Most selected skills matched first.
+    if (filters.value.skills.length > 0) {
+      const selectedSkillDifference =
+        getSelectedSkillMatchCount(second) -
+        getSelectedSkillMatchCount(first);
 
-    let position = i - 1;
+      if (selectedSkillDifference !== 0) {
+        return selectedSkillDifference;
+      }
+    }
+    let comparison = 0;
 
-    while (
-      position >= 0 &&
-      getMatchCount(results[position]) < currentCount
-    ) {
-      results[position + 1] = results[position];
-      position--;
+    if (sortBy.value === "skills") {
+      const firstScore = getMatchPercentage(first) ?? -1;
+      const secondScore = getMatchPercentage(second) ?? -1;
+
+      comparison = secondScore - firstScore;
+
+      if (comparison === 0) {
+        comparison =
+          getMatchCount(second) - getMatchCount(first);
+      }
     }
 
-    results[position + 1] = currentJob;
+    if (
+      sortBy.value === "closing-earliest" ||
+      sortBy.value === "closing-latest"
+    ) {
+      const firstDate = getClosingTime(first);
+      const secondDate = getClosingTime(second);
+
+      // Missing dates always appear last.
+      if (firstDate === null && secondDate !== null) {
+        return 1;
+      }
+
+      if (firstDate !== null && secondDate === null) {
+        return -1;
+      }
+
+  if (firstDate !== null && secondDate !== null) {
+    if (sortBy.value === "closing-earliest") {
+      comparison = firstDate - secondDate;
+    } else {
+      comparison = secondDate - firstDate;
+    }
   }
+}
+
+    if (
+      sortBy.value === "pay-highest" ||
+      sortBy.value === "pay-lowest"
+    ) {
+      const firstPay = getMonthlyPay(first);
+      const secondPay = getMonthlyPay(second);
+
+      // Unknown or non-monthly pay goes last.
+      if (!firstPay && secondPay) return 1;
+      if (firstPay && !secondPay) return -1;
+
+      if (firstPay && secondPay) {
+        // Both directions compare the advertised maximum.
+        comparison = firstPay.maximum - secondPay.maximum;
+
+        if (sortBy.value === "pay-highest") {
+          comparison = -comparison;
+        }
+      }
+    }
+
+    if (
+      sortBy.value === "company-az" ||
+      sortBy.value === "company-za"
+    ) {
+      const firstName = getCompanySortName(first);
+      const secondName = getCompanySortName(second);
+
+      if (firstName === null && secondName !== null) return 1;
+      if (firstName !== null && secondName === null) return -1;
+
+      if (firstName !== null && secondName !== null) {
+        comparison = firstName.localeCompare(secondName);
+
+        if (sortBy.value === "company-za") {
+          comparison = -comparison;
+        }
+      }
+    }
+
+    // Skill percentage breaks ties for the other sort options.
+    if (comparison === 0) {
+      comparison =
+        (getMatchPercentage(second) ?? -1) -
+        (getMatchPercentage(first) ?? -1);
+    }
+
+    return comparison;
+  });
 
   return results;
 });
 
 function updateFilters(newFilters) {
-  filters.value = newFilters;
+  filters.value = {
+    location: newFilters.location ?? "",
+    category: newFilters.category ?? "",
+    skills: newFilters.skills ?? [],
+    minSalary: newFilters.minSalary ?? "",
+    maxSalary: newFilters.maxSalary ?? "",
+  };
+
+  restartFromFirstPage();
 }
 
 async function loadJobs() {
@@ -418,6 +707,13 @@ async function loadJobs() {
 
     jobs.value = response.data.results;
     total.value = response.data.total;
+    console.table(
+      jobs.value.map((job) => ({
+        title: job.title,
+        closingDate: job.metadata?.expiryDate,
+        parsedDate: getClosingTime(job),
+      }))
+    );
   } catch (err) {
     console.error(err);
 
@@ -566,32 +862,113 @@ function getExperience(job) {
   return years + " years experience";
 }
 
-function getMatchCount(job) {
-  if (!job.skills || resumeSkills.value.length === 0) {
-    return 0;
+function getJobSkillNames(job) {
+  const names = [];
+  const source = job.skills || [];
+
+  for (let i = 0; i < source.length; i++) {
+    if (typeof source[i].skill === "string") {
+      const name = source[i].skill.trim().toLowerCase();
+
+      if (name !== "" && !names.includes(name)) {
+        names.push(name);
+      }
+    }
   }
 
+  return names;
+}
+
+function getMatchCount(job) {
+  const jobSkills = getJobSkillNames(job);
   const matchedSkills = [];
 
-  for (let i = 0; i < job.skills.length; i++) {
-    const jobSkill = job.skills[i].skill;
+  for (let i = 0; i < jobSkills.length; i++) {
+    for (let j = 0; j < resumeSkills.value.length; j++) {
+      const resumeSkill = resumeSkills.value[j];
 
-    if (typeof jobSkill === "string") {
-      const skillName = jobSkill.trim().toLowerCase();
-
-      for (let j = 0; j < resumeSkills.value.length; j++) {
-        const resumeSkill = resumeSkills.value[i];
-
-        if (typeof resumeSkill === "string" && resumeSkill.trim().toLowerCase() === skillName
-        && !matchedSkills.includes(skillName)) {
-          matchedSkills.push(skillName);
-        }
+      if (
+        typeof resumeSkill === "string" &&
+        resumeSkill.trim().toLowerCase() === jobSkills[i] &&
+        !matchedSkills.includes(jobSkills[i])
+      ) {
+        matchedSkills.push(jobSkills[i]);
       }
     }
   }
 
   return matchedSkills.length;
+}
 
+function getMatchPercentage(job) {
+  const totalSkills = getJobSkillNames(job).length;
+
+  if (totalSkills === 0 || resumeSkills.value.length === 0) {
+    return null;
+  }
+
+  return Math.round(
+    (getMatchCount(job) / totalSkills) * 100
+  );
+}
+
+// Only compare disclosed monthly salaries.
+function getMonthlyPay(job) {
+  if (job.metadata && job.metadata.isHideSalary) {
+    return null;
+  }
+
+  if (
+    !job.salary ||
+    !job.salary.type ||
+    job.salary.type.salaryType !== "Monthly"
+  ) {
+    return null;
+  }
+
+  const minimum = Number(job.salary.minimum);
+  const maximum = Number(job.salary.maximum);
+
+  if (minimum <= 0 || maximum <= 0 || maximum < minimum) {
+    return null;
+  }
+
+  return {
+    minimum: minimum,
+    maximum: maximum,
+  };
+}
+
+function hasPayValue(value) {
+  return (
+    value !== undefined &&
+    value !== null &&
+    String(value).trim() !== ""
+  );
+}
+
+function getClosingTime(job) {
+  const value = job.metadata?.expiryDate;
+
+  if (typeof value !== "string" || value.trim() === "") {
+    return null;
+  }
+
+  const time = Date.parse(value);
+
+  return Number.isNaN(time) ? null : time;
+}
+
+function getCompanySortName(job) {
+  if (job.metadata && job.metadata.isHideEmployerName) {
+    return null;
+  }
+
+  if (!job.postedCompany || !job.postedCompany.name) {
+    return null;
+  }
+
+  return job.postedCompany.name.toLowerCase();
 }
 
 function isSaved(jobId) {
@@ -638,6 +1015,61 @@ onMounted(() => {
   }
 
   loadJobs();
+});
+
+const pageInput = ref("");
+
+function goToPage() {
+  const selectedPage = Number(pageInput.value);
+
+  if (
+    !Number.isInteger(selectedPage) ||
+    selectedPage < 1 ||
+    selectedPage > totalPages.value
+  ) {
+    return;
+  }
+
+  changePage(selectedPage - 1);
+  pageInput.value = "";
+}
+
+function restartFromFirstPage() {
+  const previousPage = page.value;
+
+  page.value = 0;
+  pageInput.value = "";
+
+  if (previousPage !== 0) {
+    loadJobs();
+  }
+}
+
+function getSelectedSkillMatchCount(job) {
+  const jobSkills = getJobSkillNames(job);
+  const matchedSkills = [];
+
+  for (let i = 0; i < filters.value.skills.length; i++) {
+    const selectedSkill = filters.value.skills[i]
+      .trim()
+      .toLowerCase();
+
+    if (
+      jobSkills.includes(selectedSkill) &&
+      !matchedSkills.includes(selectedSkill)
+    ) {
+      matchedSkills.push(selectedSkill);
+    }
+  }
+
+  return matchedSkills.length;
+}
+
+const hasNextPage = computed(() => {
+  return (
+    jobs.value.length === jobsPerPage &&
+    page.value + 1 < totalPages.value
+  );
 });
 </script>
 
@@ -996,5 +1428,106 @@ button:disabled {
   color: #075b46;
   font-size: 12px;
   font-weight: 600;
+}
+
+.matching-source {
+  margin: 0 0 14px;
+  color: #526079;
+  font-size: 13px;
+}
+
+.active-filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.active-filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 20px;
+  background: #ccf7e7;
+  color: #075b46;
+  font-size: 13px;
+}
+
+.active-filter-tag:hover {
+  background: #a7efd6;
+}
+
+.active-filter-tag span {
+  font-size: 18px;
+}
+
+.clear-filters {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #2459ce;
+  font-size: 13px;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sort-control label {
+  color: #526079;
+  font-size: 13px;
+}
+
+.sort-control select {
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dce3f0;
+  border-radius: 10px;
+  background: #f5f8ff;
+  color: #17234b;
+  font: inherit;
+  font-size: 13px;
+}
+
+.resume-match {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #ccf7e7;
+  color: #075b46;
+  font-size: 12px;
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-jump label {
+  color: #526079;
+  font-size: 13px;
+}
+
+.page-jump input {
+  width: 85px;
+  padding: 9px 10px;
+  border: 1px solid #dce3f0;
+  border-radius: 8px;
+  background: #f5f8ff;
+  color: #17234b;
+  font: inherit;
+  font-size: 13px;
 }
 </style>

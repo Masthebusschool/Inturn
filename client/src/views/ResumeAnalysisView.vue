@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { resumeStore } from '../stores/resume.js'
 import { analyzeResume, createResumeFromText } from '../api/resume.js'
+import { setMatchingResume } from "../stores/jobMatch.js";
 
 const router = useRouter()
 const ready = ref(false)
@@ -52,6 +53,7 @@ async function runAnalysis() {
   try {
     const data = await analyzeResume(resume.value.text)
     skills.value = data.skills
+    setMatchingResume(resume.value.fileName, data.skills);
     review.value = data.review
   } catch (e) {
     errors.value = e.errors ?? [e.message]
