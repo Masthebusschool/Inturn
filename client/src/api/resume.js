@@ -7,9 +7,9 @@ export function uploadResume(file) {
   return request('/resume', { method: 'POST', body: form })
 }
 
-// Sends the extracted text back for scoring; replies with { skills, review }.
-export function analyzeResume(text) {
-  return request('/resume/analyze', { method: 'POST', body: { text } })
+// Scores one resume from My Resumes; replies with { resume: { id, name, updatedAt }, review }.
+export function reviewResume(resumeId) {
+  return request(`/resume/${resumeId}/review`)
 }
 
 // "AI deep analysis": the Skill Gap feature's AI turns the extracted text into a named resume

@@ -197,6 +197,7 @@ async function remove(r) {
           <small class="text-body-secondary">Updated {{ fmtDate(r.updatedAt) }}</small>
         </RouterLink>
         <div class="d-flex flex-wrap align-items-center gap-2">
+          <RouterLink v-if="armedId !== r._id" :to="`/resumes/${r._id}/analysis`" class="btn btn-sm btn-outline-primary">Analyze</RouterLink>
           <button v-if="armedId !== r._id" type="button" class="btn btn-sm btn-outline-secondary" :disabled="busyId === r._id" @click="duplicate(r)">Duplicate</button>
           <ConfirmButton
             label="Delete"

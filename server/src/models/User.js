@@ -57,13 +57,6 @@ const userSchema = new mongoose.Schema(
       validate: [(arr) => arr.length <= 10, 'You can add at most 10 industries'],
     },
     targetRoles: [String], // From the team scaffold; not asked in the UI yet.
-    resume:{
-      fileName: String,
-      pageCount:Number,
-      wordCount:Number,
-      text:String,
-      uploadedAt:Date,
-    },
     // Resume profile from the Skill Gap feature (Mas). Read by toProfile() in utils/profile.js;
     // no page edits these on the User yet. Dates are free text ("Jan 2024", "Present").
     summary: String,

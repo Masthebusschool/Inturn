@@ -2,17 +2,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
-import { resumeStore } from '../stores/resume.js'
-import { analyzeResume, createResumeFromText } from '../api/resume.js'
+import { reviewResume } from '../api/resume.js'
+
+// The resume to analyze comes from My Resumes: /resumes/:id/analysis
+const props = defineProps({ id: { type: String, required: true } })
 
 const router = useRouter()
 const ready = ref(false)
 const analyzing = ref(false)
 const errors = ref([])
-const skills = ref([])
+const resume = ref(null) // { id, name, updatedAt }
 const review = ref(null) // { score, checks } from the server
 
-const resume = computed(() => resumeStore.resume)
 const passedCount = computed(() => review.value?.checks.filter((check) => check.passed).length ?? 0)
 
 // The report is hidden until "View report" is clicked
@@ -21,6 +22,7 @@ const showReport = ref(false)
 const REPORT_SECTIONS = [
   { category: 'Contact', title: 'Contact information' },
   { category: 'Structure', title: 'Structure' },
+  { category: 'Content', title: 'Content' },
   { category: 'Other', title: 'Other' },
 ]
 const reportGroups = computed(() => {
@@ -42,16 +44,16 @@ onMounted(async () => {
   if (!authStore.checked) await authStore.fetchMe()
   if (!authStore.isLoggedIn) return router.replace('/login')
   ready.value = true
-  // Nothing to analyze after a refresh: the page asks for an upload instead
-  if (resume.value) await runAnalysis()
+  await runAnalysis()
 })
 
+// Scores the saved resume, so editing it and coming back shows the new score
 async function runAnalysis() {
   errors.value = []
   analyzing.value = true
   try {
-    const data = await analyzeResume(resume.value.text)
-    skills.value = data.skills
+    const data = await reviewResume(props.id)
+    resume.value = data.resume
     review.value = data.review
   } catch (e) {
     errors.value = e.errors ?? [e.message]
@@ -62,26 +64,11 @@ async function runAnalysis() {
 
 // ---------------------------------------------------------------------------
 // Step 2: AI deep analysis. This is the Skill Gap feature (owned by Mas);
-// this page only does the basic rule-based review, then hands the resume over:
-// Mas's AI turns the extracted text into a named resume, and Skill Gap opens with it
-// selected (?resumeId=...), so the user does not upload the PDF again.
+// this page only does the basic rule-based review, then opens Skill Gap with
+// the same resume selected (?resumeId=...), so nothing is uploaded or parsed again.
 // ---------------------------------------------------------------------------
-const preparing = ref(false)
-const deepErrors = ref([])
-
-async function startDeepAnalysis() {
-  deepErrors.value = []
-  preparing.value = true
-  try {
-    resumeStore.review = review.value
-    const name = resume.value.fileName.replace(/\.pdf$/i, '')
-    const { resume: saved } = await createResumeFromText({ name, text: resume.value.text })
-    router.push({ path: '/skill-gap', query: { resumeId: saved._id } })
-  } catch (e) {
-    deepErrors.value = e.errors ?? [e.message]
-  } finally {
-    preparing.value = false
-  }
+function startDeepAnalysis() {
+  router.push({ path: '/skill-gap', query: { resumeId: props.id } })
 }
 </script>
 
@@ -91,98 +78,91 @@ async function startDeepAnalysis() {
       <div>
         <h1 class="header-title">Resume Analysis</h1>
         <p class="header-subtitle">
-          {{ resume ? resume.fileName : 'See how your resume scores and what to improve.' }}
+          {{ resume ? resume.name : 'See how your resume scores and what to improve.' }}
         </p>
       </div>
-      <RouterLink to="/profile" class="btn-outline-inturn">Back to profile</RouterLink>
+      <div class="header-actions">
+        <RouterLink v-if="resume" :to="`/resumes/${id}`" class="btn-primary-inturn">Edit resume</RouterLink>
+        <RouterLink to="/resumes" class="btn-primary-inturn">Back to My Resumes</RouterLink>
+      </div>
     </header>
 
-    <!-- Opened directly or after a refresh: the uploaded resume is no longer in memory -->
-    <article v-if="!resume" class="panel text-center">
-      <p class="mb-3">No uploaded resume in this session. Manage your resumes in My Resumes, or compare one against a job in Skill Gap Analysis.</p>
-      <RouterLink to="/resumes" class="btn-primary-inturn">Go to My Resumes</RouterLink>
+    <div v-if="errors.length" class="alert alert-danger py-2" role="alert">
+      <div v-for="error in errors" :key="error">{{ error }}</div>
+    </div>
+
+    <article v-if="analyzing" class="panel text-center" role="status">
+      <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      Analyzing your resume...
     </article>
 
-    <template v-else>
-      <div v-if="errors.length" class="alert alert-danger py-2" role="alert">
-        <div v-for="error in errors" :key="error">{{ error }}</div>
-      </div>
-
-      <article v-if="analyzing" class="panel text-center" role="status">
-        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-        Analyzing your resume...
+    <template v-else-if="review">
+      <article class="panel score-panel">
+        <div class="score" aria-label="Resume score">
+          <span class="score-value">{{ review.score ?? '–' }}</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="score-detail">
+          <div class="progress" role="progressbar" :aria-valuenow="review.score ?? 0" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" :style="{ width: `${review.score ?? 0}%` }"></div>
+          </div>
+          <p class="muted mb-0">
+            {{ review.checks.length ? `${passedCount} of ${review.checks.length} checks passed` : 'No checks to show yet.' }}
+          </p>
+        </div>
+        <button
+          v-if="review.checks.length"
+          type="button"
+          class="btn-primary-inturn"
+          aria-controls="resume-report"
+          :aria-expanded="showReport"
+          @click="showReport = !showReport"
+        >
+          {{ showReport ? 'Hide report' : 'View report' }}
+        </button>
       </article>
 
-      <template v-else-if="review">
-        <article class="panel score-panel">
-          <div class="score" aria-label="Resume score">
-            <span class="score-value">{{ review.score ?? '–' }}</span>
-            <span class="score-max">/ 100</span>
+      <!-- The report: checks grouped by category (Contact information, Structure, Content) -->
+      <article v-if="showReport" id="resume-report" class="panel">
+        <section v-for="group in reportGroups" :key="group.title" class="report-group">
+          <div class="group-head">
+            <h2 class="section-title mb-0">{{ group.title }}</h2>
+            <span class="muted">{{ group.earned }} / {{ group.possible }}</span>
           </div>
-          <div class="score-detail">
-            <div class="progress" role="progressbar" :aria-valuenow="review.score ?? 0" aria-valuemin="0" aria-valuemax="100">
-              <div class="progress-bar" :style="{ width: `${review.score ?? 0}%` }"></div>
-            </div>
-            <p class="muted mb-0">
-              {{ review.checks.length ? `${passedCount} of ${review.checks.length} checks passed` : 'No checks to show yet.' }}
-            </p>
-          </div>
-          <button
-            v-if="review.checks.length"
-            type="button"
-            class="btn-outline-inturn"
-            aria-controls="resume-report"
-            :aria-expanded="showReport"
-            @click="showReport = !showReport"
-          >
-            {{ showReport ? 'Hide report' : 'View report' }}
-          </button>
-        </article>
-
-        <!-- The report: checks grouped by category (Contact information, Structure) -->
-        <article v-if="showReport" id="resume-report" class="panel">
-          <section v-for="group in reportGroups" :key="group.title" class="report-group">
-            <div class="group-head">
-              <h2 class="section-title mb-0">{{ group.title }}</h2>
-              <span class="muted">{{ group.earned }} / {{ group.possible }}</span>
-            </div>
-            <ul class="check-list">
-              <li v-for="check in group.checks" :key="check.label" class="check" :class="{ failed: !check.passed }">
-                <span class="check-icon" aria-hidden="true">{{ check.passed ? '✓' : '!' }}</span>
-                <div class="check-body">
-                  <div class="check-head">
-                    <span class="check-label">{{ check.label }}</span>
-                    <span class="muted">{{ check.points }} / {{ check.maxPoints }}</span>
-                  </div>
-                  <p v-if="!check.passed && check.suggestion" class="check-suggestion mb-0">{{ check.suggestion }}</p>
+          <ul class="check-list">
+            <li v-for="check in group.checks" :key="check.label" class="check" :class="{ failed: !check.passed }">
+              <span class="check-icon" aria-hidden="true">{{ check.passed ? '✓' : '!' }}</span>
+              <div class="check-body">
+                <div class="check-head">
+                  <span class="check-label">{{ check.label }}</span>
+                  <span class="muted">{{ check.points }} / {{ check.maxPoints }}</span>
                 </div>
-              </li>
-            </ul>
-          </section>
-        </article>
+                <p v-if="!check.passed && check.suggestion" class="check-suggestion mb-0">{{ check.suggestion }}</p>
+              </div>
+            </li>
+          </ul>
+        </section>
+      </article>
 
-        <!-- Step 2: AI deep analysis against a job posting (Skill Gap feature) -->
-        <article class="panel deep-panel">
-          <div>
-            <h2 class="section-title mb-1">AI deep analysis</h2>
-            <p class="muted mb-0">Compare this resume with a job posting to find missing skills and how to tailor it.</p>
-          </div>
-          <button type="button" class="btn-primary-inturn" :disabled="preparing" @click="startDeepAnalysis">
-            <span v-if="preparing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
-            {{ preparing ? 'Reading your resume...' : 'AI deep analysis' }}
-          </button>
-        </article>
-        <div v-if="deepErrors.length" class="alert alert-danger py-2" role="alert">
-          <div v-for="error in deepErrors" :key="error">{{ error }}</div>
+      <!-- Step 2: AI deep analysis against a job posting (Skill Gap feature) -->
+      <article class="panel deep-panel">
+        <div>
+          <h2 class="section-title mb-1">AI deep analysis</h2>
+          <p class="muted mb-0">Compare this resume with a job posting to find missing skills and how to tailor it.</p>
         </div>
-
-        <!-- TODO(skills step): show "Skills found" here once extractSkills is written -->
-      </template>
+        <button type="button" class="btn-primary-inturn" @click="startDeepAnalysis">AI deep analysis</button>
+      </article>
     </template>
   </section>
 </template>
 
 <style scoped>
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .analysis-page {
   max-width: 760px;
 }
