@@ -1,109 +1,87 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import CommunityQuestionsModal from '../components/CommunityQuestionsModal.vue'
 
-// 1. Practice questions list
-// Uses savedResponse to compare against current response so editing immediately shows "Unsaved changes"
-const questions = ref([
-  {
-    id: 1,
-    sourceId: 'default-1',
-    category: 'Technical',
-    text: 'Explain a full-stack feature you built and how you implemented it.',
-    tip: 'Outline how you plan before coding, and give one real example.',
-    response: '',
-    savedResponse: '',
-    savedAt: ''
-  },
-  {
-    id: 2,
-    sourceId: 'default-2',
-    category: 'Collaboration',
-    text: 'Tell me about a disagreement with a teammate over a technical approach.',
-    tip: 'Focus on how you listened, compromised and what the outcome was.',
-    response: '',
-    savedResponse: '',
-    savedAt: ''
-  },
-  {
-    id: 3,
-    sourceId: 'default-3',
-    category: 'Problem Solving',
-    text: 'Describe a difficult bug you encountered and how you diagnosed and fixed it.',
-    tip: 'Walk through your debugging process, the tools you used, and what you learned from it.',
-    response: '',
-    savedResponse: '',
-    savedAt: ''
-  }
-])
+const userName = ref('Student')
+const questions = ref([])
+const communityQuestions = ref([])
 
-// 2. Community questions shown in the pop-up modal (Consistent Title Case categories)
-const communityQuestions = ref([
-  {
-    id: 'c1',
-    company: 'Grab',
-    role: 'Software Engineering Intern',
-    category: 'System Design',
-    text: 'How would you design a food-order status tracker with real-time updates?',
-    upvotes: 31,
-    tip: 'Discuss how the frontend gets live updates and how you handle failed orders.'
-  },
-  {
-    id: 'c2',
-    company: 'Grab',
-    role: 'Software Engineering Intern',
-    category: 'Collaboration',
-    text: 'Tell me about a disagreement in a team project and what you learned from it.',
-    upvotes: 31,
-    tip: 'Use the STAR method: Situation, Task, Action, and Result.'
-  },
-  {
-    id: 'c3',
-    company: 'ByteDance',
-    role: 'Backend Engineering Intern',
-    category: 'Technical',
-    text: 'How would you diagnose an API endpoint that suddenly became much slower?',
-    upvotes: 19,
-    tip: 'Talk about checking database queries, server logs, and recent code changes.'
-  },
-  {
-    id: 'c4',
-    company: 'ByteDance',
-    role: 'Backend Engineering Intern',
-    category: 'Technical',
-    text: 'When would you use caching, and how would you keep cached data consistent?',
-    upvotes: 19,
-    tip: 'Explain how caching speeds up repeated reads and when to clear old cache data.'
-  }
-])
-
-const activeId = ref(1)
+const activeId = ref(null)
 const showModal = ref(false)
 const showSaveMessage = ref(false)
+const isAdding = ref(false)
 
-// Format display number safely (01, 02...) using array index so string IDs never break it
+// 1. Load user's saved journal questions from GET /api/interview
+async function loadJournal() {
+  try {
+    const res = await fetch('/api/interview')
+    const data = await res.json()
+    if (res.ok && data.questions) {
+      userName.value = data.userName || 'Student'
+      questions.value = data.questions
+      if (questions.value.length > 0) {
+        activeId.value = questions.value[0].id
+      }
+    }
+  } catch (error) {
+    console.error('Error loading journal:', error)
+  }
+}
+
+// 2. Load community questions directly from GET /api/intel
+async function loadCommunityQuestions() {
+  try {
+    const res = await fetch('/api/intel')
+    const data = await res.json()
+    if (!res.ok || !data.posts) return
+
+    const extracted = []
+    for (const post of data.posts) {
+      if (post.type === 'Interview questions' && Array.isArray(post.questions)) {
+        for (let i = 0; i < post.questions.length; i++) {
+          extracted.push({
+            id: `${post.id}-q${i}`,
+            company: post.company,
+            role: post.role,
+            category: 'Community Question',
+            text: post.questions[i],
+            upvotes: post.upvotes,
+            tip: 'Use the STAR method: Situation, Task, Action, and Result.'
+          })
+        }
+      }
+    }
+    communityQuestions.value = extracted
+  } catch (error) {
+    console.error('Error loading community questions:', error)
+  }
+}
+
+onMounted(() => {
+  loadJournal()
+  loadCommunityQuestions()
+})
+
+// Format display number safely (01, 02...) using array index
 function formatNum(num) {
   return num < 10 ? '0' + num : String(num)
 }
 
-// A question is considered saved ONLY if savedResponse is not empty AND matches current text
+// Check if current text matches what was saved in MongoDB
 function isQuestionSaved(q) {
   if (!q) return false
   return q.savedResponse !== '' && q.response.trim() === q.savedResponse
 }
 
-// Find the currently selected question object
 const activeQuestion = computed(() => {
   return questions.value.find((q) => q.id === activeId.value) || questions.value[0]
 })
 
-// Find the 1-based display number of the active question
 const activeNumber = computed(() => {
   const index = questions.value.findIndex((q) => q.id === activeQuestion.value?.id)
   return formatNum(index + 1)
 })
 
-// Count words in the current reflection
 const wordCount = computed(() => {
   if (!activeQuestion.value) return 0
   const text = activeQuestion.value.response.trim()
@@ -111,16 +89,17 @@ const wordCount = computed(() => {
   return text.split(/\s+/).length
 })
 
-// Count how many questions have a saved response
 const savedCount = computed(() => {
   return questions.value.filter((q) => q.savedResponse !== '').length
 })
 
-// Count how many community questions haven't been added yet (checked by sourceId)
+// Count how many community questions haven't been added yet
 const availableCount = computed(() => {
   let count = 0
   for (const cq of communityQuestions.value) {
-    const alreadyExists = questions.value.some((q) => q.sourceId === cq.id)
+    const alreadyExists = questions.value.some(
+      (q) => q.sourceId === cq.id || q.text.toLowerCase() === cq.text.toLowerCase()
+    )
     if (!alreadyExists) {
       count++
     }
@@ -133,61 +112,92 @@ function selectQuestion(id) {
   showSaveMessage.value = false
 }
 
-function clearResponse() {
+// Clear current reflection in MongoDB
+async function clearResponse() {
   if (!activeQuestion.value) return
-  if (confirm('Clear your current reflection?')) {
-    activeQuestion.value.response = ''
-    activeQuestion.value.savedResponse = ''
-    activeQuestion.value.savedAt = ''
-    showSaveMessage.value = false
+  if (!confirm('Clear your current reflection?')) return
+
+  try {
+    const res = await fetch('/api/interview/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questionId: activeQuestion.value.id,
+        response: ''
+      })
+    })
+
+    if (res.ok) {
+      activeQuestion.value.response = ''
+      activeQuestion.value.savedResponse = ''
+      activeQuestion.value.savedAt = ''
+      showSaveMessage.value = false
+    }
+  } catch (error) {
+    console.error('Error clearing response:', error)
   }
 }
 
-function saveResponse() {
+// Save current reflection to MongoDB
+async function saveResponse() {
   if (!activeQuestion.value) return
   const cleanText = activeQuestion.value.response.trim()
   if (cleanText === '') return
 
-  activeQuestion.value.response = cleanText
-  activeQuestion.value.savedResponse = cleanText
+  try {
+    const res = await fetch('/api/interview/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        questionId: activeQuestion.value.id,
+        response: cleanText
+      })
+    })
+    const data = await res.json()
 
-  const now = new Date()
-  activeQuestion.value.savedAt = now.toLocaleDateString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+    if (res.ok) {
+      activeQuestion.value.response = cleanText
+      activeQuestion.value.savedResponse = data.savedResponse
+      activeQuestion.value.savedAt = data.savedAt
 
-  showSaveMessage.value = true
-  setTimeout(() => {
-    showSaveMessage.value = false
-  }, 3000)
+      showSaveMessage.value = true
+      setTimeout(() => {
+        showSaveMessage.value = false
+      }, 3000)
+    }
+  } catch (error) {
+    console.error('Error saving response:', error)
+  }
 }
 
-// Add a question from the modal with a safe unique ID and sourceId
-function addQuestionToJournal(cq) {
-  let maxId = 0
-  for (const q of questions.value) {
-    if (typeof q.id === 'number' && q.id > maxId) {
-      maxId = q.id
+// Add a question from the modal into MongoDB
+async function addQuestionToJournal(cq) {
+  if (isAdding.value) return
+  isAdding.value = true
+
+  try {
+    const res = await fetch('/api/interview/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sourceId: cq.id,
+        category: cq.category,
+        company: cq.company,
+        text: cq.text,
+        tip: cq.tip
+      })
+    })
+    const data = await res.json()
+
+    if (res.ok && data.question) {
+      questions.value.push(data.question)
+      activeId.value = data.question.id
     }
+  } catch (error) {
+    console.error('Error adding question:', error)
+  } finally {
+    isAdding.value = false
   }
-  const newId = maxId + 1
-
-  questions.value.push({
-    id: newId,
-    sourceId: cq.id,
-    category: cq.category,
-    company: cq.company,
-    text: cq.text,
-    tip: cq.tip,
-    response: '',
-    savedResponse: '',
-    savedAt: ''
-  })
-
-  activeId.value = newId
 }
 </script>
 
@@ -196,9 +206,9 @@ function addQuestionToJournal(cq) {
     <!-- Top Header -->
     <div class="card rounded-3 p-3 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
       <div>
-        <h1 class="h5 mb-1">Gerald's Interview Journal</h1>
+        <h1 class="h5 mb-1">{{ userName }}'s Interview Journal</h1>
         <p class="small mb-0 text-secondary">
-          Hi Gerald - Let's turn your experiences into ready-made interview stories
+          Hi {{ userName }} - Let's turn your experiences into ready-made interview stories
         </p>
       </div>
       <div class="small fw-semibold text-secondary">
@@ -213,11 +223,11 @@ function addQuestionToJournal(cq) {
         <section class="card border-0 bg-body-secondary rounded-4 pt-4 overflow-hidden">
           <div class="px-3 px-md-4 pb-3">
             <div class="text-secondary fw-semibold small">
-              GovTech | Fullstack Intern
+              Interview Preparation
             </div>
             <h2 class="h6 fw-bold mt-2 mb-1">Practice Questions</h2>
             <div class="text-secondary small">
-              {{ questions.length }} {{ questions.length === 1 ? 'Question' : 'Questions' }} tailored to this role
+              {{ questions.length }} {{ questions.length === 1 ? 'Question' : 'Questions' }} in your journal
             </div>
           </div>
 
@@ -228,7 +238,7 @@ function addQuestionToJournal(cq) {
             </p>
           </div>
 
-          <!-- Question Items (numbered by index + 1) -->
+          <!-- Question Items -->
           <div v-else class="list-group list-group-flush">
             <button
               v-for="(q, index) in questions"
