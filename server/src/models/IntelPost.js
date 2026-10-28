@@ -5,6 +5,8 @@ import mongoose from 'mongoose';
 const intelPostSchema = new mongoose.Schema(
   {
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    type: {type: String, enum: ['Experience', 'Interview questions'], required: true},
+    title: {type: String, required: true},
     company: { type: String, required: true },
     role: { type: String, required: true },
     questions: [String],
