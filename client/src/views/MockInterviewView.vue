@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import CommunityQuestionsModal from '../components/CommunityQuestionsModal.vue'
 
+const isLoggedOut = ref(false)
 const userName = ref('Student')
 const questions = ref([])
 const communityQuestions = ref([])
@@ -15,8 +16,15 @@ const isAdding = ref(false)
 async function loadJournal() {
   try {
     const res = await fetch('/api/interview')
+
+    if (res.status === 401) {
+      isLoggedOut.value = true
+      return
+    }
+
     const data = await res.json()
     if (res.ok && data.questions) {
+      isLoggedOut.value = false
       userName.value = data.userName || 'Student'
       questions.value = data.questions
       if (questions.value.length > 0) {
@@ -127,6 +135,11 @@ async function clearResponse() {
       })
     })
 
+    if (res.status === 401) {
+      isLoggedOut.value = true
+      return
+    }
+
     if (res.ok) {
       activeQuestion.value.response = ''
       activeQuestion.value.savedResponse = ''
@@ -153,6 +166,12 @@ async function saveResponse() {
         response: cleanText
       })
     })
+
+    if (res.status === 401) {
+      isLoggedOut.value = true
+      return
+    }
+
     const data = await res.json()
 
     if (res.ok) {
@@ -187,6 +206,13 @@ async function addQuestionToJournal(cq) {
         tip: cq.tip
       })
     })
+
+    if (res.status === 401) {
+      isLoggedOut.value = true
+      showModal.value = false
+      return
+    }
+
     const data = await res.json()
 
     if (res.ok && data.question) {
@@ -199,191 +225,246 @@ async function addQuestionToJournal(cq) {
     isAdding.value = false
   }
 }
+
+// Remove a question from the user's journal in MongoDB
+async function deleteQuestion(questionId) {
+  if (!confirm('Remove this question from your journal?')) return
+
+  try {
+    const res = await fetch(`/api/interview/questions/${questionId}`, {
+      method: 'DELETE'
+    })
+
+    if (res.status === 401) {
+      isLoggedOut.value = true
+      return
+    }
+
+    if (res.ok) {
+      questions.value = questions.value.filter((q) => q.id !== questionId)
+      if (questions.value.length > 0) {
+        activeId.value = questions.value[0].id
+      } else {
+        activeId.value = null
+      }
+      showSaveMessage.value = false
+    }
+  } catch (error) {
+    console.error('Error deleting question:', error)
+  }
+}
 </script>
 
 <template>
   <main class="p-3 p-lg-4 text-start">
-    <!-- Top Header -->
-    <div class="card rounded-3 p-3 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+    <!-- Shown if user is not logged in -->
+    <div v-if="isLoggedOut" class="card rounded-4 p-5 text-center my-4 mx-auto" style="max-width: 520px;">
+      <i class="bi bi-lock fs-1 text-primary mb-2"></i>
+      <h2 class="h4 fw-semibold mb-2">Log in to access your Interview Journal</h2>
+      <p class="text-secondary small mb-4">
+        Sign in to practice common interview questions, save your STAR reflections, and track your preparation progress.
+      </p>
       <div>
-        <h1 class="h5 mb-1">{{ userName }}'s Interview Journal</h1>
-        <p class="small mb-0 text-secondary">
-          Hi {{ userName }} - Let's turn your experiences into ready-made interview stories
-        </p>
-      </div>
-      <div class="small fw-semibold text-secondary">
-        <i class="bi bi-journal-check me-1 text-primary"></i>
-        {{ savedCount }} / {{ questions.length }} Saved to Journal
+        <RouterLink to="/login" class="btn btn-inturn rounded-pill px-4 py-2 fw-semibold">
+          Go to Login
+        </RouterLink>
       </div>
     </div>
 
-    <div class="row g-4 px-lg-4">
-      <!-- Left Column: Questions List -->
-      <div class="col-12 col-lg-5">
-        <section class="card border-0 bg-body-secondary rounded-4 pt-4 overflow-hidden">
-          <div class="px-3 px-md-4 pb-3">
-            <div class="text-secondary fw-semibold small">
-              Interview Preparation
+    <!-- Shown when logged in -->
+    <div v-else>
+      <!-- Top Header -->
+      <div class="card rounded-3 p-3 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+        <div>
+          <h1 class="h5 mb-1">{{ userName }}'s Interview Journal</h1>
+          <p class="small mb-0 text-secondary">
+            Hi {{ userName }} - Let's turn your experiences into ready-made interview stories
+          </p>
+        </div>
+        <div class="small fw-semibold text-secondary">
+          <i class="bi bi-journal-check me-1 text-primary"></i>
+          {{ savedCount }} / {{ questions.length }} Saved to Journal
+        </div>
+      </div>
+
+      <div class="row g-4 px-lg-4">
+        <!-- Left Column: Questions List -->
+        <div class="col-12 col-lg-5">
+          <section class="card border-0 bg-body-secondary rounded-4 pt-4 overflow-hidden">
+            <div class="px-3 px-md-4 pb-3">
+              <div class="text-secondary fw-semibold small">
+                Interview Preparation
+              </div>
+              <h2 class="h6 fw-bold mt-2 mb-1">Practice Questions</h2>
+              <div class="text-secondary small">
+                {{ questions.length }} {{ questions.length === 1 ? 'Question' : 'Questions' }} in your journal
+              </div>
             </div>
-            <h2 class="h6 fw-bold mt-2 mb-1">Practice Questions</h2>
-            <div class="text-secondary small">
-              {{ questions.length }} {{ questions.length === 1 ? 'Question' : 'Questions' }} in your journal
+
+            <!-- Empty State if no questions in list -->
+            <div v-if="questions.length === 0" class="px-3 px-md-4 py-4 text-center border-top border-secondary-subtle">
+              <p class="text-secondary small mb-0">
+                No practice questions in your journal yet. Browse community questions below to get started!
+              </p>
             </div>
-          </div>
 
-          <!-- Empty State if no questions in list -->
-          <div v-if="questions.length === 0" class="px-3 px-md-4 py-4 text-center border-top border-secondary-subtle">
-            <p class="text-secondary small mb-0">
-              No practice questions in your journal yet. Browse community questions below to get started!
-            </p>
-          </div>
+            <!-- Question Items -->
+            <div v-else class="list-group list-group-flush">
+              <button
+                v-for="(q, index) in questions"
+                :key="q.id"
+                type="button"
+                class="list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 px-md-4 py-3 border-top border-secondary-subtle"
+                :class="q.id === activeId ? 'q-item-active' : 'bg-transparent'"
+                @click="selectQuestion(q.id)"
+              >
+                <span class="text-secondary">
+                  {{ formatNum(index + 1) }}
+                </span>
 
-          <!-- Question Items -->
-          <div v-else class="list-group list-group-flush">
-            <button
-              v-for="(q, index) in questions"
-              :key="q.id"
-              type="button"
-              class="list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 px-md-4 py-3 border-top border-secondary-subtle"
-              :class="q.id === activeId ? 'q-item-active' : 'bg-transparent'"
-              @click="selectQuestion(q.id)"
-            >
-              <span class="text-secondary">
-                {{ formatNum(index + 1) }}
-              </span>
-
-              <div class="flex-grow-1 min-w-0 text-break">
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                  <span class="text-primary fw-semibold small">{{ q.category }}</span>
-                  <span v-if="q.company" class="badge rounded-pill bg-primary-subtle text-primary">
-                    {{ q.company }}
-                  </span>
-                  <span v-if="isQuestionSaved(q)" class="badge rounded-pill bg-success-subtle text-success">
-                    <i class="bi bi-check-circle-fill me-1"></i>Saved
-                  </span>
-                  <span v-else-if="q.savedResponse !== ''" class="badge rounded-pill bg-warning-subtle text-warning-emphasis">
-                    Edited
-                  </span>
+                <div class="flex-grow-1 min-w-0 text-break">
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="text-primary fw-semibold small">{{ q.category }}</span>
+                    <span v-if="q.company" class="badge rounded-pill bg-primary-subtle text-primary">
+                      {{ q.company }}
+                    </span>
+                    <span v-if="isQuestionSaved(q)" class="badge rounded-pill bg-success-subtle text-success">
+                      <i class="bi bi-check-circle-fill me-1"></i>Saved
+                    </span>
+                    <span v-else-if="q.savedResponse !== ''" class="badge rounded-pill bg-warning-subtle text-warning-emphasis">
+                      Edited
+                    </span>
+                  </div>
+                  <div class="small text-dark mt-1">{{ q.text }}</div>
                 </div>
-                <div class="small text-dark mt-1">{{ q.text }}</div>
+
+                <i class="bi bi-chevron-right text-secondary"></i>
+              </button>
+            </div>
+
+            <!-- Bottom Button to Open Modal -->
+            <button
+              type="button"
+              class="btn browse-intel-bar w-100 d-flex justify-content-between align-items-center gap-2 px-3 px-md-4 py-3 border-top border-secondary-subtle rounded-0 text-start"
+              @click="showModal = true"
+            >
+              <span class="d-flex align-items-center gap-2 small fw-semibold text-dark">
+                <i class="bi bi-people text-secondary"></i>
+                <span>Browse questions from Interview Intel</span>
+              </span>
+              <span class="text-secondary small text-nowrap flex-shrink-0">
+                {{ availableCount }} available
+              </span>
+            </button>
+          </section>
+        </div>
+
+        <!-- Right Column: Response Editor -->
+        <div class="col-12 col-lg-7">
+          <!-- Empty State if no question is selected -->
+          <section
+            v-if="!activeQuestion"
+            class="card border-0 bg-body-secondary rounded-4 p-4 h-100 d-flex flex-column align-items-center justify-content-center text-center"
+          >
+            <i class="bi bi-journal-plus fs-1 text-secondary mb-2"></i>
+            <h2 class="h5 fw-bold mb-1">No question selected</h2>
+            <p class="text-secondary small mb-3">
+              Add questions from the Interview Intel community to start practicing your responses.
+            </p>
+            <button class="btn btn-inturn rounded-pill px-4 py-2 small fw-semibold" @click="showModal = true">
+              <i class="bi bi-people me-2"></i>Browse Community Questions
+            </button>
+          </section>
+
+          <!-- Active Question Editor -->
+          <section
+            v-else
+            class="card border-0 bg-body-secondary rounded-4 p-3 p-md-4 h-100 d-flex flex-column"
+          >
+            <div class="d-flex justify-content-between align-items-center small mb-2">
+              <span class="text-secondary fw-semibold">
+                Question {{ activeNumber }}
+              </span>
+              <div class="d-flex align-items-center gap-3">
+                <span class="fw-semibold text-primary">{{ activeQuestion.category }}</span>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm text-danger text-decoration-none p-0"
+                  title="Remove question from journal"
+                  @click="deleteQuestion(activeQuestion.id)"
+                >
+                  <i class="bi bi-trash me-1"></i>Remove
+                </button>
+              </div>
+            </div>
+
+            <h2 class="h5 fw-bold mb-3 text-break">{{ activeQuestion.text }}</h2>
+
+            <!-- Helpful Tips Box -->
+            <div class="inturn-bg text-white rounded-3 p-3 mb-3">
+              <div class="fw-semibold small">Helpful Tips</div>
+              <div class="small">{{ activeQuestion.tip }}</div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center small mb-2">
+              <div>
+                <label for="reflection-input" class="fw-semibold me-2 mb-0">Your Reflection</label>
+                <span v-if="isQuestionSaved(activeQuestion)" class="text-secondary">
+                  (Saved {{ activeQuestion.savedAt }})
+                </span>
+                <span v-else-if="activeQuestion.response.trim() !== ''" class="text-warning-emphasis">
+                  &bull; Unsaved changes
+                </span>
+              </div>
+              <span class="text-secondary">{{ wordCount }} {{ wordCount === 1 ? 'word' : 'words' }}</span>
+            </div>
+
+            <textarea
+              id="reflection-input"
+              v-model="activeQuestion.response"
+              maxlength="4000"
+              class="form-control border-0 rounded-4 p-3 flex-grow-1 reflection-box"
+              placeholder="Start writing your response here..."
+            ></textarea>
+
+            <!-- Save / Clear Buttons -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+              <div>
+                <span v-if="showSaveMessage" class="small fw-semibold text-success">
+                  <i class="bi bi-check-circle-fill me-1"></i>Saved to your Interview Journal!
+                </span>
               </div>
 
-              <i class="bi bi-chevron-right text-secondary"></i>
-            </button>
-          </div>
-
-          <!-- Bottom Button to Open Modal -->
-          <button
-            type="button"
-            class="btn browse-intel-bar w-100 d-flex justify-content-between align-items-center gap-2 px-3 px-md-4 py-3 border-top border-secondary-subtle rounded-0 text-start"
-            @click="showModal = true"
-          >
-            <span class="d-flex align-items-center gap-2 small fw-semibold text-dark">
-              <i class="bi bi-people text-secondary"></i>
-              <span>Browse questions from Interview Intel</span>
-            </span>
-            <span class="text-secondary small text-nowrap flex-shrink-0">
-              {{ availableCount }} available
-            </span>
-          </button>
-        </section>
+              <div class="d-flex align-items-center gap-3 ms-auto">
+                <button
+                  class="btn btn-link text-secondary text-decoration-none small p-0"
+                  :disabled="!activeQuestion.response.trim()"
+                  @click="clearResponse"
+                >
+                  Clear
+                </button>
+                <button
+                  class="btn btn-inturn rounded-pill px-3 py-2 small fw-semibold"
+                  :disabled="!activeQuestion.response.trim() || isQuestionSaved(activeQuestion)"
+                  @click="saveResponse"
+                >
+                  {{ isQuestionSaved(activeQuestion) ? 'Saved' : 'Save Response' }}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
 
-      <!-- Right Column: Response Editor -->
-      <div class="col-12 col-lg-7">
-        <!-- Empty State if no question is selected -->
-        <section
-          v-if="!activeQuestion"
-          class="card border-0 bg-body-secondary rounded-4 p-4 h-100 d-flex flex-column align-items-center justify-content-center text-center"
-        >
-          <i class="bi bi-journal-plus fs-1 text-secondary mb-2"></i>
-          <h2 class="h5 fw-bold mb-1">No question selected</h2>
-          <p class="text-secondary small mb-3">
-            Add questions from the Interview Intel community to start practicing your responses.
-          </p>
-          <button class="btn btn-inturn rounded-pill px-4 py-2 small fw-semibold" @click="showModal = true">
-            <i class="bi bi-people me-2"></i>Browse Community Questions
-          </button>
-        </section>
-
-        <!-- Active Question Editor -->
-        <section
-          v-else
-          class="card border-0 bg-body-secondary rounded-4 p-3 p-md-4 h-100 d-flex flex-column"
-        >
-          <div class="d-flex justify-content-between small mb-2">
-            <span class="text-secondary fw-semibold">
-              Question {{ activeNumber }}
-            </span>
-            <span class="fw-semibold text-primary">{{ activeQuestion.category }}</span>
-          </div>
-
-          <h2 class="h5 fw-bold mb-3 text-break">{{ activeQuestion.text }}</h2>
-
-          <!-- Helpful Tips Box -->
-          <div class="inturn-bg text-white rounded-3 p-3 mb-3">
-            <div class="fw-semibold small">Helpful Tips</div>
-            <div class="small">{{ activeQuestion.tip }}</div>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center small mb-2">
-            <div>
-              <label for="reflection-input" class="fw-semibold me-2 mb-0">Your Reflection</label>
-              <span v-if="isQuestionSaved(activeQuestion)" class="text-secondary">
-                (Saved {{ activeQuestion.savedAt }})
-              </span>
-              <span v-else-if="activeQuestion.response.trim() !== ''" class="text-warning-emphasis">
-                &bull; Unsaved changes
-              </span>
-            </div>
-            <span class="text-secondary">{{ wordCount }} {{ wordCount === 1 ? 'word' : 'words' }}</span>
-          </div>
-
-          <textarea
-            id="reflection-input"
-            v-model="activeQuestion.response"
-            maxlength="4000"
-            class="form-control border-0 rounded-4 p-3 flex-grow-1 reflection-box"
-            placeholder="Start writing your response here..."
-          ></textarea>
-
-          <!-- Save / Clear Buttons -->
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
-            <div>
-              <span v-if="showSaveMessage" class="small fw-semibold text-success">
-                <i class="bi bi-check-circle-fill me-1"></i>Saved to your Interview Journal!
-              </span>
-            </div>
-
-            <div class="d-flex align-items-center gap-3 ms-auto">
-              <button
-                class="btn btn-link text-secondary text-decoration-none small p-0"
-                :disabled="!activeQuestion.response.trim()"
-                @click="clearResponse"
-              >
-                Clear
-              </button>
-              <button
-                class="btn btn-inturn rounded-pill px-3 py-2 small fw-semibold"
-                :disabled="!activeQuestion.response.trim() || isQuestionSaved(activeQuestion)"
-                @click="saveResponse"
-              >
-                {{ isQuestionSaved(activeQuestion) ? 'Saved' : 'Save Response' }}
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
+      <!-- Community Questions Modal Component -->
+      <CommunityQuestionsModal
+        :show="showModal"
+        :community-questions="communityQuestions"
+        :existing-questions="questions"
+        @close="showModal = false"
+        @add-question="addQuestionToJournal"
+      />
     </div>
-
-    <!-- Community Questions Modal Component -->
-    <CommunityQuestionsModal
-      :show="showModal"
-      :community-questions="communityQuestions"
-      :existing-questions="questions"
-      @close="showModal = false"
-      @add-question="addQuestionToJournal"
-    />
   </main>
 </template>
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import IntelPost from '../models/IntelPost.js';
 import { isLoggedIn } from '../middleware/authMiddleware.js';
 
@@ -65,15 +66,17 @@ router.get('/', async (req, res) => {
     // Read current user ID if logged in
     const userId = req.session?.user?.id;
 
-    // Format posts for the frontend (author is NOT included so it stays anonymous)
+    // Format posts for the frontend (author ID is NEVER sent, only isOwner: true/false)
     const formattedPosts = [];
     for (const p of dbPosts) {
       const formattedDate = new Date(p.createdAt).toLocaleDateString('en-SG', {
+        timeZone: 'Asia/Singapore',
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       });
       const hasUpvoted = userId ? p.upvotedBy.includes(userId) : false;
+      const isOwner = Boolean(userId && p.author && p.author.toString() === userId.toString());
 
       formattedPosts.push({
         id: p._id,
@@ -85,6 +88,7 @@ router.get('/', async (req, res) => {
         experience: p.experience,
         upvotes: p.upvotes,
         upvoted: hasUpvoted,
+        isOwner: isOwner,
         date: formattedDate,
       });
     }
@@ -137,7 +141,7 @@ router.post('/', isLoggedIn, async (req, res) => {
     }
 
     const newPost = await IntelPost.create({
-      author: req.session.user.id, // Stored for moderation only, never returned in response
+      author: req.session.user.id, // Stored in DB only, never exposed in response
       type: type,
       company: company.trim(),
       role: role.trim(),
@@ -147,6 +151,7 @@ router.post('/', isLoggedIn, async (req, res) => {
     });
 
     const formattedDate = new Date(newPost.createdAt).toLocaleDateString('en-SG', {
+      timeZone: 'Asia/Singapore',
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -163,6 +168,7 @@ router.post('/', isLoggedIn, async (req, res) => {
         experience: newPost.experience,
         upvotes: newPost.upvotes,
         upvoted: false,
+        isOwner: true, // Current user just created this post
         date: formattedDate,
       },
     });
@@ -174,6 +180,10 @@ router.post('/', isLoggedIn, async (req, res) => {
 // 3. POST /api/intel/:id/upvote - Toggle upvote (Protected by isLoggedIn)
 router.post('/:id/upvote', isLoggedIn, async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid post ID.' });
+    }
+
     const post = await IntelPost.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ error: 'Post not found' });
@@ -195,6 +205,32 @@ router.post('/:id/upvote', isLoggedIn, async (req, res) => {
       upvotes: post.upvotes,
       upvoted: post.upvotedBy.includes(userId),
     });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// 4. DELETE /api/intel/:id - Delete a post (Only the author can delete their own post)
+router.delete('/:id', isLoggedIn, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid post ID.' });
+    }
+
+    const post = await IntelPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found.' });
+    }
+
+    const userId = req.session.user.id;
+
+    // Make sure the logged-in user is the author of this post
+    if (!post.author || post.author.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'You can only delete your own posts.' });
+    }
+
+    await post.deleteOne();
+    res.json({ message: 'Post deleted.' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

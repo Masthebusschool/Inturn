@@ -1,9 +1,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 
-// Posts list (starts empty and loads from MongoDB on mount)
+// Posts list and auth/notice states
 const posts = ref([])
+const isAuthenticated = ref(false)
+const loginNotice = ref('')
 const errorMessage = ref('')
+
+// Check if user is logged in using the auth route
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/me')
+    isAuthenticated.value = res.ok
+  } catch {
+    isAuthenticated.value = false
+  }
+}
 
 // Load posts from Express + MongoDB when the page opens
 async function loadPosts() {
@@ -19,6 +31,7 @@ async function loadPosts() {
 }
 
 onMounted(() => {
+  checkAuth()
   loadPosts()
 })
 
@@ -69,14 +82,20 @@ const filteredPosts = computed(() => {
 
 // Toggle upvote and save to MongoDB
 async function toggleUpvote(post) {
+  if (!isAuthenticated.value) {
+    loginNotice.value = 'Please log in first to upvote helpful posts.'
+    return
+  }
+
   try {
     const res = await fetch(`/api/intel/${post.id}/upvote`, {
       method: 'POST'
     })
     const data = await res.json()
 
-    if (!res.ok) {
-      alert(data.error || 'Please log in to upvote posts.')
+    if (res.status === 401 || !res.ok) {
+      isAuthenticated.value = false
+      loginNotice.value = data.error || 'Please log in first to upvote posts.'
       return
     }
 
@@ -84,6 +103,41 @@ async function toggleUpvote(post) {
     post.upvoted = data.upvoted
   } catch (error) {
     console.error('Error upvoting post:', error)
+  }
+}
+
+// Delete a post created by the current user
+async function deletePost(post) {
+  if (!confirm('Delete your post? This cannot be undone.')) return
+
+  try {
+    const res = await fetch(`/api/intel/${post.id}`, {
+      method: 'DELETE'
+    })
+    const data = await res.json()
+
+    if (res.status === 401) {
+      isAuthenticated.value = false
+      loginNotice.value = 'Please log in again to delete your post.'
+      return
+    }
+
+    if (!res.ok) {
+      loginNotice.value = data.error || 'Could not delete post.'
+      return
+    }
+
+    posts.value = posts.value.filter((p) => p.id !== post.id)
+
+    // If the deleted post was the last one for a selected filter option, reset filter
+    if (selectedCompany.value !== 'All' && !companyOptions.value.includes(selectedCompany.value)) {
+      selectedCompany.value = 'All'
+    }
+    if (selectedRole.value !== 'All' && !roleOptions.value.includes(selectedRole.value)) {
+      selectedRole.value = 'All'
+    }
+  } catch (error) {
+    console.error('Error deleting post:', error)
   }
 }
 
@@ -95,6 +149,15 @@ const formRole = ref('')
 const formTitle = ref('')
 const formBody = ref('')
 const isSubmitting = ref(false)
+
+function openShareForm() {
+  if (!isAuthenticated.value) {
+    loginNotice.value = 'Please log in first to share your interview experience.'
+    return
+  }
+  loginNotice.value = ''
+  showForm.value = true
+}
 
 // Check that all fields have real text (not just spaces)
 const canPublish = computed(() => {
@@ -153,6 +216,14 @@ async function publishPost() {
 
     const data = await res.json()
 
+    if (res.status === 401) {
+      isAuthenticated.value = false
+      showForm.value = false
+      loginNotice.value = 'Your session expired. Please log in again to publish your post.'
+      isSubmitting.value = false
+      return
+    }
+
     if (!res.ok) {
       errorMessage.value = data.error || 'Could not publish post.'
       isSubmitting.value = false
@@ -180,7 +251,7 @@ async function publishPost() {
   <div class="bg-body-tertiary min-vh-100 p-3 p-lg-4 text-start">
     <div class="container-xl px-0">
       <!-- Header -->
-      <header class="card rounded-4 p-3 p-sm-4 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+      <header class="card rounded-4 p-3 p-sm-4 mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
         <div>
           <div class="text-primary text-uppercase fw-bold small">
             Community knowledge
@@ -188,10 +259,22 @@ async function publishPost() {
           <h1 class="h3 fw-semibold mb-1">Interview Intel</h1>
           <p class="text-secondary small mb-0">Learn from real interview experiences shared by students.</p>
         </div>
-        <button class="btn btn-inturn rounded-3 fw-semibold px-3 py-2" @click="showForm = true">
+        <button class="btn btn-inturn rounded-3 fw-semibold px-3 py-2" @click="openShareForm">
           <i class="bi bi-plus-lg me-2"></i>Share your experience
         </button>
       </header>
+
+      <!-- Login Notice Banner (shown when logged-out user clicks Share or Upvote) -->
+      <div
+        v-if="loginNotice"
+        class="alert alert-warning rounded-4 d-flex justify-content-between align-items-center py-2 px-3 mb-3 small"
+      >
+        <span>
+          <i class="bi bi-info-circle me-2"></i>{{ loginNotice }}
+          <RouterLink to="/login" class="fw-semibold text-dark ms-1">Log in here</RouterLink>
+        </span>
+        <button type="button" class="btn-close btn-sm" @click="loginNotice = ''"></button>
+      </div>
 
       <!-- Share Form -->
       <section v-if="showForm" class="card rounded-4 p-3 p-sm-4 mb-3">
@@ -320,7 +403,7 @@ async function publishPost() {
           Be the first to share your interview experience or questions to help other students!
         </p>
         <div>
-          <button class="btn btn-inturn rounded-3 fw-semibold px-4 py-2" @click="showForm = true">
+          <button class="btn btn-inturn rounded-3 fw-semibold px-4 py-2" @click="openShareForm">
             <i class="bi bi-plus-lg me-2"></i>Share your experience
           </button>
         </div>
@@ -372,16 +455,31 @@ async function publishPost() {
                   <i class="bi bi-person-fill"></i>
                 </span>
                 <div>
-                  <div class="fw-semibold small">Anonymous student</div>
+                  <div class="fw-semibold small">
+                    Anonymous student
+                    <span v-if="p.isOwner" class="text-primary fw-normal">(You)</span>
+                  </div>
                   <div class="text-secondary small">{{ p.date }}</div>
                 </div>
               </div>
-              <span
-                class="badge rounded-pill px-3 py-2"
-                :class="p.type === 'Experience' ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'"
-              >
-                {{ p.type }}
-              </span>
+
+              <div class="d-flex align-items-center gap-2">
+                <span
+                  class="badge rounded-pill px-3 py-2"
+                  :class="p.type === 'Experience' ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary'"
+                >
+                  {{ p.type }}
+                </span>
+                <button
+                  v-if="p.isOwner"
+                  type="button"
+                  class="btn btn-link btn-sm text-danger text-decoration-none p-0 ms-1"
+                  title="Delete your post"
+                  @click="deletePost(p)"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </div>
 
             <div class="d-flex flex-wrap gap-2 my-2">
