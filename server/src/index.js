@@ -7,7 +7,7 @@ import { createSessionMiddleware } from './config/session.js';
 import authRouter from './routes/auth.js';
 import profileRouter from './routes/profile.js';
 import resumeRouter from './routes/resume.js';
-import jobsRouter from './routes/jobs.js';
+import jobsRouter, {prepareSnapshot,} from './routes/jobs.js';
 import skillgapRouter from './routes/skillgap.js';
 import interviewRouter from './routes/interview.js';
 import intelRouter from './routes/intel.js';
@@ -54,7 +54,11 @@ app.use('/api/applications', applicationsRouter);
 // JSON 404 for unknown /api routes (no '*' wildcard: Express 5 rejects it).
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
 
-app.listen(PORT, () => console.log(`[server] API listening on http://localhost:${PORT}`));
+app.listen(PORT, () => {console.log(`[server] API listening on http://localhost:${PORT}`);
+  prepareSnapshot().catch((error) => {
+    console.error("Could not prepare the jobs cache:", error.message);
+  });
+});
 
 // Not awaited: the HTTP server stays up whether or not Mongo connects.
 connectDB();

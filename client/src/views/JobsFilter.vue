@@ -86,15 +86,27 @@
       </p>
 
       <label for="skill-search" class="input-label">
-        Find a skill
+        Find or add a skill
       </label>
 
-      <input
-        id="skill-search"
-        v-model.trim="skillSearch"
-        type="search"
-        placeholder="Search Python, SQL, communication..."
-      />
+      <div class="skill-search-row">
+        <input
+          id="skill-search"
+          v-model.trim="skillSearch"
+          type="search"
+          placeholder="Search or add a skill, e.g. Python..."
+          @keydown.enter.prevent="addCustomSkill"
+        />
+
+        <button
+          class="add-skill-button"
+          type="button"
+          :disabled="!skillSearch.trim()"
+          @click="addCustomSkill"
+        >
+          Add skill
+        </button>
+      </div>
 
       <div class="options skill-options">
         <button
@@ -112,7 +124,7 @@
       </div>
 
       <p v-if="availableSkills.length === 0" class="empty-message">
-        No skills found.
+        No suggested skills found. Use Add skill to add your own.
       </p>
     </section>
 
@@ -230,36 +242,14 @@ const emit = defineEmits(["update:modelValue", "close"]);
 
 const skillSearch = ref("");
 
-// Region options from the current API page.
-const locations = computed(() => {
-  const values = [];
-
-  for (let i = 0; i < props.jobs.length; i++) {
-    const job = props.jobs[i];
-
-    const addressHidden =
-      job.metadata && job.metadata.isHideCompanyAddress;
-
-    if (!addressHidden && job.address && job.address.districts) {
-      for (let j = 0; j < job.address.districts.length; j++) {
-        const region = job.address.districts[j].region;
-
-        if (region && !values.includes(region)) {
-          values.push(region);
-        }
-      }
-    }
-  }
-
-  // Keep a selected region visible after changing API pages.
-  const selected = props.modelValue.location;
-
-  if (selected && !values.includes(selected)) {
-    values.push(selected);
-  }
-
-  return values.sort();
-});
+const locations = [
+  "Central",
+  "East",
+  "North",
+  "North-East",
+  "West",
+  "Islandwide",
+];
 
 // Category options from the current API page.
 const categories = computed(() => {
@@ -484,6 +474,32 @@ function resetFilters() {
     minSalary: "",
     maxSalary: "",
   });
+}
+
+function addCustomSkill() {
+  const skill = skillSearch.value.trim();
+
+  if (!skill) {
+    return;
+  }
+
+  const selectedSkills = [];
+  let alreadySelected = false;
+
+  for (const selected of props.modelValue.skills) {
+    selectedSkills.push(selected);
+
+    if (selected.toLowerCase() === skill.toLowerCase()) {
+      alreadySelected = true;
+    }
+  }
+
+  if (!alreadySelected) {
+    selectedSkills.push(skill);
+    updateFilter("skills", selectedSkills);
+  }
+
+  skillSearch.value = "";
 }
 </script>
 
@@ -731,6 +747,41 @@ input {
 }
 
 .show-results:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skill-search-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.skill-search-row input {
+  flex: 1;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+
+.add-skill-button {
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-skill-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.add-skill-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

@@ -66,7 +66,7 @@ function applyResume(r = {}) {
   nextTick(() => { loaded = true })
 }
 
-watch(form, () => { if (loaded) { dirty.value = true; saved.value = false } }, { deep: true })
+watch(form, () => {if (loaded) {dirty.value = true; saved.value = false; updateJobMatchingSkills();}}, { deep: true });
 
 onMounted(async () => {
   try {
@@ -308,6 +308,7 @@ function updateJobMatchingSkills() {
           <div class="card shadow-sm mb-4">
             <div class="card-body">
               <h2 class="h5 mb-3">Skills</h2>
+              <p>Be specific - Microsoft Excel instead of Excel</p>
               <input
                 class="form-control"
                 placeholder="Comma-separated, e.g. Python, SQL, Figma"

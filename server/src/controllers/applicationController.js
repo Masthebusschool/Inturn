@@ -13,6 +13,7 @@ import {
 import { toCard } from "../models/Application.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
 import * as User from "../models/User.js";
+import Application from "../models/Application.js";
 
 // Get All Apps By Uid
 export async function getApplications (req, res, next) {
@@ -186,4 +187,174 @@ export async function deleteSavedApplication (req, res, next) {
         console.log("Err at delete app controller: " + err);
         next(err);
     }
+}
+
+export async function getDiscoverySavedJobs(req, res, next) {
+  const uid = req.session?.user?.id;
+
+  if (!uid) {
+    return res.status(401).json({
+      error: "Please sign in to save jobs.",
+    });
+  }
+
+  try {
+    const applications = await Application.find({
+      user: uid,
+      mcfUuid: { $type: "string" },
+    }).select("_id mcfUuid status");
+
+    return res.json(
+      applications.map((application) => ({
+        applicationId: String(application._id),
+        jobId: application.mcfUuid,
+        status: application.status,
+      }))
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Create a Saved tracker card from a discovery job.
+export async function saveDiscoveryJob(req, res, next) {
+  const uid = req.session?.user?.id;
+
+  if (!uid) {
+    return res.status(401).json({
+      error: "Please sign in to save jobs.",
+    });
+  }
+
+  const job = req.body.job;
+
+  if (
+    !job ||
+    typeof job.uuid !== "string" ||
+    !/^[a-f0-9]{32}$/i.test(job.uuid) ||
+    typeof job.title !== "string" ||
+    !job.title.trim()
+  ) {
+    return res.status(400).json({
+      error: "Invalid job information.",
+    });
+  }
+
+  function savedResponse(application) {
+    return {
+      applicationId: String(application._id),
+      jobId: application.mcfUuid,
+      status: application.status,
+    };
+  }
+
+  try {
+    // Saving the same MCF job again should not create another card.
+    const existing = await Application.findOne({
+      user: uid,
+      mcfUuid: job.uuid,
+    });
+
+    if (existing) {
+      return res.json(savedResponse(existing));
+    }
+
+    const details = jobFromMcf(job);
+
+    if (!details.companyName) {
+      details.companyName = "Company undisclosed";
+    }
+
+    // Keep the existing title/company duplicate rule.
+    const duplicate = await findDuplicateApplication(
+      uid,
+      details.title,
+      details.companyName
+    );
+
+    if (duplicate) {
+      return res.status(409).json({
+        error:
+          "A job with this title and company is already on your tracker board.",
+      });
+    }
+
+    const application = await createApplication(uid, details);
+
+    return res.status(201).json(
+      savedResponse(application)
+    );
+  } catch (error) {
+    if (error.code === 11000) {
+      try {
+        const existing = await Application.findOne({
+          user: uid,
+          mcfUuid: job.uuid,
+        });
+
+        if (existing) {
+          return res.json(savedResponse(existing));
+        }
+      } catch (lookupError) {
+        return next(lookupError);
+      }
+
+      return res.status(409).json({
+        error: "This job is already on your tracker board.",
+      });
+    }
+
+    next(error);
+  }
+}
+
+export async function removeDiscoverySavedJob(req, res, next) {
+  const uid = req.session?.user?.id;
+
+  if (!uid) {
+    return res.status(401).json({
+      error: "Please sign in to manage saved jobs.",
+    });
+  }
+
+  if (!/^[a-f0-9]{32}$/i.test(req.params.jobId)) {
+    return res.status(400).json({
+      error: "Invalid job ID.",
+    });
+  }
+
+  try {
+    const removed = await Application.findOneAndDelete({
+      user: uid,
+      mcfUuid: req.params.jobId,
+      status: "Saved",
+    });
+
+    if (removed) {
+      return res.json({
+        removed: true,
+        jobId: req.params.jobId,
+      });
+    }
+
+    const existing = await Application.findOne({
+      user: uid,
+      mcfUuid: req.params.jobId,
+    }).select("status");
+
+    if (existing) {
+      return res.status(409).json({
+        error:
+          "This job has moved beyond Saved. Manage it from the tracker board.",
+        status: existing.status,
+      });
+    }
+
+    return res.json({
+      removed: true,
+      jobId: req.params.jobId,
+    });
+  } catch (error) {
+    next(error);
+  }
 }

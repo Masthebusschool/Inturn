@@ -13,8 +13,8 @@
     <JobsFilter
       v-else-if="showFilters"
       :model-value="filters"
-      :jobs="jobs"
-      :result-count="filteredJobs.length"
+      :jobs="filterOptionsJobs"
+      :result-count="total"
       @update:model-value="updateFilters"
       @close="showFilters = false"
     />
@@ -24,8 +24,7 @@
         <div>
           <h1 class="header-title">Job Discovery</h1>
           <p class="header-subtitle">
-            Live internship and job listings from public job boards, searchable by
-            keyword, role, and location.
+            Live internship and job listings from public job boards, sort and filter to your needs.
           </p>
         </div>
       </header>
@@ -93,7 +92,7 @@
           <div>
             <h2>Search Results</h2>
 
-            <p v-if="loading">Loading opportunities...</p>
+            <p v-if="loading">{{ loadingMessage }}</p>
 
             <p v-else-if="error">Results unavailable</p>
 
@@ -106,7 +105,7 @@
               Sort and filters apply to the results.
             </p>
 
-            <p v-else-if="!loading && !error && resumeSkills.length === 0"">
+            <p v-else-if="!loading && !error && resumeSkills.length === 0">
               Upload your resume to rank jobs by match.
             </p>
           </div>
@@ -130,7 +129,7 @@
 
         <div class="results-body">
           <div v-if="loading" class="message" role="status">
-            <p>Loading jobs. Please wait...</p>
+            <p>{{ loadingMessage }}</p>
           </div>
 
           <div v-else-if="error" class="message" role="alert">
@@ -147,7 +146,7 @@
           </div>
 
           <div v-else-if="filteredJobs.length === 0" class="message">
-            <h3>No matching jobs on this page</h3>
+            <h3>No matching jobs</h3>
             <p>
               Try another keyword, change your filters, or check the next page.
             </p>
@@ -189,10 +188,11 @@
                   class="save-button"
                   :class="{ saved: isSaved(job.uuid) }"
                   :aria-pressed="isSaved(job.uuid)"
+                  :disabled="!savedStateReady || isSaving(job.uuid)"
                   type="button"
                   @click="toggleSaved(job.uuid)"
                 >
-                  {{ isSaved(job.uuid) ? "Saved" : "Save" }}
+                  {{isSaving(job.uuid) ? "Updating..." : isSaved(job.uuid) ? "Saved" : "Save"}}
                 </button>
               </div>
 
@@ -330,747 +330,57 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import axios from "axios";
+
 import JobsFilter from "./JobsFilter.vue";
 import JobsSelect from "./JobsSelect.vue";
 
-const apiUrl = "/api/mcf/v2/jobs";
-const storageKey = "inturn-saved-job-ids";
-const jobsPerPage = 10;
+import { useJobsView } from "../helpers/useJobsView.js";
 
-const searchInput = ref("");
-const searchKeyword = ref("");
-const jobs = ref([]);
-const total = ref(0);
-const page = ref(0);
-const loading = ref(false);
-const error = ref("");
-
-const selectedJob = ref(null);
-
-import {
+const {
+  searchInput,
+  jobs,
+  filteredJobs,
+  filterOptionsJobs,
+  total,
+  totalPages,
+  page,
+  pageInput,
+  hasNextPage,
+  loading,
+  loadingMessage,
+  error,
+  updatedAt,
+  selectedJob,
+  showFilters,
+  filters,
+  sortBy,
   resumeSkills,
   matchingResumeName,
-} from "../stores/jobMatch.js";
-
-function selectJob(job) {
-  selectedJob.value = job;
-}
-
-const savedJobs = ref([]);
-const saveMessage = ref("");
-const showFilters = ref(false);
-
-const filters = ref({
-  location: "",
-  category: "",
-  skills: [],
-  minSalary: "",
-  maxSalary: "",
-});
-
-const sortBy = ref("skills");
-
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(total.value / jobsPerPage));
-});
-
-const activeFilters = computed(() => {
-  const tags = [];
-
-  if (filters.value.location !== "") {
-    tags.push({
-      key: "location",
-      type: "location",
-      label: filters.value.location,
-    });
-  }
-
-  if (filters.value.category !== "") {
-    tags.push({
-      key: "category",
-      type: "category",
-      label: filters.value.category,
-    });
-  }
-
-  for (let i = 0; i < filters.value.skills.length; i++) {
-    const skill = filters.value.skills[i];
-
-    tags.push({
-      key: "skill-" + skill,
-      type: "skill",
-      value: skill,
-      label: skill,
-    });
-  }
-
-  if (hasPayValue(filters.value.minSalary)) {
-  tags.push({
-    key: "minSalary",
-    type: "minSalary",
-    label: "Minimum S$" + filters.value.minSalary + "/month",
-  });
-}
-
-if (hasPayValue(filters.value.maxSalary)) {
-  tags.push({
-    key: "maxSalary",
-    type: "maxSalary",
-    label: "Maximum S$" + filters.value.maxSalary + "/month",
-  });
-}
-
-  return tags;
-});
-
-const activeFilterCount = computed(() => {
-  return activeFilters.value.length;
-});
-
-function removeSearchFilter(filter) {
-  if (filter.type === "skill") {
-    const index = filters.value.skills.indexOf(filter.value);
-
-    if (index !== -1) {
-      filters.value.skills.splice(index, 1);
-    }
-  } else {
-    filters.value[filter.type] = "";
-  }
-
-  restartFromFirstPage();
-}
-
-function clearSearchFilters() {
-  filters.value = {
-    location: "",
-    category: "",
-    skills: [],
-    minSalary: "",
-    maxSalary: "",
-  };
-
-  restartFromFirstPage();
-}
-
-const filteredJobs = computed(() => {
-  const results = [];
-
-  const minimumPay = hasPayValue(filters.value.minSalary)
-  ? Number(filters.value.minSalary)
-  : null;
-
-const maximumPay = hasPayValue(filters.value.maxSalary)
-  ? Number(filters.value.maxSalary)
-  : null;
-
-  // Invalid pay ranges produce no results.
-  if (
-    (minimumPay !== null &&
-      (!Number.isFinite(minimumPay) || minimumPay < 0)) ||
-    (maximumPay !== null &&
-      (!Number.isFinite(maximumPay) || maximumPay < 0)) ||
-    (minimumPay !== null &&
-      maximumPay !== null &&
-      minimumPay > maximumPay)
-  ) {
-    return results;
-  }
-
-  for (let i = 0; i < jobs.value.length; i++) {
-    const job = jobs.value[i];
-    let matches = true;
-
-    // Location
-    if (filters.value.location !== "") {
-      let locationMatches = false;
-
-      const hidden =
-        job.metadata && job.metadata.isHideCompanyAddress;
-
-      if (!hidden && job.address && job.address.districts) {
-        for (let j = 0; j < job.address.districts.length; j++) {
-          if (
-            job.address.districts[j].region ===
-            filters.value.location
-          ) {
-            locationMatches = true;
-          }
-        }
-      }
-
-      if (!locationMatches) {
-        matches = false;
-      }
-    }
-
-    // Category
-    if (filters.value.category !== "") {
-      let categoryMatches = false;
-
-      if (job.categories) {
-        for (let j = 0; j < job.categories.length; j++) {
-          if (
-            job.categories[j].category ===
-            filters.value.category
-          ) {
-            categoryMatches = true;
-          }
-        }
-      }
-
-      if (!categoryMatches) {
-        matches = false;
-      }
-    }
-
-    // Match at least one selected skill.
-    // No selected skills means no skill restriction.
-    if (
-      filters.value.skills.length > 0 &&
-      getSelectedSkillMatchCount(job) === 0
-    ) {
-      matches = false;
-    }
-
-    // Pay: advertised range must overlap the selected range.
-    if (minimumPay !== null || maximumPay !== null) {
-      const pay = getMonthlyPay(job);
-
-      if (!pay) {
-        matches = false;
-      } else {
-        if (
-          minimumPay !== null &&
-          pay.maximum < minimumPay
-        ) {
-          matches = false;
-        }
-
-        if (
-          maximumPay !== null &&
-          pay.minimum > maximumPay
-        ) {
-          matches = false;
-        }
-      }
-    }
-
-    if (matches) {
-      results.push(job);
-    }
-  }
-
-  // Sort this separate results array.
-  results.sort((first, second) => {
-    // Most selected skills matched first.
-    if (filters.value.skills.length > 0) {
-      const selectedSkillDifference =
-        getSelectedSkillMatchCount(second) -
-        getSelectedSkillMatchCount(first);
-
-      if (selectedSkillDifference !== 0) {
-        return selectedSkillDifference;
-      }
-    }
-    let comparison = 0;
-
-    if (sortBy.value === "skills") {
-      const firstScore = getMatchPercentage(first) ?? -1;
-      const secondScore = getMatchPercentage(second) ?? -1;
-
-      comparison = secondScore - firstScore;
-
-      if (comparison === 0) {
-        comparison =
-          getMatchCount(second) - getMatchCount(first);
-      }
-    }
-
-    if (
-      sortBy.value === "closing-earliest" ||
-      sortBy.value === "closing-latest"
-    ) {
-      const firstDate = getClosingTime(first);
-      const secondDate = getClosingTime(second);
-
-      // Missing dates always appear last.
-      if (firstDate === null && secondDate !== null) {
-        return 1;
-      }
-
-      if (firstDate !== null && secondDate === null) {
-        return -1;
-      }
-
-  if (firstDate !== null && secondDate !== null) {
-    if (sortBy.value === "closing-earliest") {
-      comparison = firstDate - secondDate;
-    } else {
-      comparison = secondDate - firstDate;
-    }
-  }
-}
-
-    if (
-      sortBy.value === "pay-highest" ||
-      sortBy.value === "pay-lowest"
-    ) {
-      const firstPay = getMonthlyPay(first);
-      const secondPay = getMonthlyPay(second);
-
-      // Unknown or non-monthly pay goes last.
-      if (!firstPay && secondPay) return 1;
-      if (firstPay && !secondPay) return -1;
-
-      if (firstPay && secondPay) {
-        // Both directions compare the advertised maximum.
-        comparison = firstPay.maximum - secondPay.maximum;
-
-        if (sortBy.value === "pay-highest") {
-          comparison = -comparison;
-        }
-      }
-    }
-
-    if (
-      sortBy.value === "company-az" ||
-      sortBy.value === "company-za"
-    ) {
-      const firstName = getCompanySortName(first);
-      const secondName = getCompanySortName(second);
-
-      if (firstName === null && secondName !== null) return 1;
-      if (firstName !== null && secondName === null) return -1;
-
-      if (firstName !== null && secondName !== null) {
-        comparison = firstName.localeCompare(secondName);
-
-        if (sortBy.value === "company-za") {
-          comparison = -comparison;
-        }
-      }
-    }
-
-    // Skill percentage breaks ties for the other sort options.
-    if (comparison === 0) {
-      comparison =
-        (getMatchPercentage(second) ?? -1) -
-        (getMatchPercentage(first) ?? -1);
-    }
-
-    return comparison;
-  });
-
-  return results;
-});
-
-function updateFilters(newFilters) {
-  filters.value = {
-    location: newFilters.location ?? "",
-    category: newFilters.category ?? "",
-    skills: newFilters.skills ?? [],
-    minSalary: newFilters.minSalary ?? "",
-    maxSalary: newFilters.maxSalary ?? "",
-  };
-
-  restartFromFirstPage();
-}
-
-async function loadJobs() {
-  if (loading.value) {
-    return;
-  }
-
-  loading.value = true;
-  error.value = "";
-
-  try {
-    const response = await axios.get(apiUrl, {
-      params: {
-        search: searchKeyword.value,
-        page: page.value,
-        limit: jobsPerPage,
-        sortBy: "new_posting_date",
-      },
-    });
-
-    if (
-      !response.data ||
-      !Array.isArray(response.data.results) ||
-      typeof response.data.total !== "number"
-    ) {
-      throw new Error("Unexpected API response");
-    }
-
-    jobs.value = response.data.results;
-    total.value = response.data.total;
-    console.table(
-      jobs.value.map((job) => ({
-        title: job.title,
-        closingDate: job.metadata?.expiryDate,
-        parsedDate: getClosingTime(job),
-      }))
-    );
-  } catch (err) {
-    console.error(err);
-
-    jobs.value = [];
-    total.value = 0;
-    error.value = "Jobs could not be loaded. Please try again.";
-  }
-
-  loading.value = false;
-}
-
-function searchJobs() {
-  if (loading.value) {
-    return;
-  }
-
-  searchKeyword.value = searchInput.value;
-  page.value = 0;
-  loadJobs();
-}
-
-function changePage(newPage) {
-  if (
-    loading.value ||
-    newPage < 0 ||
-    newPage >= totalPages.value
-  ) {
-    return;
-  }
-
-  page.value = newPage;
-  loadJobs();
-}
-
-function getCompany(job) {
-  if (job.metadata && job.metadata.isHideEmployerName) {
-    return "Company undisclosed";
-  }
-
-  if (job.postedCompany && job.postedCompany.name) {
-    return job.postedCompany.name;
-  }
-
-  return "Company not specified";
-}
-
-function getLocation(job) {
-  if (job.metadata && job.metadata.isHideCompanyAddress) {
-    return "Location not disclosed";
-  }
-
-  if (!job.address) {
-    return "Location not specified";
-  }
-
-  if (job.address.isOverseas) {
-    if (typeof job.address.overseasCountry === "string") {
-      return job.address.overseasCountry;
-    }
-
-    return "Overseas";
-  }
-
-  if (job.address.street) {
-    if (job.address.block) {
-      return job.address.block + " " + job.address.street;
-    }
-
-    return job.address.street;
-  }
-
-  if (job.address.districts && job.address.districts.length > 0) {
-    return job.address.districts[0].location;
-  }
-
-  return "Singapore";
-}
-
-function getEmployment(job) {
-  if (!job.employmentTypes || job.employmentTypes.length === 0) {
-    return "Employment type not specified";
-  }
-
-  let employment = "";
-
-  for (let i = 0; i < job.employmentTypes.length; i++) {
-    if (i > 0) {
-      employment += " / ";
-    }
-
-    employment += job.employmentTypes[i].employmentType;
-  }
-
-  return employment;
-}
-
-function getSalary(job) {
-  if (job.metadata && job.metadata.isHideSalary) {
-    return "Salary not disclosed";
-  }
-
-  if (!job.salary) {
-    return "Salary not disclosed";
-  }
-
-  const minimum = job.salary.minimum;
-  const maximum = job.salary.maximum;
-  let salary = "";
-
-  if (minimum > 0 && maximum > 0) {
-    if (minimum === maximum) {
-      salary = "S$" + minimum;
-    } else {
-      salary = "S$" + minimum + " – S$" + maximum;
-    }
-  } else if (minimum > 0) {
-    salary = "From S$" + minimum;
-  } else if (maximum > 0) {
-    salary = "Up to S$" + maximum;
-  } else {
-    return "Salary not disclosed";
-  }
-
-  if (job.salary.type && job.salary.type.salaryType) {
-    salary += " / " + job.salary.type.salaryType;
-  }
-
-  return salary;
-}
-
-function getExperience(job) {
-  const years = job.minimumYearsExperience;
-
-  if (years === null || years === undefined || years === "") {
-    return "Experience not specified";
-  }
-
-  if (years === 0) {
-    return "No minimum experience";
-  }
-
-  if (years === 1) {
-    return "1 year experience";
-  }
-
-  return years + " years experience";
-}
-
-function getJobSkillNames(job) {
-  const names = [];
-  const source = job.skills || [];
-
-  for (let i = 0; i < source.length; i++) {
-    if (typeof source[i].skill === "string") {
-      const name = source[i].skill.trim().toLowerCase();
-
-      if (name !== "" && !names.includes(name)) {
-        names.push(name);
-      }
-    }
-  }
-
-  return names;
-}
-
-function getMatchCount(job) {
-  const jobSkills = getJobSkillNames(job);
-  const matchedSkills = [];
-
-  for (let i = 0; i < jobSkills.length; i++) {
-    for (let j = 0; j < resumeSkills.value.length; j++) {
-      const resumeSkill = resumeSkills.value[j];
-
-      if (
-        typeof resumeSkill === "string" &&
-        resumeSkill.trim().toLowerCase() === jobSkills[i] &&
-        !matchedSkills.includes(jobSkills[i])
-      ) {
-        matchedSkills.push(jobSkills[i]);
-      }
-    }
-  }
-
-  return matchedSkills.length;
-}
-
-function getMatchPercentage(job) {
-  const totalSkills = getJobSkillNames(job).length;
-
-  if (totalSkills === 0 || resumeSkills.value.length === 0) {
-    return null;
-  }
-
-  return Math.round(
-    (getMatchCount(job) / totalSkills) * 100
-  );
-}
-
-// Only compare disclosed monthly salaries.
-function getMonthlyPay(job) {
-  if (job.metadata && job.metadata.isHideSalary) {
-    return null;
-  }
-
-  if (
-    !job.salary ||
-    !job.salary.type ||
-    job.salary.type.salaryType !== "Monthly"
-  ) {
-    return null;
-  }
-
-  const minimum = Number(job.salary.minimum);
-  const maximum = Number(job.salary.maximum);
-
-  if (minimum <= 0 || maximum <= 0 || maximum < minimum) {
-    return null;
-  }
-
-  return {
-    minimum: minimum,
-    maximum: maximum,
-  };
-}
-
-function hasPayValue(value) {
-  return (
-    value !== undefined &&
-    value !== null &&
-    String(value).trim() !== ""
-  );
-}
-
-function getClosingTime(job) {
-  const value = job.metadata?.expiryDate;
-
-  if (typeof value !== "string" || value.trim() === "") {
-    return null;
-  }
-
-  const time = Date.parse(value);
-
-  return Number.isNaN(time) ? null : time;
-}
-
-function getCompanySortName(job) {
-  if (job.metadata && job.metadata.isHideEmployerName) {
-    return null;
-  }
-
-  if (!job.postedCompany || !job.postedCompany.name) {
-    return null;
-  }
-
-  return job.postedCompany.name.toLowerCase();
-}
-
-function isSaved(jobId) {
-  return savedJobs.value.includes(jobId);
-}
-
-function toggleSaved(jobId) {
-  const index = savedJobs.value.indexOf(jobId);
-
-  if (index === -1) {
-    savedJobs.value.push(jobId);
-    saveMessage.value = "Job saved.";
-  } else {
-    savedJobs.value.splice(index, 1);
-    saveMessage.value = "Job removed from saved jobs.";
-  }
-
-  try {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify(savedJobs.value)
-    );
-  } catch (err) {
-    console.error(err);
-    saveMessage.value =
-      "Your selection changed, but could not be stored in this browser.";
-  }
-}
-
-onMounted(() => {
-  try {
-    const storedJobs = localStorage.getItem(storageKey);
-
-    if (storedJobs) {
-      const parsedJobs = JSON.parse(storedJobs);
-
-      if (Array.isArray(parsedJobs)) {
-        savedJobs.value = parsedJobs;
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    savedJobs.value = [];
-  }
-
-  loadJobs();
-});
-
-const pageInput = ref("");
-
-function goToPage() {
-  const selectedPage = Number(pageInput.value);
-
-  if (
-    !Number.isInteger(selectedPage) ||
-    selectedPage < 1 ||
-    selectedPage > totalPages.value
-  ) {
-    return;
-  }
-
-  changePage(selectedPage - 1);
-  pageInput.value = "";
-}
-
-function restartFromFirstPage() {
-  const previousPage = page.value;
-
-  page.value = 0;
-  pageInput.value = "";
-
-  if (previousPage !== 0) {
-    loadJobs();
-  }
-}
-
-function getSelectedSkillMatchCount(job) {
-  const jobSkills = getJobSkillNames(job);
-  const matchedSkills = [];
-
-  for (let i = 0; i < filters.value.skills.length; i++) {
-    const selectedSkill = filters.value.skills[i]
-      .trim()
-      .toLowerCase();
-
-    if (
-      jobSkills.includes(selectedSkill) &&
-      !matchedSkills.includes(selectedSkill)
-    ) {
-      matchedSkills.push(selectedSkill);
-    }
-  }
-
-  return matchedSkills.length;
-}
-
-const hasNextPage = computed(() => {
-  return (
-    jobs.value.length === jobsPerPage &&
-    page.value + 1 < totalPages.value
-  );
-});
+  activeFilters,
+  activeFilterCount,
+  saveMessage,
+  savedStateReady,
+  loadJobs,
+  updateFilters,
+  removeSearchFilter,
+  clearSearchFilters,
+  searchJobs,
+  changePage,
+  goToPage,
+  selectJob,
+  getCompany,
+  getLocation,
+  getEmployment,
+  getSalary,
+  getExperience,
+  getJobSkillNames,
+  getMatchCount,
+  getMatchPercentage,
+  getSelectedSkillMatchCount,
+  isSaved,
+  toggleSaved,
+  isSaving,
+} = useJobsView();
 </script>
 
 <style scoped>

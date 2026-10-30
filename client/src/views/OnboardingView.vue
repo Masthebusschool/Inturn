@@ -197,7 +197,7 @@ async function finish(skipIndustries = false) {
       <div v-else-if="currentStep === 'skills'" class="mb-3">
         <label for="onboarding-skills" class="form-label">Your skills <span class="required">*</span></label>
         <p class="form-text mt-0">
-          Add at least one. Type a skill and press Enter, or pick from the suggestions.
+          Add at least one. Type a skill and press Enter, or pick from the suggestions. Be specific - Microsoft Excel instead of Excel
           <template v-if="matchedField">Suggestions are based on {{ matchedField.name }}.</template>
         </p>
         <TagInput
