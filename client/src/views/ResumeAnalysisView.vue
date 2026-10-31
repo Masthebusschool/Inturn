@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { reviewResume } from '../api/resume.js'
+import { setMatchingResume } from "../stores/jobMatch.js";
 
 // The resume to analyze comes from My Resumes: /resumes/:id/analysis
 const props = defineProps({ id: { type: String, required: true } })
@@ -55,6 +56,7 @@ async function runAnalysis() {
     const data = await reviewResume(props.id)
     resume.value = data.resume
     review.value = data.review
+    setMatchingResume(resume.value.fileName, data.skills);
   } catch (e) {
     errors.value = e.errors ?? [e.message]
   } finally {

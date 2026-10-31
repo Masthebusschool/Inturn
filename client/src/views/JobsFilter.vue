@@ -26,7 +26,6 @@
     <div class="active-summary">
       <div class="summary-counts">
         <strong>{{ activeFilters.length }} active filters</strong>
-        <span>{{ resultCount }} matches on this page</span>
       </div>
 
       <div v-if="activeFilters.length > 0" class="filter-tags">
@@ -83,19 +82,31 @@
       <h3>Skills</h3>
 
       <p class="section-description">
-        Jobs must include every skill you select.
+        Jobs will include at least one selected skill. Ranked from most to least number of skills selected
       </p>
 
       <label for="skill-search" class="input-label">
-        Find a skill
+        Find or add a skill
       </label>
 
-      <input
-        id="skill-search"
-        v-model.trim="skillSearch"
-        type="search"
-        placeholder="Search Python, SQL, communication..."
-      />
+      <div class="skill-search-row">
+        <input
+          id="skill-search"
+          v-model.trim="skillSearch"
+          type="search"
+          placeholder="Search or add a skill, e.g. Python..."
+          @keydown.enter.prevent="addCustomSkill"
+        />
+
+        <button
+          class="add-skill-button"
+          type="button"
+          :disabled="!skillSearch.trim()"
+          @click="addCustomSkill"
+        >
+          Add skill
+        </button>
+      </div>
 
       <div class="options skill-options">
         <button
@@ -113,7 +124,7 @@
       </div>
 
       <p v-if="availableSkills.length === 0" class="empty-message">
-        No skills found.
+        No suggested skills found. Use Add skill to add your own.
       </p>
     </section>
 
@@ -151,15 +162,63 @@
       </div>
     </section>
 
+    <!-- Pay range -->
+    <section class="filter-section">
+      <h3>Monthly Pay Range</h3>
+
+      <p class="section-description">
+        Enter amounts in SGD. Leave either field blank for no limit.
+        Jobs whose advertised monthly pay overlaps your range are included.
+      </p>
+
+      <label for="minimum-pay" class="input-label">
+        Minimum monthly pay
+      </label>
+
+      <input
+        id="minimum-pay"
+        type="number"
+        min="0"
+        step="any"
+        placeholder="For example, 2000"
+        :value="modelValue.minSalary ?? ''"
+        @input="changePay('minSalary', $event.target.value)"
+      />
+
+      <label for="maximum-pay" class="input-label">
+        Maximum monthly pay
+      </label>
+
+      <input
+        id="maximum-pay"
+        type="number"
+        min="0"
+        step="any"
+        placeholder="For example, 5000"
+        :value="modelValue.maxSalary ?? ''"
+        @input="changePay('maxSalary', $event.target.value)"
+      />
+
+      <p class="section-description">
+        Hidden, unavailable and non-monthly salaries are excluded when a pay
+        filter is selected.
+      </p>
+
+      <p v-if="payRangeInvalid" class="pay-error" role="alert">
+        Enter valid non-negative amounts. Minimum pay cannot exceed maximum pay.
+      </p>
+    </section>
+
     <footer class="filter-footer">
       <p>Search results are reflected from the filters chosen.</p>
 
       <button
         class="show-results"
         type="button"
+        :disabled="payRangeInvalid"
         @click="emit('close')"
       >
-        Show {{ resultCount }} Results
+        Show All Results
       </button>
     </footer>
   </section>
@@ -177,46 +236,20 @@ const props = defineProps({
     type: Array,
     required: true,
   },
-  resultCount: {
-    type: Number,
-    required: true,
-  },
 });
 
 const emit = defineEmits(["update:modelValue", "close"]);
 
 const skillSearch = ref("");
 
-// Region options from the current API page.
-const locations = computed(() => {
-  const values = [];
-
-  for (let i = 0; i < props.jobs.length; i++) {
-    const job = props.jobs[i];
-
-    const addressHidden =
-      job.metadata && job.metadata.isHideCompanyAddress;
-
-    if (!addressHidden && job.address && job.address.districts) {
-      for (let j = 0; j < job.address.districts.length; j++) {
-        const region = job.address.districts[j].region;
-
-        if (region && !values.includes(region)) {
-          values.push(region);
-        }
-      }
-    }
-  }
-
-  // Keep a selected region visible after changing API pages.
-  const selected = props.modelValue.location;
-
-  if (selected && !values.includes(selected)) {
-    values.push(selected);
-  }
-
-  return values.sort();
-});
+const locations = [
+  "Central",
+  "East",
+  "North",
+  "North-East",
+  "West",
+  "Islandwide",
+];
 
 // Category options from the current API page.
 const categories = computed(() => {
@@ -285,10 +318,46 @@ const availableSkills = computed(() => {
 });
 
 // Tags for the selected filters.
+function hasPayValue(value) {
+  return (
+    value !== undefined &&
+    value !== null &&
+    String(value).trim() !== ""
+  );
+}
+
+const payRangeInvalid = computed(() => {
+  const minimum = props.modelValue.minSalary;
+  const maximum = props.modelValue.maxSalary;
+
+  if (hasPayValue(minimum)) {
+    const amount = Number(minimum);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      return true;
+    }
+  }
+
+  if (hasPayValue(maximum)) {
+    const amount = Number(maximum);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      return true;
+    }
+  }
+
+  return (
+    hasPayValue(minimum) &&
+    hasPayValue(maximum) &&
+    Number(minimum) > Number(maximum)
+  );
+});
+
+// Tags appear only for selected filters.
 const activeFilters = computed(() => {
   const tags = [];
 
-  if (props.modelValue.location !== "") {
+  if (props.modelValue.location) {
     tags.push({
       key: "location",
       type: "location",
@@ -296,7 +365,7 @@ const activeFilters = computed(() => {
     });
   }
 
-  if (props.modelValue.category !== "") {
+  if (props.modelValue.category) {
     tags.push({
       key: "category",
       type: "category",
@@ -314,41 +383,60 @@ const activeFilters = computed(() => {
     });
   }
 
+  if (hasPayValue(props.modelValue.minSalary)) {
+    tags.push({
+      key: "minSalary",
+      type: "minSalary",
+      label: "Minimum S$" + props.modelValue.minSalary + "/month",
+    });
+  }
+
+  if (hasPayValue(props.modelValue.maxSalary)) {
+    tags.push({
+      key: "maxSalary",
+      type: "maxSalary",
+      label: "Maximum S$" + props.modelValue.maxSalary + "/month",
+    });
+  }
+
   return tags;
 });
 
+// Preserve all filter fields whenever one field changes.
+function updateFilter(field, value) {
+  const updatedFilters = {
+    location: props.modelValue.location ?? "",
+    category: props.modelValue.category ?? "",
+    skills: props.modelValue.skills ?? [],
+    minSalary: props.modelValue.minSalary ?? "",
+    maxSalary: props.modelValue.maxSalary ?? "",
+  };
+
+  updatedFilters[field] = value;
+
+  emit("update:modelValue", updatedFilters);
+}
+
 function changeLocation(location) {
-  let selectedLocation = location;
-
   if (props.modelValue.location === location) {
-    selectedLocation = "";
+    updateFilter("location", "");
+  } else {
+    updateFilter("location", location);
   }
-
-  emit("update:modelValue", {
-    location: selectedLocation,
-    category: props.modelValue.category,
-    skills: props.modelValue.skills,
-  });
 }
 
 function changeCategory(category) {
-  let selectedCategory = category;
-
   if (props.modelValue.category === category) {
-    selectedCategory = "";
+    updateFilter("category", "");
+  } else {
+    updateFilter("category", category);
   }
-
-  emit("update:modelValue", {
-    location: props.modelValue.location,
-    category: selectedCategory,
-    skills: props.modelValue.skills,
-  });
 }
 
 function toggleSkill(skill) {
   const selectedSkills = [];
 
-  // Copy the skills instead of changing props directly.
+  // Copy the array instead of changing props.
   for (let i = 0; i < props.modelValue.skills.length; i++) {
     selectedSkills.push(props.modelValue.skills[i]);
   }
@@ -361,20 +449,18 @@ function toggleSkill(skill) {
     selectedSkills.splice(index, 1);
   }
 
-  emit("update:modelValue", {
-    location: props.modelValue.location,
-    category: props.modelValue.category,
-    skills: selectedSkills,
-  });
+  updateFilter("skills", selectedSkills);
+}
+
+function changePay(field, value) {
+  updateFilter(field, value);
 }
 
 function removeFilter(filter) {
-  if (filter.type === "location") {
-    changeLocation("");
-  } else if (filter.type === "category") {
-    changeCategory("");
-  } else {
+  if (filter.type === "skill") {
     toggleSkill(filter.label);
+  } else {
+    updateFilter(filter.type, "");
   }
 }
 
@@ -385,7 +471,35 @@ function resetFilters() {
     location: "",
     category: "",
     skills: [],
+    minSalary: "",
+    maxSalary: "",
   });
+}
+
+function addCustomSkill() {
+  const skill = skillSearch.value.trim();
+
+  if (!skill) {
+    return;
+  }
+
+  const selectedSkills = [];
+  let alreadySelected = false;
+
+  for (const selected of props.modelValue.skills) {
+    selectedSkills.push(selected);
+
+    if (selected.toLowerCase() === skill.toLowerCase()) {
+      alreadySelected = true;
+    }
+  }
+
+  if (!alreadySelected) {
+    selectedSkills.push(skill);
+    updateFilter("skills", selectedSkills);
+  }
+
+  skillSearch.value = "";
 }
 </script>
 
@@ -623,5 +737,52 @@ input {
 
 .show-results:hover {
   background: #1d4ed8;
+}
+
+.pay-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.show-results:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.skill-search-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.skill-search-row input {
+  flex: 1;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+
+.add-skill-button {
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-skill-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.add-skill-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

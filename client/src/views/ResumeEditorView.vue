@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api } from '../lib/api.js'
 import ResumePreview from '../components/resumes/ResumePreview.vue'
 import ConfirmButton from '../components/common/ConfirmButton.vue'
+import { setMatchingResume } from "../stores/jobMatch.js";
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -60,11 +61,12 @@ function applyResume(r = {}) {
   form.experience = (r.experience || []).map(expToForm)
   form.projects = (r.projects || []).map(projToForm)
   form.education = (r.education || []).map(eduToForm)
+  updateJobMatchingSkills();
   dirty.value = false
   nextTick(() => { loaded = true })
 }
 
-watch(form, () => { if (loaded) { dirty.value = true; saved.value = false } }, { deep: true })
+watch(form, () => {if (loaded) {dirty.value = true; saved.value = false; updateJobMatchingSkills();}}, { deep: true });
 
 onMounted(async () => {
   try {
@@ -185,6 +187,36 @@ async function onFile(e) {
     parsing.value = false
   }
 }
+
+function updateJobMatchingSkills() {
+  const resume = payload();
+  const skills = [];
+
+  // Main resume skills
+  for (let i = 0; i < resume.skills.length; i++) {
+    skills.push(resume.skills[i]);
+  }
+
+  // Experience skills
+  for (let i = 0; i < resume.experience.length; i++) {
+    const experienceSkills = resume.experience[i].skills || [];
+
+    for (let j = 0; j < experienceSkills.length; j++) {
+      skills.push(experienceSkills[j]);
+    }
+  }
+
+  // Project skills
+  for (let i = 0; i < resume.projects.length; i++) {
+    const projectSkills = resume.projects[i].skills || [];
+
+    for (let j = 0; j < projectSkills.length; j++) {
+      skills.push(projectSkills[j]);
+    }
+  }
+
+  setMatchingResume(resume.name, skills);
+}
 </script>
 
 <template>
@@ -276,6 +308,7 @@ async function onFile(e) {
           <div class="card shadow-sm mb-4">
             <div class="card-body">
               <h2 class="h5 mb-3">Skills</h2>
+              <p>Be specific - Microsoft Excel instead of Excel</p>
               <input
                 class="form-control"
                 placeholder="Comma-separated, e.g. Python, SQL, Figma"

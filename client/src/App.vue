@@ -3,11 +3,12 @@ import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/layout/AppSidebar.vue'
 import { authStore } from './stores/auth.js'
+import { restoreMatchingResume } from "./stores/jobMatch.js";
 
 const route = useRoute()
 
 // Find out who is logged in once, so the sidebar can show Log in / Log out.
-onMounted(() => authStore.fetchMe())
+onMounted(async() => {await authStore.fetchMe(); await restoreMatchingResume()})
 </script>
 
 <template>

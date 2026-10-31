@@ -3,6 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { isValidEmail } from '../utils/validators.js'
+import { restoreMatchingResume, clearMatchingResume } from "../stores/jobMatch.js";
 
 const router = useRouter()
 
@@ -30,6 +31,8 @@ async function handleLogin() {
   try {
     const user = await authStore.login({ ...form, email: form.email.trim() })
     form.password = ''
+    clearMatchingResume()
+    await restoreMatchingResume()
     // Education level is required in onboarding, so no education level means onboarding is not done yet
     router.push(user.educationLevel ? '/jobs' : '/onboarding')
   } catch (err) {
@@ -39,6 +42,7 @@ async function handleLogin() {
 
 async function handleLogout() {
   await authStore.logout()
+  clearMatchingResume()
   form.password = ''
 }
 
