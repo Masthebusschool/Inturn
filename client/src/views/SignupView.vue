@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { authStore } from '../stores/auth.js'
 import { isValidEmail, PASSWORD_RULES } from '../utils/validators.js'
 
@@ -7,10 +7,6 @@ const form = reactive({ name: '', email: '', password: '', confirmPassword: '' }
 const errors = ref([])
 const submitting = ref(false)
 const createdUser = ref(null)
-
-onMounted(() => {
-  if (!authStore.checked) authStore.fetchMe()
-})
 
 function validate() {
   const list = []
@@ -44,9 +40,6 @@ async function handleSignup() {
   }
 }
 
-async function handleLogout() {
-  await authStore.logout()
-}
 </script>
 
 <template>
@@ -60,14 +53,6 @@ async function handleLogout() {
       <p class="small text-body-secondary">Log in to complete your profile.</p>
       <!-- The email goes in history state (not the URL) so the login form can prefill it -->
       <RouterLink :to="{ path: '/login', state: { email: createdUser.email } }" class="btn-primary-inturn">Log in</RouterLink>
-    </div>
-
-    <!-- Temporary: someone already logged in opened /signup -->
-    <div v-else-if="authStore.isLoggedIn" class="signup-card text-center">
-      <h2 class="welcome">You're logged in</h2>
-      <p class="subtitle mb-1">{{ authStore.user.name }}</p>
-      <p class="subtitle">{{ authStore.user.email }}</p>
-      <button type="button" class="btn-primary-inturn" @click="handleLogout">Log out</button>
     </div>
 
     <form v-else class="signup-card" novalidate @submit.prevent="handleSignup">

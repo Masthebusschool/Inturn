@@ -35,9 +35,11 @@ const routes = [
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
-router.beforeEach(async (to) => {
-  if (to.meta.public) return true
+router.beforeEach(async (to) => { 
   if (!authStore.checked) await authStore.fetchMe()
+  if (authStore.isLoggedIn && (to.name === 'login' || to.name === 'signup')) {
+    return authStore.user.educationLevel ? '/jobs' : '/onboarding'}
+  if (to.meta.public) return true
   if (!authStore.isLoggedIn) return { name: 'login', query: { redirect: to.fullPath } }
   return true
 })
