@@ -55,7 +55,15 @@ const route = useRoute()
 const resumes = ref([])
 const selectedResumeId = ref('')
 const applicationId = ref(typeof route.query.applicationId === 'string' ? route.query.applicationId : '')
-const applicationMcfUuid = ref('')
+const applicationJob = ref(null) // { mcfUuid, title, company } of that Tracker card, once loaded
+
+// Link an analysis back to the card only while the form still describes the card's job,
+// so a different posting typed in later (via "New analysis") doesn't overwrite the card's link.
+function linksToApplication() {
+  const a = applicationJob.value
+  const same = (x, y) => (x || '').trim().toLowerCase() === (y || '').trim().toLowerCase()
+  return !!a && same(job.value.title, a.title) && same(job.value.company, a.company)
+}
 
 async function loadResumes() {
   try {
@@ -76,11 +84,11 @@ async function loadFromApplication() {
   if (!applicationId.value) return
   try {
     const app = await api(`/api/applications/${applicationId.value}`)
+    applicationJob.value = { mcfUuid: app.mcfUuid || '', title: app.title || '', company: app.companyName || '' }
     if (app.skillGapResultId) {
       await openResult(app.skillGapResultId)
       return
     }
-    applicationMcfUuid.value = app.mcfUuid || ''
     job.value = {
       title: app.title || '',
       company: app.companyName || '',
@@ -324,6 +332,7 @@ async function analyze() {
   analyzing.value = true
   elapsed.value = 0
   elapsedTimer = setInterval(() => elapsed.value++, 1000)
+  const linked = linksToApplication()
   try {
     const { result: r } = await api('/api/skillgap', {
       method: 'POST',
@@ -333,10 +342,10 @@ async function analyze() {
           company: job.value.company.trim(),
           description: job.value.description.trim(),
           applicationDeadline: job.value.applicationDeadline || undefined,
-          ...(applicationId.value && { jobId: applicationMcfUuid.value || undefined, source: 'tracker' }),
+          ...(linked && { jobId: applicationJob.value.mcfUuid || undefined, source: 'tracker' }),
         },
         ...(selectedResumeId.value && { resumeId: selectedResumeId.value }),
-        ...(applicationId.value && { applicationId: applicationId.value }),
+        ...(linked && { applicationId: applicationId.value }),
       },
     })
     openLoaded(r)
