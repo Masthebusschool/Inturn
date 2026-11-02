@@ -3,21 +3,15 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import skillgapRouter from './skillgap.js';
 import Application from '../models/Application.js';
-import User from '../models/User.js';
 import { ensureDb, startTestServer } from '../test/helpers.js';
 
 const TITLE_PREFIX = '__test_skillgap_link__';
-let base, close, userId;
+let base, close;
 
+// startTestServer upserts and logs in as the dev user; these tests only need a stranger-owned app.
 before(async () => {
   await ensureDb();
   ({ base, close } = await startTestServer('/api/skillgap', skillgapRouter));
-  const user = await User.findOneAndUpdate(
-    { email: 'dev@inturn.local' },
-    { $setOnInsert: { email: 'dev@inturn.local', name: 'Dev Student' } },
-    { upsert: true, returnDocument: 'after' }
-  );
-  userId = user.id;
 });
 
 after(async () => {
