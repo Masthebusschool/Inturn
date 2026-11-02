@@ -31,7 +31,7 @@ function cancelDelete() {
             <!-- backend error, only shows if deleting failed -->
             <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
 
-            <p class="mb-0">You are about to delete <span class="text-primary">"{{ card.title }}"</span> from your applications track board. Click "Delete" to confirm.</p>
+            <p class="mb-0">You are about to delete <span class="text-primary">"{{ card.company }} - {{ card.title }}"</span> from your applications track board. Click "Delete" to confirm.</p>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" v-on:click="cancelDelete">Cancel</button>
