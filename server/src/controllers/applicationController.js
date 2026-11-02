@@ -283,7 +283,11 @@ export async function saveDiscoveryJob(req, res, next) {
     // block saving the card (the user can paste the description in manually later).
     if (!details.description) {
       try {
-        const fullJob = await fetchJobDetail(job.uuid);
+        // fetchUpstream retries for ~2 minutes when MCF is down; cap the wait so Save stays snappy
+        const fullJob = await Promise.race([
+          fetchJobDetail(job.uuid),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000)),
+        ]);
         details.description = jobFromMcf(fullJob).description;
       } catch {
         // leave it blank
