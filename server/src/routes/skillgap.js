@@ -5,6 +5,7 @@ import { apiErrors } from '../middleware/apiErrors.js';
 import { analyzeSkillGap, generateTailoredResume, rescoreDraft, tailorChatTurn, AIServiceError } from '../services/aiService.js';
 import SkillGapResult from '../models/SkillGapResult.js';
 import Resume from '../models/Resume.js';
+import Application from '../models/Application.js';
 import { toProfile } from '../utils/profile.js';
 import { profileFromResume } from '../utils/resumeProfile.js';
 import { syncLearningTasksFromResult } from '../utils/learningTasks.js';
@@ -52,6 +53,16 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Job title and description are required.' });
   }
 
+  // Set when the analysis started from the Tracker board's "Tailor Resume" button.
+  const applicationId = str(req.body?.applicationId);
+  let application;
+  if (applicationId) {
+    application = mongoose.isValidObjectId(applicationId)
+      ? await Application.findOne({ _id: applicationId, user: req.user._id })
+      : null;
+    if (!application) return res.status(404).json({ error: 'Application not found' });
+  }
+
   const resumeId = str(req.body?.resumeId);
   let profile;
   let sourceResume;
@@ -81,7 +92,11 @@ router.post('/', async (req, res) => {
   const tailoredResume = await generateTailoredResume(profile, job, gap);
   const result = await SkillGapResult.create({
     user: req.user._id, job, ...gap, tailoredResume, ...(sourceResume && { sourceResume }),
+    ...(application && { application: application._id }),
   });
+  if (application) {
+    await Application.updateOne({ _id: application._id }, { skillGapResultId: result._id });
+  }
   // The analysis is saved; a to-do sync failure must not turn it into a 500.
   try {
     await syncLearningTasksFromResult(req.user._id, result);
