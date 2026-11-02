@@ -54,6 +54,8 @@ const paperProfile = computed(() => {
 const route = useRoute()
 const resumes = ref([])
 const selectedResumeId = ref('')
+const applicationId = ref(typeof route.query.applicationId === 'string' ? route.query.applicationId : '')
+const applicationMcfUuid = ref('')
 
 async function loadResumes() {
   try {
@@ -65,6 +67,28 @@ async function loadResumes() {
     else if (!selectedResumeId.value && r.length) selectedResumeId.value = r[0]._id // already sorted updatedAt desc
   } catch {
     // Non-fatal: the form just falls back to "Use base Profile" if this fails.
+  }
+}
+
+// Coming from the Tracker board's "Tailor Resume" button: either resume the analysis
+// already linked to this card, or prefill the job form from the card's saved details.
+async function loadFromApplication() {
+  if (!applicationId.value) return
+  try {
+    const app = await api(`/api/applications/${applicationId.value}`)
+    if (app.skillGapResultId) {
+      await openResult(app.skillGapResultId)
+      return
+    }
+    applicationMcfUuid.value = app.mcfUuid || ''
+    job.value = {
+      title: app.title || '',
+      company: app.companyName || '',
+      description: app.description || '',
+      applicationDeadline: app.expiryDate ? app.expiryDate.slice(0, 10) : '',
+    }
+  } catch {
+    // application missing/deleted since the link was created — leave the blank form
   }
 }
 
@@ -309,8 +333,10 @@ async function analyze() {
           company: job.value.company.trim(),
           description: job.value.description.trim(),
           applicationDeadline: job.value.applicationDeadline || undefined,
+          ...(applicationId.value && { jobId: applicationMcfUuid.value || undefined, source: 'tracker' }),
         },
         ...(selectedResumeId.value && { resumeId: selectedResumeId.value }),
+        ...(applicationId.value && { applicationId: applicationId.value }),
       },
     })
     openLoaded(r)
@@ -419,6 +445,7 @@ onMounted(() => {
   loadHistory()
   loadTodos()
   loadResumes()
+  loadFromApplication()
   window.addEventListener('keydown', onKey)
 })
 onBeforeUnmount(() => {
