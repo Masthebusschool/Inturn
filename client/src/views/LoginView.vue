@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { isValidEmail } from '../utils/validators.js'
@@ -12,9 +12,6 @@ const errors = ref([])
 const info = ref('')
 const submitting = ref(false)
 
-onMounted(() => {
-  if (!authStore.checked) authStore.fetchMe()
-})
 
 function validate() {
   const list = []
@@ -37,10 +34,6 @@ async function handleLogin() {
   } 
 }
 
-async function handleLogout() {
-  await authStore.logout()
-  form.password = ''
-}
 
 </script>
 
@@ -48,15 +41,7 @@ async function handleLogout() {
   <section class="login-page">
     <h1 class="brand">Inturn</h1>
 
-    <!-- Temporary: shows who is logged in until the profile page exists -->
-    <div v-if="authStore.isLoggedIn" class="login-card text-center">
-      <h2 class="welcome">You're logged in</h2>
-      <p class="subtitle mb-1">{{ authStore.user.name }}</p>
-      <p class="subtitle">{{ authStore.user.email }}</p>
-      <button type="button" class="btn-primary-inturn" @click="handleLogout">Log out</button>
-    </div>
-
-    <form v-else class="login-card" novalidate @submit.prevent="handleLogin">
+    <form class="login-card" novalidate @submit.prevent="handleLogin">
       <h2 class="welcome text-center">Welcome to Inturn</h2>
       <p class="subtitle">Sign in to continue your career prep.</p>
 
