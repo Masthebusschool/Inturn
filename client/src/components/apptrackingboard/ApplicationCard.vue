@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { formatDate } from '../../helpers/apptrackingboard/KanbanViewHelper';
 
 const props = defineProps({ app: Object });
+const emit = defineEmits(['tailor-resume']);
 
 // which date to show depends on the column
 const dateLabel = computed(() => {
@@ -46,6 +47,18 @@ const matchPercent = computed(() => {
       <div class="progress-bar" :style="{ width: matchPercent + '%' }"></div>
     </div>
     <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
+
+    <!-- only while the card is still in Saved: this is a pre-decision tool, not an ongoing one -->
+    <button
+      v-if="app.status === 'Saved'"
+      type="button"
+      class="btn btn-sm btn-outline-primary w-100 mt-2"
+      v-on:pointerdown.stop
+      v-on:click="emit('tailor-resume', app)"
+    >
+      <span v-if="app.skillGapScore != null" class="badge text-bg-light border me-1">{{ app.skillGapScore }}</span>
+      Tailor Resume
+    </button>
 
     <slot>
       <!-- Insert Dropdown Button to shift to other columns -->

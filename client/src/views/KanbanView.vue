@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import ApplicationCard from '../components/apptrackingboard/ApplicationCard.vue'
 import CardMenu from '../components/apptrackingboard/CardMenu.vue';
 import { getApplications } from '../services/applicationsApi.js';
@@ -25,7 +26,12 @@ import {
 } from '../helpers/apptrackingboard/KanbanViewHelper.js';
 
 const user = computed(() => authStore.user);
+const router = useRouter();
 const kanbanColumns = ['Saved', 'Applied', 'Interview', 'Offered'];
+
+function goToSkillGap (card) {
+  router.push({ path: '/skill-gap', query: { applicationId: card._id } });
+}
 
 // loaded from the backend in onMounted
 const applications = ref([]);
@@ -302,7 +308,7 @@ onUnmounted(() => {
               :style="{ opacity: draggedCard == app ? 0.5 : 1 }"
               v-on:pointerdown="startDrag($event, app)"
           >
-              <ApplicationCard :app="app">
+              <ApplicationCard :app="app" v-on:tailor-resume="goToSkillGap">
                 <select v-if="isMobile" 
                   :value="app.status" 
                   v-on:change="onMoveCard(app, $event.target.value)" 
