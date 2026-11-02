@@ -13,6 +13,7 @@ import {
 } from "../models/Application.js";
 import { toCard } from "../models/Application.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
+import { fetchJobDetail } from "../routes/jobs.js";
 import * as User from "../models/User.js";
 import Application from "../models/Application.js";
 
@@ -276,6 +277,18 @@ export async function saveDiscoveryJob(req, res, next) {
     }
 
     const details = jobFromMcf(job);
+
+    // The list card's "Save" button sends the compact job (no description) — only the
+    // detail modal's job object has it. Best-effort backfill; a failure here must not
+    // block saving the card (the user can paste the description in manually later).
+    if (!details.description) {
+      try {
+        const fullJob = await fetchJobDetail(job.uuid);
+        details.description = jobFromMcf(fullJob).description;
+      } catch {
+        // leave it blank
+      }
+    }
 
     if (!details.companyName) {
       details.companyName = "Company undisclosed";

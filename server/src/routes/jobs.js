@@ -633,6 +633,10 @@ router.post("/search", async (req, res) => {
   }
 });
 
+export async function fetchJobDetail(uuid) {
+  return fetchUpstream(upstreamUrl + "/" + uuid);
+}
+
 router.get("/:id", async (req, res) => {
   if (!/^[a-f0-9]{32}$/i.test(req.params.id)) {
     return res.status(400).json({
@@ -641,9 +645,7 @@ router.get("/:id", async (req, res) => {
   }
 
   try {
-    const job = await fetchUpstream(
-      upstreamUrl + "/" + req.params.id
-    );
+    const job = await fetchJobDetail(req.params.id);
 
     return res.json(job);
   } catch {

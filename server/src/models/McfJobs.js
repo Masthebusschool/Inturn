@@ -1,5 +1,24 @@
 // Picks the job details we need out of one MyCareersFuture API job
 // The result is spread straight into a new Application
+
+// MCF's description is an HTML string; convert it to plain text for scoring/display,
+// same conversion JobsSelect.vue already does client-side for the detail modal.
+function htmlToText(html) {
+  let text = html || '';
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<\/li>/gi, '\n');
+  text = text.replace(/<li[^>]*>/gi, '• ');
+  text = text.replace(/<[^>]*>/g, '');
+  text = text.replace(/&nbsp;/gi, ' ');
+  text = text.replace(/&amp;/gi, '&');
+  text = text.replace(/&lt;/gi, '<');
+  text = text.replace(/&gt;/gi, '>');
+  text = text.replace(/&quot;/gi, '"');
+  text = text.replace(/&#39;/g, "'");
+  return text.trim();
+}
+
 export function jobFromMcf(mcfJob) {
   // MCF has two companies, the one actually hiring and the agency that posted the job
   // use the hiring company, if there isn't one use the poster, if neither use an empty object
@@ -37,6 +56,7 @@ export function jobFromMcf(mcfJob) {
     salaryMax: salary.maximum,
     expiryDate: metadata.expiryDate,
     jobDetailsUrl: metadata.jobDetailsUrl,
+    description: htmlToText(mcfJob.description),
   };
 }
 
