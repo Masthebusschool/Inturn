@@ -73,9 +73,10 @@ export function toCard(application, skills) {
         prep: `${completedTasks} / ${application.tasks.length}`,
         matched: skillsMatched,
         total: application.skills.length,
-        // null until a Skill Gap Analysis is linked (see skillGapResultId); populated by getApplicationsByUser
-        skillGapScore: application.skillGapResultId?.atsScore ?? null,
-        skillGapBand: application.skillGapResultId?.band ?? null,
+        // null until a Skill Gap Analysis is linked (see skillGapResultId); populated by getApplicationsByUser.
+        // Prefer the tailored draft's score, same as the Skill Gap page's history badge.
+        skillGapScore: application.skillGapResultId?.draftScore?.atsScore ?? application.skillGapResultId?.atsScore ?? null,
+        skillGapBand: application.skillGapResultId?.draftScore?.band ?? application.skillGapResultId?.band ?? null,
     };
 
     return card;
@@ -85,7 +86,7 @@ export function toCard(application, skills) {
 
 // get all specified user's applications
 export function getApplicationsByUser(uid) {
-    return Application.find({ user: uid }).populate('skillGapResultId', 'atsScore band');
+    return Application.find({ user: uid }).populate('skillGapResultId', 'atsScore band draftScore.atsScore draftScore.band');
 }
 
 // create application

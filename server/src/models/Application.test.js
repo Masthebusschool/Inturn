@@ -30,3 +30,11 @@ test('toCard surfaces the populated skillGapResultId score and band', () => {
   assert.equal(card.skillGapScore, 72);
   assert.equal(card.skillGapBand, 'moderate');
 });
+
+test('toCard prefers the tailored draft score, matching the Skill Gap history badge', () => {
+  const card = toCard(baseApp({
+    skillGapResultId: { atsScore: 16, band: 'low', draftScore: { atsScore: 70, band: 'moderate' } },
+  }), []);
+  assert.equal(card.skillGapScore, 70);
+  assert.equal(card.skillGapBand, 'moderate');
+});
