@@ -8,7 +8,8 @@ import {
     addApplicationTaskById,
     updateApplicationTaskById,
     deleteApplicationTaskById,
-    deleteApplicationById
+    deleteApplicationById,
+    getApplicationByIdAndUser
 } from "../models/Application.js";
 import { toCard } from "../models/Application.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
@@ -40,6 +41,21 @@ export async function getApplications (req, res, next) {
         
     } catch (err) {
         console.log("Err at get apps controller: " + err);
+        next(err);
+    }
+}
+
+// Get one application by id, used to prefill Skill Gap Analysis from a saved job
+export async function getApplicationById(req, res, next) {
+    try {
+        const uid = req.session.user.id;
+        const application = await getApplicationByIdAndUser(req.params.id, uid);
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+        return res.json(application);
+
+    } catch (err) {
+        console.log("Err at get application by id controller: " + err);
         next(err);
     }
 }
