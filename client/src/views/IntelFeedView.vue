@@ -161,7 +161,20 @@ const formCompany = ref("");
 const formRole = ref("");
 const formTitle = ref("");
 const formBody = ref("");
+const formQuestions = ref([""]); // one entry per question input
+const MAX_QUESTIONS = 10;
 const isSubmitting = ref(false);
+
+function addQuestion() {
+  if (formQuestions.value.length < MAX_QUESTIONS) {
+    formQuestions.value.push("");
+  }
+}
+
+function removeQuestion(index) {
+  formQuestions.value.splice(index, 1);
+  if (formQuestions.value.length === 0) formQuestions.value.push("");
+}
 
 function openShareForm() {
   if (!isAuthenticated.value) {
@@ -175,11 +188,16 @@ function openShareForm() {
 
 // Check that all fields have real text (not just spaces)
 const canPublish = computed(() => {
+  const hasContent =
+    formType.value === "Experience"
+      ? formBody.value.trim() !== ""
+      : formQuestions.value.some((q) => q.trim() !== "");
+
   return (
     formCompany.value.trim() !== "" &&
     formRole.value.trim() !== "" &&
     formTitle.value.trim() !== "" &&
-    formBody.value.trim() !== ""
+    hasContent
   );
 });
 
@@ -190,6 +208,7 @@ function resetForm() {
   formRole.value = "";
   formTitle.value = "";
   formBody.value = "";
+  formQuestions.value = [""];
   errorMessage.value = "";
 }
 
@@ -203,12 +222,9 @@ async function publishPost() {
   if (formType.value === "Experience") {
     experienceText = formBody.value.trim();
   } else {
-    const rawLines = formBody.value.split("\n");
-    for (const line of rawLines) {
-      if (line.trim() !== "") {
-        questionList.push(line.trim());
-      }
-    }
+    questionList.push(
+      ...formQuestions.value.map((q) => q.trim()).filter(Boolean),
+    );
   }
 
   isSubmitting.value = true;
@@ -263,17 +279,25 @@ async function publishPost() {
 </script>
 
 <template>
-  <div class="text-start">
-    <div>
+  <div class="bg-body-tertiary min-vh-100 p-3 p-lg-4 text-start">
+    <div class="container-xl px-0">
       <!-- Header -->
-      <header class="page-header">
+      <header
+        class="card rounded-4 p-3 p-sm-4 mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3"
+      >
         <div>
-          <h1 class="header-title">Interview Intel</h1>
-          <p class="header-subtitle">
+          <div class="text-primary text-uppercase fw-bold small">
+            Community knowledge
+          </div>
+          <h1 class="h3 fw-semibold mb-1">Interview Intel</h1>
+          <p class="text-secondary small mb-0">
             Learn from real interview experiences shared by students.
           </p>
         </div>
-        <button class="btn-primary-inturn" @click="openShareForm">
+        <button
+          class="btn btn-inturn rounded-3 fw-semibold px-3 py-2 text-nowrap flex-shrink-0"
+          @click="openShareForm"
+        >
           <i class="bi bi-plus-lg me-2"></i>Share your experience
         </button>
       </header>
@@ -281,7 +305,7 @@ async function publishPost() {
       <!-- Login Notice Banner (shown when logged-out user clicks Share or Upvote) -->
       <div
         v-if="loginNotice"
-        class="alert alert-warning d-flex justify-content-between align-items-center py-2 px-3 mb-3 small"
+        class="alert alert-warning rounded-4 d-flex justify-content-between align-items-center py-2 px-3 mb-3 small"
       >
         <span>
           <i class="bi bi-info-circle me-2"></i>{{ loginNotice }}
@@ -297,10 +321,18 @@ async function publishPost() {
       </div>
 
       <!-- Share Form -->
-      <section v-if="showForm" class="card-inturn mb-3">
+      <section v-if="showForm" class="card rounded-4 p-3 p-sm-4 mb-3">
         <div class="d-flex justify-content-between align-items-start">
-          <h2 class="section-title">Share interview intel</h2>
-          <button class="btn-link-inturn" @click="resetForm">
+          <div>
+            <div class="text-primary text-uppercase fw-bold small">
+              Help the next candidate
+            </div>
+            <h2 class="h4 fw-semibold mt-1 mb-3">Share interview intel</h2>
+          </div>
+          <button
+            class="btn btn-link btn-sm text-secondary text-decoration-none p-0"
+            @click="resetForm"
+          >
             Cancel
           </button>
         </div>
@@ -310,20 +342,20 @@ async function publishPost() {
         </div>
 
         <div class="row g-3">
-          <div class="col-12 col-md-4">
+          <div class="col-12 col-sm-6 col-xl-4">
             <label for="post-type" class="form-label small fw-semibold mb-1"
               >Post type</label
             >
             <select
               id="post-type"
               v-model="formType"
-              class="input-inturn"
+              class="form-select bg-body-tertiary rounded-3"
             >
               <option>Experience</option>
               <option>Interview questions</option>
             </select>
           </div>
-          <div class="col-12 col-md-4">
+          <div class="col-12 col-sm-6 col-xl-4">
             <label for="post-company" class="form-label small fw-semibold mb-1"
               >Company</label
             >
@@ -331,11 +363,11 @@ async function publishPost() {
               id="post-company"
               v-model="formCompany"
               maxlength="80"
-              class="input-inturn"
+              class="form-control bg-body-tertiary rounded-3"
               placeholder="e.g. GovTech"
             />
           </div>
-          <div class="col-12 col-md-4">
+          <div class="col-12 col-xl-4">
             <label for="post-role" class="form-label small fw-semibold mb-1"
               >Role</label
             >
@@ -343,7 +375,7 @@ async function publishPost() {
               id="post-role"
               v-model="formRole"
               maxlength="80"
-              class="input-inturn"
+              class="form-control bg-body-tertiary rounded-3"
               placeholder="e.g. Engineering Intern"
             />
           </div>
@@ -355,26 +387,64 @@ async function publishPost() {
               id="post-title"
               v-model="formTitle"
               maxlength="120"
-              class="input-inturn"
+              class="form-control bg-body-tertiary rounded-3"
               placeholder="Give your post a clear title"
             />
           </div>
-          <div class="col-12">
+          <!-- Experience: free-text body -->
+          <div v-if="formType === 'Experience'" class="col-12">
             <label for="post-body" class="form-label small fw-semibold mb-1">
-              {{
-                formType === "Experience"
-                  ? "What would you like others to know?"
-                  : "Which questions were you asked? (one per line)"
-              }}
+              What would you like others to know?
             </label>
             <textarea
               id="post-body"
               v-model="formBody"
               maxlength="2000"
-              class="input-inturn"
+              class="form-control bg-body-tertiary rounded-3"
               rows="5"
               placeholder="Write your post details here..."
             ></textarea>
+          </div>
+
+          <!-- Interview questions: one input per question -->
+          <div v-else class="col-12">
+            <label class="form-label small fw-semibold mb-1">
+              Which questions were you asked?
+            </label>
+
+            <div
+              v-for="(q, index) in formQuestions"
+              :key="index"
+              class="input-group mb-2"
+            >
+              <span class="input-group-text bg-body-tertiary">{{
+                index + 1
+              }}</span>
+              <input
+                v-model="formQuestions[index]"
+                maxlength="300"
+                class="form-control bg-body-tertiary"
+                placeholder="Type one question"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                :disabled="formQuestions.length === 1 && !q"
+                aria-label="Remove question"
+                @click="removeQuestion(index)"
+              >
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary rounded-3"
+              :disabled="formQuestions.length >= MAX_QUESTIONS"
+              @click="addQuestion"
+            >
+              <i class="bi bi-plus-lg me-1"></i>Add another question
+            </button>
           </div>
         </div>
 
@@ -385,7 +455,7 @@ async function publishPost() {
             >Keep personal or confidential information out of your post.</span
           >
           <button
-            class="btn-primary-inturn"
+            class="btn btn-inturn rounded-3 fw-semibold px-4 py-2"
             :disabled="!canPublish || isSubmitting"
             @click="publishPost"
           >
@@ -395,18 +465,18 @@ async function publishPost() {
       </section>
 
       <!-- Filters -->
-      <section class="card-inturn mb-3">
+      <section class="card rounded-4 p-3 p-sm-4 mb-3">
         <div class="row g-3 align-items-center">
-          <div class="col-12 col-md-4">
-            <h2 class="section-title mb-0">Explore the community</h2>
+          <div class="col-12 col-xxl-3">
+            <div class="fw-semibold">Explore the community</div>
             <div class="text-secondary small">
               {{ filteredPosts.length }}
               {{ filteredPosts.length === 1 ? "post" : "posts" }}
             </div>
           </div>
-          <div class="col-12 col-md-8">
+          <div class="col-12 col-xxl-9">
             <div class="row g-3">
-              <div class="col-12 col-sm-4">
+              <div class="col-12 col-sm-6 col-xl-4">
                 <label
                   for="filter-type"
                   class="form-label small fw-semibold mb-1"
@@ -422,7 +492,7 @@ async function publishPost() {
                   placeholder="All"
                 />
               </div>
-              <div class="col-12 col-sm-4">
+              <div class="col-12 col-sm-6 col-xl-4">
                 <label
                   for="filter-company"
                   class="form-label small fw-semibold mb-1"
@@ -437,7 +507,7 @@ async function publishPost() {
                   placeholder="All"
                 />
               </div>
-              <div class="col-12 col-sm-4">
+              <div class="col-12 col-xl-4">
                 <label
                   for="filter-role"
                   class="form-label small fw-semibold mb-1"
@@ -460,16 +530,19 @@ async function publishPost() {
       <!-- Empty State 1: No posts exist at all -->
       <div
         v-if="posts.length === 0"
-        class="card-inturn p-5 text-center mb-3"
+        class="card rounded-4 p-5 text-center mb-3"
       >
         <i class="bi bi-chat-left-dots fs-1 text-secondary mb-2"></i>
-        <h3 class="section-title mb-1">No community intel shared yet</h3>
+        <h3 class="h5 fw-semibold mb-1">No community intel shared yet</h3>
         <p class="text-secondary small mb-3">
           Be the first to share your interview experience or questions to help
           other students!
         </p>
         <div>
-          <button class="btn-primary-inturn" @click="openShareForm">
+          <button
+            class="btn btn-inturn rounded-3 fw-semibold px-4 py-2"
+            @click="openShareForm"
+          >
             <i class="bi bi-plus-lg me-2"></i>Share your experience
           </button>
         </div>
@@ -478,17 +551,17 @@ async function publishPost() {
       <!-- Empty State 2: Posts exist, but none match the selected filters -->
       <div
         v-else-if="filteredPosts.length === 0"
-        class="card-inturn p-5 text-center mb-3"
+        class="card rounded-4 p-5 text-center mb-3"
       >
         <i class="bi bi-funnel fs-1 text-secondary mb-2"></i>
-        <h3 class="section-title mb-1">No posts match these filters</h3>
+        <h3 class="h6 fw-semibold mb-1">No posts match these filters</h3>
         <p class="text-secondary small mb-3">
           Try changing your filter selection or reset to view all community
           posts.
         </p>
         <div>
           <button
-            class="btn-neutral-inturn btn-sm-inturn"
+            class="btn btn-outline-secondary btn-sm rounded-3 px-3"
             @click="
               selectedType = 'All';
               selectedCompany = 'All';
@@ -505,12 +578,14 @@ async function publishPost() {
         <article
           v-for="p in filteredPosts"
           :key="p.id"
-          class="card-inturn mb-3 d-flex flex-column flex-sm-row gap-3"
+          class="card rounded-4 p-3 p-sm-4 mb-3 d-flex flex-column flex-sm-row gap-3"
         >
           <button
             type="button"
-            class="upvote-btn d-flex flex-row flex-sm-column align-items-center justify-content-center gap-2 gap-sm-0 align-self-start flex-shrink-0"
-            :class="p.upvoted ? 'btn-secondary-inturn' : 'btn-neutral-inturn'"
+            class="btn upvote-btn rounded-3 d-flex flex-row flex-sm-column align-items-center justify-content-center gap-2 gap-sm-0 align-self-start px-3 py-2 flex-shrink-0 order-last order-sm-first"
+            :class="
+              p.upvoted ? 'upvote-active' : 'btn-outline-secondary text-dark'
+            "
             :aria-pressed="p.upvoted"
             @click="toggleUpvote(p)"
           >
@@ -520,9 +595,7 @@ async function publishPost() {
           </button>
 
           <div class="flex-grow-1 min-w-0 text-break">
-            <div
-              class="d-flex flex-wrap justify-content-between align-items-start gap-2"
-            >
+            <div class="d-flex justify-content-between align-items-start gap-2">
               <div class="d-flex align-items-center gap-2">
                 <span
                   class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
@@ -542,20 +615,10 @@ async function publishPost() {
               </div>
 
               <div class="d-flex align-items-center gap-2">
-                <span
-                  class="badge rounded-pill px-3 py-2"
-                  :class="
-                    p.type === 'Experience'
-                      ? 'bg-success-subtle text-success'
-                      : 'bg-primary-subtle text-primary'
-                  "
-                >
-                  {{ p.type }}
-                </span>
                 <button
                   v-if="p.isOwner"
                   type="button"
-                  class="btn-link-inturn text-danger ms-1"
+                  class="btn btn-link btn-sm text-danger text-decoration-none p-0 ms-1"
                   title="Delete your post"
                   @click="deletePost(p)"
                 >
@@ -565,8 +628,23 @@ async function publishPost() {
             </div>
 
             <div class="d-flex flex-wrap gap-2 my-2">
-              <span class="tag-inturn">{{ p.company }}</span>
-              <span class="tag-inturn">{{ p.role }}</span>
+              <span
+                class="badge fw-semibold px-2 py-1"
+                :class="
+                  p.type === 'Experience'
+                    ? 'bg-success-subtle text-success'
+                    : 'bg-primary-subtle text-primary'
+                "
+                >{{ p.type }}</span
+              >
+              <span
+                class="badge bg-body-secondary text-dark fw-normal px-2 py-1"
+                >{{ p.company }}</span
+              >
+              <span
+                class="badge bg-body-secondary text-dark fw-normal px-2 py-1"
+                >{{ p.role }}</span
+              >
             </div>
 
             <h3 class="h5 fw-semibold mb-2">{{ p.title }}</h3>
@@ -585,7 +663,25 @@ async function publishPost() {
 </template>
 
 <style scoped>
+.btn-inturn {
+  background-color: #4a86e8;
+  color: #fff;
+  border: 0;
+}
+.btn-inturn:hover {
+  background-color: #3a74d4;
+  color: #fff;
+}
+.btn-inturn:disabled {
+  background-color: #9db9ea;
+  color: #fff;
+}
 .upvote-btn {
   min-width: 72px;
+}
+.upvote-active {
+  background-color: #e1edfd;
+  border: 1px solid #4a86e8;
+  color: #4a86e8;
 }
 </style>

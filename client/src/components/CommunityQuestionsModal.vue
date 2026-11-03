@@ -49,7 +49,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
     @click.self="emit('close')"
   >
     <div
-      class="card-inturn p-0 shadow-lg w-100 modal-card overflow-hidden"
+      class="card border-0 rounded-4 shadow-lg w-100 modal-card overflow-hidden"
     >
       <!-- Modal Header -->
       <div
@@ -57,13 +57,16 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
       >
         <div class="d-flex align-items-center gap-3">
           <div
-            class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+            class="rounded-4 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
             style="width: 52px; height: 52px"
           >
             <i class="bi bi-people fs-4"></i>
           </div>
           <div>
-            <h2 id="modal-title" class="h5 fw-bold mb-1">
+            <div class="text-primary text-uppercase fw-bold small">
+              Powered by Interview Intel
+            </div>
+            <h2 id="modal-title" class="h4 fw-bold mb-1">
               Community interview questions
             </h2>
             <p class="text-secondary small mb-0">
@@ -74,10 +77,12 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 
         <button
           type="button"
-          class="btn-close"
+          class="btn btn-light border rounded-3"
           aria-label="Close modal"
           @click="emit('close')"
-        ></button>
+        >
+          <i class="bi bi-x-lg text-secondary"></i>
+        </button>
       </div>
 
       <!-- Modal Body -->
@@ -96,17 +101,17 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
           <div
             v-for="cq in communityQuestions"
             :key="cq.id"
-            class="col-12 col-md-6"
+            class="col-12 col-lg-6"
           >
             <div
-              class="card-inturn h-100 d-flex flex-column justify-content-between"
+              class="card border rounded-4 p-3 p-sm-4 h-100 d-flex flex-column justify-content-between bg-white"
             >
               <div class="min-w-0 text-break">
                 <!-- Company Info & Category Badge -->
                 <div
-                  class="d-flex justify-content-between align-items-start gap-2 mb-3"
+                  class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"
                 >
-                  <div class="d-flex align-items-center gap-2">
+                  <div class="d-flex align-items-center gap-2 min-w-0">
                     <div
                       class="rounded-3 bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
                       style="width: 40px; height: 40px"
@@ -123,7 +128,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
                     </div>
                   </div>
                   <span
-                    class="tag-inturn"
+                    class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2 text-nowrap"
                   >
                     {{ cq.category || "General" }}
                   </span>
@@ -142,11 +147,11 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
               <!-- Add to Journal Button -->
               <button
                 type="button"
-                class="btn-sm-inturn w-100"
+                class="btn w-100 rounded-3 py-2 small fw-semibold"
                 :class="
                   isAlreadyAdded(cq)
-                    ? 'btn-neutral-inturn text-success'
-                    : 'btn-secondary-inturn'
+                    ? 'btn-success-subtle text-success'
+                    : 'btn-add-journal'
                 "
                 :disabled="isAlreadyAdded(cq)"
                 @click="emit('add-question', cq)"
@@ -178,5 +183,14 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 }
 .modal-card {
   max-width: 900px;
+}
+.btn-add-journal {
+  background-color: #eef4ff;
+  border: 1px solid #cfe0fc;
+  color: #2b6cb0;
+}
+.btn-add-journal:hover {
+  background-color: #e1edfd;
+  border-color: #4a86e8;
 }
 </style>
