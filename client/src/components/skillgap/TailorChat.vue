@@ -78,7 +78,7 @@ watch(() => [props.messages.length, sending.value], async () => {
           {{ r.text }}
           <button type="button" class="btn-close btn-close-white sg-chip-x" :aria-label="`Stop tailoring for ${r.text}`" @click="emit('remove-focus', r.key)"></button>
         </span>
-        <button type="button" class="btn btn-link btn-sm p-0 ms-1" @click="emit('clear-focus')">Clear all</button>
+        <button type="button" class="btn-link-inturn ms-1" @click="emit('clear-focus')">Clear all</button>
       </div>
       <p v-else class="small text-body-secondary mb-0">Click a missing or partial requirement to tailor for it, or ask anything.</p>
     </div>
@@ -92,8 +92,8 @@ watch(() => [props.messages.length, sending.value], async () => {
           <span v-if="m.asking" class="badge text-bg-warning mb-1">Needs your answer</span>
           <div class="sg-text">{{ m.text }}</div>
         </div>
-        <div v-for="s in visible(m)" :key="s.id" class="sg-sugg card">
-          <div class="card-body p-2">
+        <div v-for="s in visible(m)" :key="s.id" class="sg-sugg card-inturn p-0">
+          <div class="p-2">
             <div class="small fw-semibold mb-1">{{ sectionLabel(draft, s.sectionId) }}</div>
             <div v-if="s.original" class="small text-body-secondary mb-1">Replaces: <s>{{ s.original }}</s></div>
             <div class="sg-text">{{ s.field === 'skills' ? 'Add: ' : '' }}{{ s.text }}</div>
@@ -101,8 +101,8 @@ watch(() => [props.messages.length, sending.value], async () => {
               <span v-for="k in s.requirementKeys" :key="k" class="badge text-bg-light border fw-normal">{{ k.replace(/-/g, ' ') }}</span>
             </div>
             <div class="d-flex gap-2 mt-2">
-              <button type="button" class="btn btn-sm btn-primary" :disabled="applied.has(s.id)" @click="emit('apply', s)">{{ applied.has(s.id) ? 'Applied' : 'Apply' }}</button>
-              <button v-if="!applied.has(s.id)" type="button" class="btn btn-sm btn-outline-secondary" @click="dismiss(s.id)">Dismiss</button>
+              <button type="button" class="btn-primary-inturn btn-sm-inturn" :disabled="applied.has(s.id)" @click="emit('apply', s)">{{ applied.has(s.id) ? 'Applied' : 'Apply' }}</button>
+              <button v-if="!applied.has(s.id)" type="button" class="btn-neutral-inturn btn-sm-inturn" @click="dismiss(s.id)">Dismiss</button>
             </div>
           </div>
         </div>
@@ -116,14 +116,14 @@ watch(() => [props.messages.length, sending.value], async () => {
       <div aria-live="assertive">
         <div v-if="error" class="alert alert-danger py-2 small d-flex justify-content-between align-items-center gap-2" role="alert">
           <span>{{ error.message }}</span>
-          <button v-if="error.code !== 'ai_daily_quota'" type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" :disabled="sending" @click="send">Retry</button>
+          <button v-if="error.code !== 'ai_daily_quota'" type="button" class="btn-danger-inturn btn-sm-inturn flex-shrink-0" :disabled="sending" @click="send">Retry</button>
         </div>
       </div>
       <label for="sg-chat-input" class="visually-hidden">Message to the tailoring assistant</label>
-      <textarea id="sg-chat-input" v-model="input" class="form-control" rows="2" maxlength="2000" placeholder="Ask about your draft…" :disabled="sending" @keydown="onKey"></textarea>
+      <textarea id="sg-chat-input" v-model="input" class="input-inturn" rows="2" maxlength="2000" placeholder="Ask about your draft…" :disabled="sending" @keydown="onKey"></textarea>
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
-        <ConfirmButton label="Clear conversation" trigger-class="btn btn-link btn-sm text-danger p-0" prompt="Clear this conversation? Suggestions already applied to your draft stay." confirm-label="Clear" :disabled="!messages.length || sending" @confirm="clear" />
-        <button type="button" class="btn btn-primary btn-sm px-3 ms-auto" :disabled="!input.trim() || sending" @click="send">Send</button>
+        <ConfirmButton label="Clear conversation" trigger-class="btn-link-inturn text-danger" prompt="Clear this conversation? Suggestions already applied to your draft stay." confirm-label="Clear" :disabled="!messages.length || sending" @confirm="clear" />
+        <button type="button" class="btn-primary-inturn btn-sm-inturn ms-auto" :disabled="!input.trim() || sending" @click="send">Send</button>
       </div>
       <div class="form-text">Enter to send, Shift+Enter for a new line.</div>
     </div>
@@ -136,7 +136,7 @@ watch(() => [props.messages.length, sending.value], async () => {
 .sg-msg { display: flex; flex-direction: column; gap: 0.5rem; max-width: 92%; }
 .sg-msg.is-user { align-self: flex-end; align-items: flex-end; }
 .sg-msg.is-bot { align-self: flex-start; align-items: stretch; }
-.sg-bubble { padding: 0.75rem 1rem; border-radius: var(--bs-border-radius-xl); font-size: 0.9rem; }
+.sg-bubble { padding: 0.75rem 1rem; border-radius: var(--r-md); font-size: 0.9rem; }
 .is-user .sg-bubble { background: var(--bs-primary); color: #fff; border-bottom-right-radius: var(--bs-border-radius-sm); }
 .is-bot .sg-bubble { background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); border-bottom-left-radius: var(--bs-border-radius-sm); }
 .sg-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }

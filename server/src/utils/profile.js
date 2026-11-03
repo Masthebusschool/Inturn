@@ -1,23 +1,20 @@
-export const PROFILE_FIELDS = [
-  'summary', 'skills', 'experience', 'projects', 'education',
-  'targetRoles', 'targetIndustries', 'educationLevel',
-];
-
-const plain = (arr) => (arr || []).map((x) => (x && typeof x.toObject === 'function' ? x.toObject() : x));
-
-// Public shape of a user's profile (never includes passwordHash).
+// The profile shape Skill Gap scoring and "Start from Profile" read, built from the fields the
+// Profile page collects. Work experience, projects and summaries live on each Resume instead.
+// Never includes passwordHash.
 export function toProfile(user) {
   return {
     email: user.email,
     name: user.name,
     educationLevel: user.educationLevel,
-    summary: user.summary || '',
+    summary: '',
     skills: [...(user.skills || [])],
-    targetRoles: [...(user.targetRoles || [])],
+    targetRoles: [],
     targetIndustries: [...(user.targetIndustries || [])],
-    experience: plain(user.experience),
-    projects: plain(user.projects),
-    education: plain(user.education),
+    experience: [],
+    projects: [],
+    education: user.institution || user.fieldOfStudy
+      ? [{ school: user.institution || '', degree: user.educationLevel || '', field: user.fieldOfStudy || '', startDate: '', endDate: '' }]
+      : [],
     updatedAt: user.updatedAt,
   };
 }

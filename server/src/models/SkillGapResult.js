@@ -47,6 +47,10 @@ const skillGapResultSchema = new mongoose.Schema(
       description: String,
       applicationDeadline: Date, // "apply by" date, typed in manually until the real job board exists
     },
+    // The live link back to the Tracker board card this analysis was started from, if any.
+    // (job.jobId/job.source above already existed for this purpose but were never populated —
+    // see sourceResume's "no live link back" comment for the equivalent on the resume side.)
+    application: { type: mongoose.Schema.Types.ObjectId, ref: 'Application', default: null },
     atsScore: { type: Number, min: 0, max: 100 },
     band: { type: String, enum: ['strong', 'moderate', 'emerging', 'low'] },
     requirements: [requirementSchema],

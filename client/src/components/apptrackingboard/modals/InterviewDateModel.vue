@@ -27,11 +27,11 @@ function skipInterviewDate() {
         </div>
         <div class="modal-body">
           <p class="small text-secondary mb-2">{{ card.title }} · {{ card.company }}</p>
-          <input v-model="interviewDate" type="datetime-local" class="form-control" />
+          <input v-model="interviewDate" type="datetime-local" class="input-inturn" />
         </div>
         <div class="modal-footer">
-          <button class="btn btn-outline-secondary" v-on:click="skipInterviewDate">Skip for now</button>
-          <button class="btn btn-primary" :disabled="!interviewDate" v-on:click="saveInterviewDate">Save</button>
+          <button class="btn-neutral-inturn" v-on:click="skipInterviewDate">Skip for now</button>
+          <button class="btn-primary-inturn" :disabled="!interviewDate" v-on:click="saveInterviewDate">Save</button>
         </div>
       </div>
     </div>

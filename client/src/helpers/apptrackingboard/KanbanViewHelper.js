@@ -10,7 +10,7 @@ import {
     deleteApplication
 } from '../../services/applicationsApi.js'
 
-const mobileWidth = 768; // fixed breakpt for mobile
+const mobileWidth = 768; // fixed bp for mobile px
 
 export function isMobileScreen () { return window.innerWidth < mobileWidth; }
 
@@ -27,6 +27,32 @@ export function searchApplications (applications, searchText) {
   return applications.filter(app =>
     app.title.toLowerCase().includes(text) || app.company.toLowerCase().includes(text)
   );
+}
+
+// only the favourite applications when favouritesOnly is true, otherwise all of them
+export function filterFavourites (applications, favouritesOnly) {
+  if (!favouritesOnly) return applications;
+  return applications.filter(app => app.isFavourite);
+}
+
+// turn a date into a number so two dates can be compared, no date counts as far in the future
+function dateToNumber (value) {
+  if (!value) return Number.MAX_SAFE_INTEGER;
+  return new Date(value).getTime();
+}
+
+// sort a copy of the apps, the original order from the backend stays the same
+// deadline puts the soonest due first, latest puts the newest saved first, anything else keeps the order
+export function sortApplications (applications, sortBy) {
+  const sorted = applications.slice(); // copy so sort doesn't change the original list
+
+  if (sortBy === 'deadline') {
+    sorted.sort((a, b) => dateToNumber(a.expiryDate) - dateToNumber(b.expiryDate));
+  }
+  else if (sortBy === 'latest') {
+    sorted.sort((a, b) => dateToNumber(b.createdAt) - dateToNumber(a.createdAt));
+  }
+  return sorted;
 }
 
 // copy the mouse position from the event into mp, which is { xPos, yPos }
@@ -49,7 +75,6 @@ export async function moveCard (card, updatedStatus) {
     card.status = oldStatus // if fail, revert
     return false;
   }
-
   return updatedStatus === 'Interview' && !card.interviewAt;
 }
 

@@ -21,7 +21,7 @@ function pick (option) {
 <template>
   <!-- pointerdown.stop so clicking the menu doesn't start dragging the card -->
   <div class="position-absolute top-0 end-0 m-3" v-on:pointerdown.stop>
-    <button type="button" class="btn btn-sm btn-light border text-primary fw-bold py-0" v-on:click="toggleMenu" aria-label="Card options">
+    <button type="button" class="btn-neutral-inturn btn-sm-inturn" v-on:click="toggleMenu" aria-label="Card options">
       &#8943;
     </button>
 

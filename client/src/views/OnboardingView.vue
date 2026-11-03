@@ -100,7 +100,8 @@ function back() {
   stepIndex.value--
 }
 
-async function finish(skipIndustries = false) {
+// "Skip for now" only skips the resume upload; everything already filled in is still saved
+async function finish() {
   errors.value = []
   saving.value = true
   try {
@@ -108,7 +109,6 @@ async function finish(skipIndustries = false) {
       ...form,
       institution: form.institution.trim(),
       fieldOfStudy: form.fieldOfStudy.trim(),
-      targetIndustries: skipIndustries ? [] : form.targetIndustries,
     })
     router.push('/jobs')
   } catch (err) {
@@ -121,12 +121,9 @@ async function finish(skipIndustries = false) {
 
 <template>
   <section class="onboarding-page">
-   
-    
-    <img src="../assets/logogogo.jpg" class="brand-logo">
-        
+    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
 
-    <div v-if="ready" class="onboarding-card">
+    <div v-if="ready" class="card-inturn auth-card">
       <h2 class="welcome text-center">{{ isEditing ? 'Edit your profile' : 'Complete your profile' }}</h2>
       <p class="subtitle text-center">This helps us personalise jobs, skill-gap analysis and interview practice.</p>
 
@@ -151,10 +148,10 @@ async function finish(skipIndustries = false) {
         <p class="form-label mb-1">Upload your resume <span class="optional">(optional)</span></p>
         <p class="form-text mt-0">You can also skip this and add it later from My Resumes.</p>
         <ResumeUploadBox @uploaded="handleResumeUploaded" />
-        <p v-if="parsing" class="resume-note" role="status">
+        <p v-if="parsing" class="callout-inturn resume-note" role="status">
           <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Parsing your resume with AI… you can press Finish; it will still be saved to My Resumes.
         </p>
-        <p v-if="resumeNote" class="resume-note" role="status">{{ resumeNote }}</p>
+        <p v-if="resumeNote" class="callout-inturn resume-note" role="status">{{ resumeNote }}</p>
         <div v-if="resumeError" class="alert alert-warning py-2 mt-3 mb-0" role="status">{{ resumeError }}</div>
       </div>
 
@@ -163,7 +160,7 @@ async function finish(skipIndustries = false) {
         <fieldset class="mb-3">
           <legend class="form-label fs-6">Education level <span class="required">*</span></legend>
           <div class="level-options">
-            <label v-for="level in EDUCATION_LEVELS" :key="level" class="level-option" :class="{ selected: form.educationLevel === level }">
+            <label v-for="level in EDUCATION_LEVELS" :key="level" class="chip-inturn level-option" :class="{ 'is-active': form.educationLevel === level }">
               <input v-model="form.educationLevel" type="radio" name="educationLevel" :value="level" class="visually-hidden" />
               {{ level }}
             </label>
@@ -175,7 +172,7 @@ async function finish(skipIndustries = false) {
             id="onboarding-institution"
             v-model="form.institution"
             type="text"
-            class="form-control input-inturn"
+            class="input-inturn"
             placeholder="e.g. Singapore Management University"
             :maxlength="PROFILE_LIMITS.textLength"
           />
@@ -225,14 +222,13 @@ async function finish(skipIndustries = false) {
       </div>
 
       <div class="actions">
-        <button v-if="stepIndex > 0" type="button" class="btn-outline-inturn" :disabled="saving" @click="back">Back</button>
-        <RouterLink v-else-if="isEditing" to="/profile" class="link-secondary">Cancel</RouterLink>
+        <button v-if="stepIndex > 0" type="button" class="btn-neutral-inturn" :disabled="saving" @click="back">Back</button>
+        <RouterLink v-else-if="isEditing" to="/profile" class="btn-neutral-inturn">Cancel</RouterLink>
         <span v-else></span>
 
-        
         <button v-if="!isLastStep" type="button" class="btn-primary-inturn" @click="next">Next</button>
         <div v-else class="d-flex align-items-center gap-3">
-          <button v-if="!isEditing" type="button" class="btn btn-link link-secondary p-0" :disabled="saving" @click="finish(true)">Skip for now</button>
+          <button v-if="!isEditing" type="button" class="btn-link-inturn" :disabled="saving" @click="finish()">Skip for now</button>
           <button type="button" class="btn-primary-inturn" :disabled="saving" @click="finish()">
             {{ saving ? 'Saving...' : 'Finish' }}
           </button>
@@ -243,11 +239,6 @@ async function finish(skipIndustries = false) {
 </template>
 
 <style scoped>
-.brand-logo{
-  height:120px;
-  width: auto;
-  padding:1rem 0;
-}
 .onboarding-page {
   display: flex;
   flex-direction: column;
@@ -255,14 +246,16 @@ async function finish(skipIndustries = false) {
   padding: 2rem 0;
 }
 
+.brand-logo {
+  height: 120px;
+  width: auto;
+  padding: 1rem 0;
+}
 
-.onboarding-card {
+.auth-card {
   width: 100%;
   max-width: 640px;
   padding: 2rem 2.75rem;
-  background: #f3f3f3;
-  border: 1px solid #4e8be6;
-  border-radius: 16px;
 }
 
 .welcome {
@@ -273,7 +266,7 @@ async function finish(skipIndustries = false) {
 
 .subtitle {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   margin-bottom: 1.5rem;
 }
 
@@ -293,7 +286,7 @@ async function finish(skipIndustries = false) {
   align-items: center;
   gap: 0.35rem;
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   position: relative;
 }
 
@@ -305,13 +298,13 @@ async function finish(skipIndustries = false) {
   right: 50%;
   width: 100%;
   height: 2px;
-  background: #ced4da;
+  background: var(--inturn-border-strong);
   z-index: 0;
 }
 
 .stepper li.complete + li::before,
 .stepper li.active:not(:first-child)::before {
-  background: #4e8be6;
+  background: var(--inturn-primary);
 }
 
 .stepper .dot {
@@ -323,43 +316,39 @@ async function finish(skipIndustries = false) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border: 2px solid #ced4da;
+  background: var(--inturn-surface);
+  border: 2px solid var(--inturn-border-strong);
   font-weight: 600;
 }
 
 .stepper li.active,
 .stepper li.complete {
-  color: #3c70b3;
+  color: var(--inturn-primary-hover);
   font-weight: 600;
 }
 
 .stepper li.active .dot {
-  border-color: #4e8be6;
-  color: #4e8be6;
+  border-color: var(--inturn-primary);
+  color: var(--inturn-primary);
 }
 
 .stepper li.complete .dot {
-  background: #4e8be6;
-  border-color: #4e8be6;
+  background: var(--inturn-primary);
+  border-color: var(--inturn-primary);
   color: #fff;
 }
 
 .required {
-  color: #dc3545;
+  color: var(--inturn-danger);
 }
 
 .optional {
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   font-size: 0.85rem;
 }
 
 .resume-note {
   margin: 0.75rem 0 0;
-  padding: 0.6rem 0.85rem;
-  background: #e3ecfb;
-  color: #3c70b3;
-  border-radius: 8px;
   font-size: 0.9rem;
 }
 
@@ -369,30 +358,13 @@ async function finish(skipIndustries = false) {
   gap: 0.6rem;
 }
 
+/* Chips stretched to fill the grid cells */
 .level-option {
-  padding: 0.75rem 0.5rem;
-  text-align: center;
-  background: #fff;
-  border: 1px solid #222;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.level-option.selected {
-  background: #e3ecfb;
-  border: 2px solid #4e8be6;
-  color: #3c70b3;
-  font-weight: 600;
+  justify-content: center;
 }
 
 .level-option:focus-within {
   box-shadow: 0 0 0 0.2rem rgba(78, 139, 230, 0.25);
-}
-
-.input-inturn {
-  border: 1px solid #222;
-  border-radius: 12px;
-  padding: 0.65rem 0.9rem;
 }
 
 .actions {
@@ -402,34 +374,8 @@ async function finish(skipIndustries = false) {
   margin-top: 1.75rem;
 }
 
-.btn-primary-inturn {
-  background: #4e8be6;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.5rem 2rem;
-  font-size: 1.05rem;
-}
-
-.btn-primary-inturn:hover:not(:disabled) {
-  background: #3c70b3;
-}
-
-.btn-outline-inturn {
-  background: transparent;
-  color: #3c70b3;
-  border: 1px solid #4e8be6;
-  border-radius: 10px;
-  padding: 0.5rem 1.5rem;
-}
-
-.btn-primary-inturn:disabled,
-.btn-outline-inturn:disabled {
-  opacity: 0.7;
-}
-
 @media (max-width: 576px) {
-  .onboarding-card {
+  .auth-card {
     padding: 1.5rem 1.25rem;
   }
 

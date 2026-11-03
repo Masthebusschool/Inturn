@@ -80,25 +80,25 @@ function cancel() { emit('cancel'); }
 
           <div class="mb-3">
             <label class="form-label">Job title <span class="text-danger">*</span></label>
-            <input v-model="title" class="form-control" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" maxlength="100" />
+            <input v-model="title" class="input-inturn" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" maxlength="100" />
             <div class="invalid-feedback">{{ errors.title }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Company <span class="text-danger">*</span></label>
-            <input v-model="companyName" class="form-control" :class="{ 'is-invalid': errors.companyName }" placeholder="e.g. Grab" maxlength="100" />
+            <input v-model="companyName" class="input-inturn" :class="{ 'is-invalid': errors.companyName }" placeholder="e.g. Grab" maxlength="100" />
             <div class="invalid-feedback">{{ errors.companyName }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Application deadline <span class="text-danger">*</span></label>
-            <input v-model="expiryDate" type="date" class="form-control" :class="{ 'is-invalid': errors.expiryDate }" :min="today" />
+            <input v-model="expiryDate" type="date" class="input-inturn" :class="{ 'is-invalid': errors.expiryDate }" :min="today" />
             <div class="invalid-feedback">{{ errors.expiryDate }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Status <span class="text-danger">*</span></label>
-            <select v-model="status" class="form-select">
+            <select v-model="status" class="input-inturn">
               <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
@@ -106,27 +106,27 @@ function cancel() { emit('cancel'); }
           <!-- only shown when the card starts in Interview -->
           <div v-if="status === 'Interview'" class="mb-3">
             <label class="form-label">Interview date</label>
-            <input v-model="interviewAt" type="datetime-local" class="form-control" />
+            <input v-model="interviewAt" type="datetime-local" class="input-inturn" />
             <div class="form-text">Optional. You can add it later.</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Job posting link</label>
-            <input v-model="jobDetailsUrl" type="url" class="form-control" :class="{ 'is-invalid': errors.jobDetailsUrl }" placeholder="https://..." />
+            <input v-model="jobDetailsUrl" type="url" class="input-inturn" :class="{ 'is-invalid': errors.jobDetailsUrl }" placeholder="https://..." />
             <div class="invalid-feedback">{{ errors.jobDetailsUrl }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Skills needed</label>
-            <input v-model="skills" class="form-control" placeholder="Python, SQL, Git" maxlength="500" />
+            <input v-model="skills" class="input-inturn" placeholder="Python, SQL, Git" maxlength="500" />
             <div class="form-text">Separate skills with commas.</div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" v-on:click="cancel">Cancel</button>
+          <button type="button" class="btn-neutral-inturn" v-on:click="cancel">Cancel</button>
           <!-- type="submit" already runs submitApplication through the form, no v-on:click needed -->
-          <button type="submit" class="btn btn-primary">Add</button>
+          <button type="submit" class="btn-primary-inturn">Add</button>
         </div>
       </form>
     </div>

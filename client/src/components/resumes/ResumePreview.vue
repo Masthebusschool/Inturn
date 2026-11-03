@@ -61,7 +61,7 @@ const contactLine = (c) => [c.phone, c.email, c.linkedin, c.github, c.portfolio]
 </template>
 
 <style scoped>
-.rp-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--bs-border-color); border-radius: 0.5rem; box-shadow: var(--bs-box-shadow-sm); }
+.rp-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--bs-border-color); border-radius: var(--r-sm); box-shadow: var(--bs-box-shadow-sm); }
 .rp-head { text-align: center; border-bottom: 2px solid #212529; padding-bottom: 0.6rem; margin-bottom: 1rem; }
 .rp-name { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.02em; }
 .rp-contact { color: #495057; font-size: 0.8rem; margin-top: 0.2rem; }

@@ -1,8 +1,8 @@
 <template>
   <section class="filter-panel">
-    <header class="filter-header">
+    <header class="page-header filter-header">
       <button
-        class="back-button"
+        class="btn-neutral-inturn"
         type="button"
         @click="emit('close')"
       >
@@ -10,12 +10,12 @@
       </button>
 
       <div class="heading">
-        <h2>Filter Jobs</h2>
-        <p>Find opportunities that suit your needs.</p>
+        <h2 class="header-title">Filter Jobs</h2>
+        <p class="header-subtitle">Find opportunities that suit your needs.</p>
       </div>
 
       <button
-        class="reset-button"
+        class="btn-neutral-inturn"
         type="button"
         @click="resetFilters"
       >
@@ -23,7 +23,7 @@
       </button>
     </header>
 
-    <div class="active-summary">
+    <div class="card-inturn active-summary">
       <div class="summary-counts">
         <strong>{{ activeFilters.length }} active filters</strong>
       </div>
@@ -32,7 +32,7 @@
         <button
           v-for="filter in activeFilters"
           :key="filter.key"
-          class="filter-tag"
+          class="chip-inturn is-active"
           type="button"
           @click="removeFilter(filter)"
         >
@@ -47,14 +47,14 @@
     </div>
 
     <!-- Location -->
-    <section class="filter-section">
-      <h3>Location</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Location</h3>
       <p class="section-description">Choose a region.</p>
 
       <div class="options">
         <button
-          class="option"
-          :class="{ selected: modelValue.location === '' }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.location === '' }"
           :aria-pressed="modelValue.location === ''"
           type="button"
           @click="changeLocation('')"
@@ -65,8 +65,8 @@
         <button
           v-for="location in locations"
           :key="location"
-          class="option"
-          :class="{ selected: modelValue.location === location }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.location === location }"
           :aria-pressed="modelValue.location === location"
           type="button"
           @click="changeLocation(location)"
@@ -78,8 +78,8 @@
     </section>
 
     <!-- Skills -->
-    <section class="filter-section">
-      <h3>Skills</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Skills</h3>
 
       <p class="section-description">
         Jobs will include at least one selected skill. Ranked from most to least number of skills selected
@@ -94,12 +94,13 @@
           id="skill-search"
           v-model.trim="skillSearch"
           type="search"
+          class="input-inturn"
           placeholder="Search or add a skill, e.g. Python..."
           @keydown.enter.prevent="addCustomSkill"
         />
 
         <button
-          class="add-skill-button"
+          class="btn-primary-inturn"
           type="button"
           :disabled="!skillSearch.trim()"
           @click="addCustomSkill"
@@ -112,8 +113,8 @@
         <button
           v-for="skill in availableSkills"
           :key="skill"
-          class="option skill-option"
-          :class="{ selected: modelValue.skills.includes(skill) }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.skills.includes(skill) }"
           :aria-pressed="modelValue.skills.includes(skill)"
           type="button"
           @click="toggleSkill(skill)"
@@ -129,8 +130,8 @@
     </section>
 
     <!-- Category -->
-    <section class="filter-section">
-      <h3>Job Category</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Job Category</h3>
 
       <p class="section-description">
         Choose the type of work you are interested in.
@@ -138,8 +139,8 @@
 
       <div class="options">
         <button
-          class="option"
-          :class="{ selected: modelValue.category === '' }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.category === '' }"
           :aria-pressed="modelValue.category === ''"
           type="button"
           @click="changeCategory('')"
@@ -150,8 +151,8 @@
         <button
           v-for="category in categories"
           :key="category"
-          class="option"
-          :class="{ selected: modelValue.category === category }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.category === category }"
           :aria-pressed="modelValue.category === category"
           type="button"
           @click="changeCategory(category)"
@@ -163,8 +164,8 @@
     </section>
 
     <!-- Pay range -->
-    <section class="filter-section">
-      <h3>Monthly Pay Range</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Monthly Pay Range</h3>
 
       <p class="section-description">
         Enter amounts in SGD. Leave either field blank for no limit.
@@ -178,6 +179,7 @@
       <input
         id="minimum-pay"
         type="number"
+        class="input-inturn pay-input"
         min="0"
         step="any"
         placeholder="For example, 2000"
@@ -192,6 +194,7 @@
       <input
         id="maximum-pay"
         type="number"
+        class="input-inturn pay-input"
         min="0"
         step="any"
         placeholder="For example, 5000"
@@ -213,7 +216,7 @@
       <p>Search results are reflected from the filters chosen.</p>
 
       <button
-        class="show-results"
+        class="btn-primary-inturn w-100"
         type="button"
         :disabled="payRangeInvalid"
         @click="emit('close')"
@@ -506,13 +509,6 @@ function addCustomSkill() {
 <style scoped>
 .filter-panel {
   width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  background: #f6f8ff;
-  color: #17234b;
 }
 
 .filter-panel,
@@ -521,11 +517,7 @@ function addCustomSkill() {
 }
 
 .filter-header {
-  display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 24px;
 }
 
 .heading {
@@ -533,48 +525,8 @@ function addCustomSkill() {
   min-width: 160px;
 }
 
-.heading h2 {
-  margin: 0;
-  font-size: 23px;
-}
-
-.heading p {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-.back-button,
-.reset-button {
-  padding: 9px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #2459ce;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.back-button:hover,
-.reset-button:hover {
-  background: #e6edff;
-}
-
 .active-summary {
-  margin-bottom: 22px;
-  padding: 16px;
-  border-radius: 14px;
-  background: #eaf0ff;
+  margin-bottom: 1.25rem;
 }
 
 .summary-counts {
@@ -586,11 +538,7 @@ button {
 }
 
 .summary-counts strong {
-  color: #2459ce;
-}
-
-.summary-counts span {
-  color: #086b56;
+  color: var(--inturn-primary-hover);
 }
 
 .filter-tags {
@@ -600,51 +548,19 @@ button {
   margin-top: 14px;
 }
 
-.filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 100%;
-  padding: 7px 11px;
-  border: none;
-  border-radius: 20px;
-  background: #c8f7e7;
-  color: #075b46;
-  font-size: 13px;
-  text-align: left;
-  word-wrap: break-word;
-}
-
-.filter-tag:hover {
-  background: #a7efd6;
-}
-
-.filter-tag span {
-  font-size: 17px;
-}
-
 .empty-summary {
   margin: 12px 0 0;
-  color: #526079;
+  color: var(--inturn-text-muted);
   font-size: 13px;
 }
 
 .filter-section {
-  margin-bottom: 20px;
-  padding: 22px;
-  border: 1px solid #e9edf5;
-  border-radius: 16px;
-  background: white;
-}
-
-.filter-section h3 {
-  margin: 0;
-  font-size: 18px;
+  margin-bottom: 1.25rem;
 }
 
 .section-description {
   margin: 8px 0 18px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -655,49 +571,16 @@ button {
   gap: 9px;
 }
 
-.option {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 9px 13px;
-  border: 1px solid #dfe7fa;
-  border-radius: 10px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 14px;
-  line-height: 1.4;
-  text-align: left;
-  word-wrap: break-word;
-}
-
-.option:hover {
-  background: #dfeaff;
-}
-
-.option.selected {
-  border-color: #2563eb;
-  background: #2563eb;
-  color: white;
-}
-
 .input-label {
   display: block;
   margin-bottom: 8px;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   font-weight: 600;
 }
 
-input {
-  width: 100%;
+.pay-input {
   margin-bottom: 16px;
-  padding: 12px 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 10px;
-  background: #f5f8ff;
-  color: #17234b;
-  font-size: 14px;
 }
 
 .skill-options {
@@ -706,49 +589,24 @@ input {
   padding: 4px;
 }
 
-.skill-option.selected {
-  border-color: #81dfbd;
-  background: #ccf7e7;
-  color: #075b46;
-}
-
 .empty-message {
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 14px;
 }
 
 .filter-footer p {
   margin: 0 0 14px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
   line-height: 1.5;
   text-align: center;
 }
 
-.show-results {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
-  font-weight: 600;
-}
-
-.show-results:hover {
-  background: #1d4ed8;
-}
-
 .pay-error {
   margin: 0;
-  color: #b42318;
+  color: var(--inturn-danger);
   font-size: 13px;
   line-height: 1.6;
-}
-
-.show-results:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .skill-search-row {
@@ -761,28 +619,7 @@ input {
 
 .skill-search-row input {
   flex: 1;
+  width: auto;
   min-width: 150px;
-  margin-bottom: 0;
-}
-
-.add-skill-button {
-  padding: 12px 14px;
-  border: none;
-  border-radius: 10px;
-  background: #2563eb;
-  color: white;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.add-skill-button:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.add-skill-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

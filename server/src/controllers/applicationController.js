@@ -8,10 +8,12 @@ import {
     addApplicationTaskById,
     updateApplicationTaskById,
     deleteApplicationTaskById,
-    deleteApplicationById
+    deleteApplicationById,
+    getApplicationByIdAndUser
 } from "../models/Application.js";
 import { toCard } from "../models/Application.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
+import { fetchJobDetail } from "../routes/jobs.js";
 import * as User from "../models/User.js";
 import Application from "../models/Application.js";
 
@@ -40,6 +42,21 @@ export async function getApplications (req, res, next) {
         
     } catch (err) {
         console.log("Err at get apps controller: " + err);
+        next(err);
+    }
+}
+
+// Get one application by id, used to prefill Skill Gap Analysis from a saved job
+export async function getApplicationById(req, res, next) {
+    try {
+        const uid = req.session.user.id;
+        const application = await getApplicationByIdAndUser(req.params.id, uid);
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+        return res.json(application);
+
+    } catch (err) {
+        console.log("Err at get application by id controller: " + err);
         next(err);
     }
 }
@@ -260,6 +277,22 @@ export async function saveDiscoveryJob(req, res, next) {
     }
 
     const details = jobFromMcf(job);
+
+    // The list card's "Save" button sends the compact job (no description) — only the
+    // detail modal's job object has it. Best-effort backfill; a failure here must not
+    // block saving the card (the user can paste the description in manually later).
+    if (!details.description) {
+      try {
+        // fetchUpstream retries for ~2 minutes when MCF is down; cap the wait so Save stays snappy
+        const fullJob = await Promise.race([
+          fetchJobDetail(job.uuid),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8000)),
+        ]);
+        details.description = jobFromMcf(fullJob).description;
+      } catch {
+        // leave it blank
+      }
+    }
 
     if (!details.companyName) {
       details.companyName = "Company undisclosed";

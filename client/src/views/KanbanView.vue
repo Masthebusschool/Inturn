@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import ApplicationCard from '../components/apptrackingboard/ApplicationCard.vue'
 import CardMenu from '../components/apptrackingboard/CardMenu.vue';
 import { getApplications } from '../services/applicationsApi.js';
@@ -12,6 +13,8 @@ import {
   isMobileScreen,
   applicationsInColumn,
   searchApplications,
+  filterFavourites,
+  sortApplications,
   updateMousePosition,
   moveCard,
   saveInterviewDate,
@@ -25,7 +28,12 @@ import {
 } from '../helpers/apptrackingboard/KanbanViewHelper.js';
 
 const user = computed(() => authStore.user);
+const router = useRouter();
 const kanbanColumns = ['Saved', 'Applied', 'Interview', 'Offered'];
+
+function goToSkillGap (card) {
+  router.push({ path: '/skill-gap', query: { applicationId: card._id } });
+}
 
 // loaded from the backend in onMounted
 const applications = ref([]);
@@ -33,9 +41,29 @@ const isLoading = ref(true); // true while the apps are being fetched, shows the
 const loadFailed = ref(false); // true if fetching the apps failed, shows the try again button
 
 const searchText = ref(''); // text in the search box
+const sortBy = ref('default'); // default, deadline or latest
+const favouritesOnly = ref(false); // true shows only favourite cards
 
-// the cards that match the search, the columns show these instead of every app
-const visibleApplications = computed(() => searchApplications(applications.value, searchText.value));
+// the cards to show, search first, then the favourites filter, then the sort
+const visibleApplications = computed(() => {
+  let list = searchApplications(applications.value, searchText.value);
+  list = filterFavourites(list, favouritesOnly.value);
+  list = sortApplications(list, sortBy.value);
+  return list;
+});
+
+// true if the search or the favourites filter is hiding some cards
+const isFiltering = computed(() => searchText.value.trim() !== '' || favouritesOnly.value);
+
+// true if the search, sort or favourites filter is not on its default, shows the reset button
+const hasChanges = computed(() => isFiltering.value || sortBy.value !== 'default');
+
+// put the search, sort and favourites filter back to how they start
+function resetFilters () {
+  searchText.value = '';
+  sortBy.value = 'default';
+  favouritesOnly.value = false;
+}
 
 const draggedCard = ref(null);
 const selectedColumn = ref(null);
@@ -219,7 +247,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-<div class="bg-light min-vh-100 p-3 p-md-4">
+<div>
   <!-- spinner in the page area while the apps are being fetched, the nav stays visible -->
   <div v-if="isLoading" class="d-flex flex-column justify-content-center align-items-center text-secondary" style="min-height: 70vh">
     <div class="spinner-border text-primary mb-3" role="status"></div>
@@ -229,7 +257,7 @@ onUnmounted(() => {
   <!-- the apps cannot be fetched -->
   <div v-else-if="loadFailed" class="d-flex flex-column justify-content-center align-items-center text-center" style="min-height: 70vh">
     <p class="mb-3">Could not load your applications. Please check your connection.</p>
-    <button class="btn btn-dark rounded-3" v-on:click="loadApplications">Try again</button>
+    <button class="btn-neutral-inturn" v-on:click="loadApplications">Try again</button>
   </div>
   <!-- no user in auth store -->
   <div v-else-if="!user">
@@ -238,19 +266,52 @@ onUnmounted(() => {
 
   <!-- the whole page, only shows once the apps are loaded -->
   <template v-else>
-    <!-- Top Area -->
-    <div class="bg-white border rounded-4 d-flex flex-wrap gap-3 justify-content-between align-items-center p-3 p-md-4 mb-3">
+    <!-- Top Area: page title on the left and add application on the right -->
+    <header class="page-header">
       <div>
-        <h1 class="h5 fw-semibold mb-1">{{user.name}}'s Applications</h1>
-        <p class="small text-secondary mb-0">{{ applications.length }} internships tracked</p>
+        <h1 class="header-title">Tracker Board</h1>
+        <p class="header-subtitle">
+        {{ applications.length }} {{ applications.length === 1 ? 'internship' : 'internships' }} tracked
+        </p>
       </div>
 
+      <!-- top button always starts in Saved, flex-shrink-0 stops it squashing on small screens -->
+      <button class="btn-primary-inturn flex-shrink-0" v-on:click="openAddModal('Saved')">
+        Add Application +
+      </button>
+    </header>
+
+    <!-- search, sort, favourites and reset -->
+    <div class="card-inturn mb-3">
       <div class="d-flex flex-wrap gap-2 align-items-center">
         <!-- search by job title or company, filters the board as you type -->
-        <input v-model="searchText" type="search" class="form-control rounded-3 w-auto" placeholder="Search applications..."/>
-        <!-- top button always starts in Saved -->
-        <button class="btn btn-dark rounded-3" v-on:click="openAddModal('Saved')">
-          Add Application +
+        <input v-model="searchText" type="search" class="input-inturn w-auto" placeholder="Search title or company"/>
+
+        <!-- sort the cards inside each column -->
+        <select v-model="sortBy" class="input-inturn w-auto" aria-label="Sort applications">
+          <option value="default">Sort by default</option>
+          <option value="deadline">Deadline, soonest first</option>
+          <option value="latest">Latest saved</option>
+        </select>
+
+        <!-- show only favourites, is-active when it's on -->
+        <button
+          type="button"
+          class="chip-inturn"
+          :class="{ 'is-active': favouritesOnly }"
+          v-on:click="favouritesOnly = !favouritesOnly"
+        >
+          &#9733; Favourites
+        </button>
+
+        <!-- clears the search, sort and favourites filter, only shows when one of them is on -->
+        <button
+          v-if="hasChanges"
+          type="button"
+          class="btn-neutral-inturn"
+          v-on:click="resetFilters"
+        >
+          &#8634; Reset
         </button>
       </div>
     </div>
@@ -258,12 +319,12 @@ onUnmounted(() => {
     <!-- Error message, only shows if something failed and no modal is open -->
     <div v-if="errorMessage && !isModalOpen()" class="alert alert-danger">{{ errorMessage }}</div>
 
-    <!-- nothing matches the search -->
-    <p v-if="searchText.trim() !== '' && visibleApplications.length === 0" class="text-secondary">
-      No applications match "{{ searchText }}".
+    <!-- nothing matches the search or the favourites filter -->
+    <p v-if="isFiltering && visibleApplications.length === 0" class="text-secondary">
+      No applications match your search or filter.
     </p>
-    <p v-else-if="searchText.trim() !== ''">
-      {{ visibleApplications.length }} search results found.
+    <p v-else-if="isFiltering">
+      {{ visibleApplications.length }} results found.
     </p>
 
     <!-- Application Tracking Boards -->
@@ -282,19 +343,19 @@ onUnmounted(() => {
       v-on:pointerleave="setSelectedColumn(null)"
       >
         <!-- border-primary highlights the column the dragged card is over -->
-        <div class="bg-white border rounded-4 p-3" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
-          <!-- column header, the count only includes cards that match the search -->
+        <div class="card-inturn" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+          <!-- column header, the count only includes cards that match the search and filter -->
           <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
             <h2 class="h6 fw-semibold mb-0">
               {{ col }}
               <span class="text-secondary fw-normal">({{ applicationsInColumn(visibleApplications, col).length }})</span>
             </h2>
             <!-- column + button starts the form in this column -->
-            <button class="btn btn-dark btn-sm rounded-3 px-3" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
+            <button class="btn-secondary-inturn btn-sm-inturn" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
           </div>
 
           <!-- handle card dragging -->
-          <!-- (inner loop) only shows applications which match the status of the current looped column and the search -->
+          <!-- (inner loop) only shows applications which match the status of the current looped column, the search and the filter, in the sorted order -->
           <div
               v-for="app in applicationsInColumn(visibleApplications, col)" 
               :key="app._id"
@@ -302,12 +363,12 @@ onUnmounted(() => {
               :style="{ opacity: draggedCard == app ? 0.5 : 1 }"
               v-on:pointerdown="startDrag($event, app)"
           >
-              <ApplicationCard :app="app">
+              <ApplicationCard :app="app" v-on:tailor-resume="goToSkillGap">
                 <select v-if="isMobile" 
                   :value="app.status" 
                   v-on:change="onMoveCard(app, $event.target.value)" 
                   v-on:pointerdown.stop
-                  class="form-select form-select-sm mt-3">
+                  class="input-inturn mt-3">
                   <option v-for="col in kanbanColumns" :key="col" :value="col">Move to {{ col }}</option>
                 </select>
               </ApplicationCard>
@@ -321,7 +382,7 @@ onUnmounted(() => {
               />
           </div>
 
-          <div v-if="!isMobile" class="border-dashed rounded-4 p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+          <div v-if="!isMobile" class="border-dashed p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
               <p class="small text-secondary mb-0">Drag card here</p>
           </div>
         </div>
@@ -380,7 +441,8 @@ onUnmounted(() => {
 <style scoped>
   /* bootstrap has no dashed border or grab cursor */
   .border-dashed {
-      border: 2px dashed #d5def0;
+      border: 2px dashed var(--inturn-border-strong);
+      border-radius: var(--r-md);
   }
 
   .cursor-grab { 

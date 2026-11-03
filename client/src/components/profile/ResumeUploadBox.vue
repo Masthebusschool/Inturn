@@ -83,7 +83,7 @@ async function upload(file) {
           {{ resume.pageCount }} {{ resume.pageCount === 1 ? 'page' : 'pages' }} · {{ resume.wordCount }} words
         </p>
       </div>
-      <button type="button" class="btn btn-link link-secondary p-0" @click="chooseFile">Replace</button>
+      <button type="button" class="btn-link-inturn" @click="chooseFile">Replace</button>
     </div>
 
     <!-- Not uploaded yet (or uploading): the drop zone -->
@@ -116,16 +116,16 @@ async function upload(file) {
   gap: 0.4rem;
   width: 100%;
   padding: 2rem 1rem;
-  background: #fff;
-  border: 2px dashed #4e8be6;
-  border-radius: 12px;
-  color: #212529;
+  background: var(--inturn-surface);
+  border: 2px dashed var(--inturn-primary);
+  border-radius: var(--r-md);
+  color: var(--inturn-text);
   cursor: pointer;
 }
 
 .drop-zone:hover,
 .drop-zone.dragging {
-  background: #e3ecfb;
+  background: var(--inturn-primary-soft);
 }
 
 .drop-zone:focus-visible {
@@ -140,7 +140,7 @@ async function upload(file) {
 .upload-icon {
   width: 36px;
   height: 36px;
-  color: #4e8be6;
+  color: var(--inturn-primary);
 }
 
 .drop-title {
@@ -148,7 +148,7 @@ async function upload(file) {
 }
 
 .muted {
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   font-size: 0.85rem;
 }
 
@@ -157,16 +157,16 @@ async function upload(file) {
   align-items: center;
   gap: 0.85rem;
   padding: 0.9rem 1rem;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border);
+  border-radius: var(--r-md);
 }
 
 .file-icon {
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  color: #4e8be6;
+  color: var(--inturn-primary);
 }
 
 .file-meta {

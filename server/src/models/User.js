@@ -87,23 +87,8 @@ const userSchema = new mongoose.Schema(
       type: [{ type: String, trim: true, minLength: 1, maxLength: [50, 'Each industry must not exceed 50 characters'] }],
       validate: [(arr) => arr.length <= 10, 'You can add at most 10 industries'],
     },
-    targetRoles: [String], // From the team scaffold; not asked in the UI yet.
-    // Resume profile from the Skill Gap feature (Mas). Read by toProfile() in utils/profile.js;
-    // no page edits these on the User yet. Dates are free text ("Jan 2024", "Present").
-    summary: String,
-    experience: [
-      {
-        title: String,
-        company: String,
-        startDate: String,
-        endDate: String,
-        current: { type: Boolean, default: false },
-        bullets: [String],
-        skills: [String],
-      },
-    ],
-    projects: [{ name: String, bullets: [String], skills: [String], url: String }],
-    education: [{ school: String, degree: String, field: String, startDate: String, endDate: String }],
+    // Work experience, projects and summaries live on each Resume, not here.
+    // utils/profile.js toProfile() builds the Skill Gap / "Start from Profile" shape from the fields above.
 
    // Mock Interview Journal questions & saved reflections
     journalQuestions: {

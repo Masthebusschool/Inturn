@@ -84,8 +84,8 @@ function startDeepAnalysis() {
         </p>
       </div>
       <div class="header-actions">
-        <RouterLink v-if="resume" :to="`/resumes/${id}`" class="btn-primary-inturn">Edit resume</RouterLink>
-        <RouterLink to="/resumes" class="btn-primary-inturn">Back to My Resumes</RouterLink>
+        <RouterLink v-if="resume" :to="`/resumes/${id}`" class="btn-secondary-inturn">Edit resume</RouterLink>
+        <RouterLink to="/resumes" class="btn-neutral-inturn">Back to My Resumes</RouterLink>
       </div>
     </header>
 
@@ -93,13 +93,13 @@ function startDeepAnalysis() {
       <div v-for="error in errors" :key="error">{{ error }}</div>
     </div>
 
-    <article v-if="analyzing" class="panel text-center" role="status">
+    <article v-if="analyzing" class="card-inturn panel text-center" role="status">
       <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
       Analyzing your resume...
     </article>
 
     <template v-else-if="review">
-      <article class="panel score-panel">
+      <article class="card-inturn panel score-panel">
         <div class="score" aria-label="Resume score">
           <span class="score-value">{{ review.score ?? '–' }}</span>
           <span class="score-max">/ 100</span>
@@ -115,7 +115,7 @@ function startDeepAnalysis() {
         <button
           v-if="review.checks.length"
           type="button"
-          class="btn-primary-inturn"
+          class="btn-secondary-inturn"
           aria-controls="resume-report"
           :aria-expanded="showReport"
           @click="showReport = !showReport"
@@ -125,7 +125,7 @@ function startDeepAnalysis() {
       </article>
 
       <!-- The report: checks grouped by category (Contact information, Structure, Content) -->
-      <article v-if="showReport" id="resume-report" class="panel">
+      <article v-if="showReport" id="resume-report" class="card-inturn panel">
         <section v-for="group in reportGroups" :key="group.title" class="report-group">
           <div class="group-head">
             <h2 class="section-title mb-0">{{ group.title }}</h2>
@@ -147,7 +147,7 @@ function startDeepAnalysis() {
       </article>
 
       <!-- Step 2: AI deep analysis against a job posting (Skill Gap feature) -->
-      <article class="panel deep-panel">
+      <article class="card-inturn panel deep-panel">
         <div>
           <h2 class="section-title mb-1">AI deep analysis</h2>
           <p class="muted mb-0">Compare this resume with a job posting to find missing skills and how to tailor it.</p>
@@ -165,50 +165,17 @@ function startDeepAnalysis() {
   gap: 0.5rem;
 }
 
-.analysis-page {
-  max-width: 760px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-}
-
-.header-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.15rem;
-}
-
 .header-subtitle {
-  font-size: 0.8rem;
-  margin-bottom: 0;
   overflow-wrap: anywhere;
 }
 
 .panel {
-  padding: 1.5rem;
   margin-bottom: 1.25rem;
-  background: #f3f3f3;
-  border-radius: 16px;
 }
 
 .muted {
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   font-size: 0.9rem;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
 }
 
 .score-panel {
@@ -227,12 +194,12 @@ function startDeepAnalysis() {
 .score-value {
   font-size: 2.75rem;
   font-weight: 700;
-  color: #3c70b3;
+  color: var(--inturn-primary-hover);
   line-height: 1;
 }
 
 .score-max {
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .score-detail {
@@ -250,15 +217,14 @@ function startDeepAnalysis() {
 .progress {
   height: 10px;
   margin-bottom: 0.5rem;
-  background: #dde7f8;
+  background: var(--inturn-primary-soft);
 }
 
 .progress-bar {
-  background: #4e8be6;
+  background: var(--inturn-primary);
 }
 
-.check-list,
-.skill-list {
+.check-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -273,14 +239,14 @@ function startDeepAnalysis() {
   justify-content: space-between;
   align-items: baseline;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #dde7f8;
+  border-bottom: 2px solid var(--inturn-primary-soft);
 }
 
 .check {
   display: flex;
   gap: 0.75rem;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #e2e2e2;
+  border-bottom: 1px solid var(--inturn-border);
 }
 
 .check:last-child {
@@ -326,77 +292,7 @@ function startDeepAnalysis() {
   font-size: 0.9rem;
 }
 
-.skill-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.skill {
-  padding: 0.3rem 0.85rem;
-  background: #fff;
-  color: #3c70b3;
-  border: 1px solid #c9d9f3;
-  border-radius: 999px;
-  font-size: 0.85rem;
-}
-
-.skill.evidenced {
-  background: #e3ecfb;
-  border-color: #4e8be6;
-}
-
-.legend {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.75rem;
-  font-size: 0.8rem;
-}
-
-.legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #e3ecfb;
-  border: 1px solid #4e8be6;
-}
-
-.btn-primary-inturn,
-.btn-outline-inturn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: 10px;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-.btn-primary-inturn {
-  background: #4e8be6;
-  color: #fff;
-  border: none;
-}
-
-.btn-primary-inturn:hover {
-  background: #3c70b3;
-  color: #fff;
-}
-
-.btn-outline-inturn {
-  background: #fff;
-  color: #4e8be6;
-  border: 1px solid #4e8be6;
-}
-
-.btn-outline-inturn:hover {
-  background: #e3ecfb;
-  color: #3c70b3;
-}
-
 @media (max-width: 576px) {
-  .page-header,
   .score-panel,
   .deep-panel {
     flex-direction: column;
@@ -405,10 +301,6 @@ function startDeepAnalysis() {
 
   .score-detail {
     width: 100%;
-  }
-
-  .panel {
-    padding: 1.25rem;
   }
 }
 </style>

@@ -26,6 +26,9 @@ importers:
       vue:
         specifier: ^3.5.0
         version: 3.5.43
+      vue-multiselect:
+        specifier: ^3.5.0
+        version: 3.5.0
       vue-router:
         specifier: ^5.0.0
         version: 5.3.1(@vue/compiler-sfc@3.5.43)(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.5))(vue@3.5.43)
@@ -1426,6 +1429,10 @@ packages:
       yaml:
         optional: true
 
+  vue-multiselect@3.5.0:
+    resolution: {integrity: sha512-i758SEqWFcFshL1eAg0F3EFeFQ1mOCmh2mgnGCZv1XpHFVIAv8fxo8bQQ4ZnMoaPhMp8KI1A6gPBVHh3YzRg/Q==}
+    engines: {node: '>= 14.18.1', npm: '>= 6.14.15'}
+
   vue-router@5.3.1:
     resolution: {integrity: sha512-GDBZzgmILxA/kFnkFbJjQZdZ2QQbngnIMMuoUcjhZIfH1RGMaPjPwX5ASnV38qamuA9uhO0RDjSBHTDNG2uXyQ==}
     peerDependencies:
@@ -2769,6 +2776,8 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.6.5
       fsevents: 2.3.3
+
+  vue-multiselect@3.5.0: {}
 
   vue-router@5.3.1(@vue/compiler-sfc@3.5.43)(rolldown@1.2.12)(vite@8.3.2(@types/node@26.6.5))(vue@3.5.43):
     dependencies:

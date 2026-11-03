@@ -9,7 +9,7 @@ const props = defineProps({
   prompt: { type: String, required: true },
   confirmLabel: { type: String, default: 'Confirm' },
   cancelLabel: { type: String, default: 'Cancel' },
-  triggerClass: { type: String, default: 'btn btn-sm btn-outline-danger' },
+  triggerClass: { type: String, default: 'btn-danger-inturn btn-sm-inturn' },
   triggerAriaLabel: { type: String, default: '' },
   disabled: Boolean,
   busy: Boolean,
@@ -72,8 +72,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside, tru
     <div v-else role="group" :aria-labelledby="promptId" class="cb-bar" @keydown.esc.stop.prevent="disarm()" @focusout="onFocusOut">
       <span :id="promptId" class="cb-prompt">{{ prompt }}</span>
       <span class="cb-actions">
-        <button type="button" class="btn btn-sm btn-danger" @click="onConfirm">{{ confirmLabel }}</button>
-        <button ref="cancelEl" type="button" class="btn btn-sm btn-light border" @click="disarm()">{{ cancelLabel }}</button>
+        <button type="button" class="btn-danger-inturn btn-sm-inturn" @click="onConfirm">{{ confirmLabel }}</button>
+        <button ref="cancelEl" type="button" class="btn-neutral-inturn btn-sm-inturn" @click="disarm()">{{ cancelLabel }}</button>
       </span>
     </div>
   </div>
@@ -82,7 +82,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside, tru
 <style scoped>
 .cb { display: inline-flex; max-width: 100%; }
 .cb-armed { display: flex; }
-.cb-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.75rem; width: 100%; padding: 0.375rem 0.375rem 0.375rem 0.75rem; border: 1px solid var(--bs-danger-border-subtle); border-radius: var(--bs-border-radius); background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); font-size: 0.875rem; line-height: 1.35; animation: cb-in 0.16s ease-out; }
+.cb-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem 0.75rem; width: 100%; padding: 0.375rem 0.375rem 0.375rem 0.75rem; border: 1px solid var(--bs-danger-border-subtle); border-radius: var(--r-sm); background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); font-size: 0.875rem; line-height: 1.35; animation: cb-in 0.16s ease-out; }
 .cb-prompt { flex: 1 1 auto; min-width: 0; }
 .cb-actions { display: inline-flex; gap: 0.375rem; flex-shrink: 0; margin-left: auto; }
 @keyframes cb-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }

@@ -256,16 +256,16 @@ async function deleteQuestion(questionId) {
 </script>
 
 <template>
-  <main class="p-3 p-lg-4 text-start">
+  <section class="text-start">
     <!-- Shown if user is not logged in -->
-    <div v-if="isLoggedOut" class="card rounded-4 p-5 text-center my-4 mx-auto" style="max-width: 520px;">
+    <div v-if="isLoggedOut" class="card-inturn p-5 text-center my-4 mx-auto" style="max-width: 520px;">
       <i class="bi bi-lock fs-1 text-primary mb-2"></i>
       <h2 class="h4 fw-semibold mb-2">Log in to access your Interview Journal</h2>
       <p class="text-secondary small mb-4">
         Sign in to practice common interview questions, save your STAR reflections, and track your preparation progress.
       </p>
       <div>
-        <RouterLink to="/login" class="btn btn-inturn rounded-pill px-4 py-2 fw-semibold">
+        <RouterLink to="/login" class="btn-primary-inturn">
           Go to Login
         </RouterLink>
       </div>
@@ -274,10 +274,10 @@ async function deleteQuestion(questionId) {
     <!-- Shown when logged in -->
     <div v-else>
       <!-- Top Header -->
-      <div class="card rounded-3 p-3 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+      <header class="page-header">
         <div>
-          <h1 class="h5 mb-1">{{ userName }}'s Interview Journal</h1>
-          <p class="small mb-0 text-secondary">
+          <h1 class="header-title">Interview Journal</h1>
+          <p class="header-subtitle">
             Hi {{ userName }} - Let's turn your experiences into ready-made interview stories
           </p>
         </div>
@@ -285,17 +285,14 @@ async function deleteQuestion(questionId) {
           <i class="bi bi-journal-check me-1 text-primary"></i>
           {{ savedCount }} / {{ questions.length }} Saved to Journal
         </div>
-      </div>
+      </header>
 
-      <div class="row g-4 px-lg-4">
+      <div class="row g-4">
         <!-- Left Column: Questions List -->
         <div class="col-12 col-lg-5">
-          <section class="card border-0 bg-body-secondary rounded-4 pt-4 overflow-hidden">
+          <section class="card-inturn p-0 pt-4 overflow-hidden">
             <div class="px-3 px-md-4 pb-3">
-              <div class="text-secondary fw-semibold small">
-                Interview Preparation
-              </div>
-              <h2 class="h6 fw-bold mt-2 mb-1">Practice Questions</h2>
+              <h2 class="section-title mb-1">Practice Questions</h2>
               <div class="text-secondary small">
                 {{ questions.length }} {{ questions.length === 1 ? 'Question' : 'Questions' }} in your journal
               </div>
@@ -325,7 +322,7 @@ async function deleteQuestion(questionId) {
                 <div class="flex-grow-1 min-w-0 text-break">
                   <div class="d-flex flex-wrap align-items-center gap-2">
                     <span class="text-primary fw-semibold small">{{ q.category }}</span>
-                    <span v-if="q.company" class="badge rounded-pill bg-primary-subtle text-primary">
+                    <span v-if="q.company" class="tag-inturn">
                       {{ q.company }}
                     </span>
                     <span v-if="isQuestionSaved(q)" class="badge rounded-pill bg-success-subtle text-success">
@@ -345,7 +342,7 @@ async function deleteQuestion(questionId) {
             <!-- Bottom Button to Open Modal -->
             <button
               type="button"
-              class="btn browse-intel-bar w-100 d-flex justify-content-between align-items-center gap-2 px-3 px-md-4 py-3 border-top border-secondary-subtle rounded-0 text-start"
+              class="browse-intel-bar w-100 d-flex justify-content-between align-items-center gap-2 px-3 px-md-4 py-3 border-0 border-top border-secondary-subtle text-start"
               @click="showModal = true"
             >
               <span class="d-flex align-items-center gap-2 small fw-semibold text-dark">
@@ -364,14 +361,14 @@ async function deleteQuestion(questionId) {
           <!-- Empty State if no question is selected -->
           <section
             v-if="!activeQuestion"
-            class="card border-0 bg-body-secondary rounded-4 p-4 h-100 d-flex flex-column align-items-center justify-content-center text-center"
+            class="card-inturn p-4 h-100 d-flex flex-column align-items-center justify-content-center text-center"
           >
             <i class="bi bi-journal-plus fs-1 text-secondary mb-2"></i>
-            <h2 class="h5 fw-bold mb-1">No question selected</h2>
+            <h2 class="section-title mb-1">No question selected</h2>
             <p class="text-secondary small mb-3">
               Add questions from the Interview Intel community to start practicing your responses.
             </p>
-            <button class="btn btn-inturn rounded-pill px-4 py-2 small fw-semibold" @click="showModal = true">
+            <button class="btn-primary-inturn" @click="showModal = true">
               <i class="bi bi-people me-2"></i>Browse Community Questions
             </button>
           </section>
@@ -379,7 +376,7 @@ async function deleteQuestion(questionId) {
           <!-- Active Question Editor -->
           <section
             v-else
-            class="card border-0 bg-body-secondary rounded-4 p-3 p-md-4 h-100 d-flex flex-column"
+            class="card-inturn h-100 d-flex flex-column"
           >
             <div class="d-flex justify-content-between align-items-center small mb-2">
               <span class="text-secondary fw-semibold">
@@ -389,7 +386,7 @@ async function deleteQuestion(questionId) {
                 <span class="fw-semibold text-primary">{{ activeQuestion.category }}</span>
                 <button
                   type="button"
-                  class="btn btn-link btn-sm text-danger text-decoration-none p-0"
+                  class="btn-link-inturn text-danger"
                   title="Remove question from journal"
                   @click="deleteQuestion(activeQuestion.id)"
                 >
@@ -401,7 +398,7 @@ async function deleteQuestion(questionId) {
             <h2 class="h5 fw-bold mb-3 text-break">{{ activeQuestion.text }}</h2>
 
             <!-- Helpful Tips Box -->
-            <div class="inturn-bg text-white rounded-3 p-3 mb-3">
+            <div class="callout-inturn mb-3">
               <div class="fw-semibold small">Helpful Tips</div>
               <div class="small">{{ activeQuestion.tip }}</div>
             </div>
@@ -423,7 +420,7 @@ async function deleteQuestion(questionId) {
               id="reflection-input"
               v-model="activeQuestion.response"
               maxlength="4000"
-              class="form-control border-0 rounded-4 p-3 flex-grow-1 reflection-box"
+              class="input-inturn flex-grow-1 reflection-box"
               placeholder="Start writing your response here..."
             ></textarea>
 
@@ -437,14 +434,14 @@ async function deleteQuestion(questionId) {
 
               <div class="d-flex align-items-center gap-3 ms-auto">
                 <button
-                  class="btn btn-link text-secondary text-decoration-none small p-0"
+                  class="btn-link-inturn"
                   :disabled="!activeQuestion.response.trim()"
                   @click="clearResponse"
                 >
                   Clear
                 </button>
                 <button
-                  class="btn btn-inturn rounded-pill px-3 py-2 small fw-semibold"
+                  class="btn-primary-inturn"
                   :disabled="!activeQuestion.response.trim() || isQuestionSaved(activeQuestion)"
                   @click="saveResponse"
                 >
@@ -465,32 +462,19 @@ async function deleteQuestion(questionId) {
         @add-question="addQuestionToJournal"
       />
     </div>
-  </main>
+  </section>
 </template>
 
 <style scoped>
-.inturn-bg,
-.btn-inturn {
-  background-color: #4a86e8;
-  color: #fff;
-  border: 0;
-}
-.btn-inturn:hover {
-  background-color: #3a74d4;
-  color: #fff;
-}
-.btn-inturn:disabled {
-  background-color: #9db9ea;
-  color: #fff;
-}
 .q-item-active {
-  background-color: #e1edfd !important;
+  background-color: var(--inturn-primary-soft) !important;
 }
 .browse-intel-bar {
-  background-color: #eaedf2;
+  font: inherit;
+  background-color: var(--inturn-surface-muted);
 }
 .browse-intel-bar:hover {
-  background-color: #dfe4ec;
+  background-color: var(--inturn-primary-soft);
 }
 .reflection-box {
   resize: none;

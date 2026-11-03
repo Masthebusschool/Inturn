@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 export function apiErrors(err, req, res, next) {
   if (res.headersSent) return next(err);
   if (err instanceof multer.MulterError) {
-    const msg = err.code === 'LIMIT_FILE_SIZE' ? 'PDF must be 5 MB or smaller' : err.message;
+    const msg = err.code === 'LIMIT_FILE_SIZE' ? 'PDF must be 2 MB or smaller' : err.message;
     return res.status(400).json({ error: msg });
   }
   const status = err.status ?? err.statusCode;

@@ -22,11 +22,13 @@ const applicationSchema = new mongoose.Schema(
         salaryMax: { type: Number },
         expiryDate: { type: Date }, // application deadline
         jobDetailsUrl: { type: String },
+        description: { type: String }, // full job description text, snapshotted at save time so Skill Gap Analysis has real text to score
 
         status: { type: String, enum: STATUSES, default: STATUS.SAVED },
         appliedDate: { type: Date }, // opt
         interviewAt: { type: Date, default: null }, // opt
         isFavourite: { type: Boolean, required: true, default: false },
+        skillGapResultId: { type: mongoose.Schema.Types.ObjectId, ref: 'SkillGapResult', default: null }, // set once a Skill Gap Analysis is linked to this card
 
         tasks: { type: [taskSchema], default:[] }, // empty checklist at start
     },
@@ -70,7 +72,11 @@ export function toCard(application, skills) {
         tasks: application.tasks, // [{ _id, text, done }] for the checklist modal
         prep: `${completedTasks} / ${application.tasks.length}`,
         matched: skillsMatched,
-        total: application.skills.length
+        total: application.skills.length,
+        // null until a Skill Gap Analysis is linked (see skillGapResultId); populated by getApplicationsByUser.
+        // Prefer the tailored draft's score, same as the Skill Gap page's history badge.
+        skillGapScore: application.skillGapResultId?.draftScore?.atsScore ?? application.skillGapResultId?.atsScore ?? null,
+        skillGapBand: application.skillGapResultId?.draftScore?.band ?? application.skillGapResultId?.band ?? null,
     };
 
     return card;
@@ -80,7 +86,7 @@ export function toCard(application, skills) {
 
 // get all specified user's applications
 export function getApplicationsByUser(uid) {
-    return Application.find({ user: uid});
+    return Application.find({ user: uid }).populate('skillGapResultId', 'atsScore band draftScore.atsScore draftScore.band');
 }
 
 // create application
@@ -109,6 +115,12 @@ export function updateApplicationInterviewDateById(id, uid, interviewAt) {
 export function findDuplicateApplication(userId, title, companyName) {
     return Application.findOne({ user: userId, title: title, companyName: companyName })
         .collation({ locale: 'en', strength: 2 });
+}
+
+// get one application owned by this user, used to prefill Skill Gap Analysis from a saved job
+export function getApplicationByIdAndUser(id, uid) {
+    if (!mongoose.isValidObjectId(id)) return null;
+    return Application.findOne({ _id: id, user: uid });
 }
 
 // favourite or unfavourite a card
