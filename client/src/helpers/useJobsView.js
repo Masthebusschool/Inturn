@@ -16,7 +16,7 @@ export function useJobsView() {
   const pageInput = ref("");
 
   const loading = ref(false);
-  const loadingMessage = ref("Loading opportunities...");
+  const loadingMessage = ref("Loading jobs...");
   const error = ref("");
   const updatedAt = ref("");
 
@@ -135,7 +135,7 @@ export function useJobsView() {
     controller = currentController;
 
     loading.value = true;
-    loadingMessage.value = "Loading opportunities...";
+    loadingMessage.value = "Loading jobs...";
     error.value = "";
 
     try {
@@ -152,41 +152,39 @@ export function useJobsView() {
         {
           signal: currentController.signal,
           withCredentials: true,
+          timeout: 60000,
         }
       );
 
-      if (version !== requestVersion || disposed) {
+      if (
+        version !== requestVersion ||
+        disposed
+      ) {
         return;
       }
 
-      // The first complete collection is still running.
-      if (response.status === 202) {
-        loadingMessage.value =
-          "Preparing listings: " +
-          (response.data.loaded || 0) +
-          " jobs collected. Please wait.";
-
-        timer = setTimeout(loadJobs, 3000);
-        return;
-      }
+      const data = response.data;
 
       if (
-        !Array.isArray(response.data.results) ||
-        !Number.isFinite(response.data.total)
+        !Array.isArray(data.results) ||
+        !Number.isInteger(data.total) ||
+        data.total < 0 ||
+        !Number.isInteger(data.page) ||
+        data.page < 0
       ) {
-        throw new Error("Unexpected job response");
+        throw new Error("Unexpected job response.");
       }
 
-      jobs.value = response.data.results;
-      total.value = response.data.total;
-      page.value = response.data.page;
+      jobs.value = data.results;
+      total.value = data.total;
+      page.value = data.page;
 
       filterOptionsJobs.value =
-        response.data.filterOptionsJobs || [];
+        Array.isArray(data.filterOptionsJobs)
+          ? data.filterOptionsJobs
+          : [];
 
-      updatedAt.value = response.data.updatedAt || "";
-
-      loading.value = false;
+      updatedAt.value = data.updatedAt || "";
     } catch (err) {
       if (
         version !== requestVersion ||
@@ -199,23 +197,29 @@ export function useJobsView() {
       jobs.value = [];
       total.value = 0;
 
-      console.error("Jobs request failed:", {
-        status: err.response?.status,
-        response: err.response?.data,
-        message: err.message,
-        });
+      const serverMessage = err.response?.data?.error;
+      const status = err.response?.status;
 
-        const status = err.response?.status;
-        const serverMessage = err.response?.data?.error;
-
+      if (typeof serverMessage === "string") {
+        error.value = serverMessage;
+      } else if (err.code === "ECONNABORTED") {
         error.value =
-        typeof serverMessage === "string"
-            ? serverMessage
-            : status
-            ? `Jobs request failed: HTTP ${status}.`
-            : err.message || "Could not connect to the jobs server.";
-
-      loading.value = false;
+          "Loading jobs took too long. Please try again.";
+      } else if (status) {
+        error.value =
+          `Jobs request failed: HTTP ${status}.`;
+      } else {
+        error.value =
+          err.message ||
+          "Could not connect to the jobs server.";
+      }
+    } finally {
+      if (
+        version === requestVersion &&
+        !disposed
+      ) {
+        loading.value = false;
+      }
     }
   }
 

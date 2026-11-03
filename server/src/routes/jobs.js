@@ -1,240 +1,30 @@
 import { Router } from "express";
 
 import {
-  readFile,
-  writeFile,
-  mkdir,
-  rename,
-} from "node:fs/promises";
-
-import { resolve, dirname } from "node:path";
+  loadPublishedSnapshot,
+  fetchMcfJson,
+} from "../services/jobsSnapshot.js";
 
 const router = Router();
 
 const upstreamUrl =
   "https://api.mycareersfuture.gov.sg/v2/jobs";
 
-const cachePath = resolve("data/mcf-jobs-cache.json");
-
-let snapshot = null;
-let initialization = null;
-let collecting = null;
-let lastFailure = 0;
-let collectionError = "";
-
-let progress = {
-  loaded: 0,
-  expected: 0,
-};
-
-function wait(milliseconds) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-async function fetchUpstream(url) {
-  for (let attempt = 0; attempt < 4; attempt++) {
-    try {
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(30000),
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const error = new Error(
-          "Job API returned HTTP " + response.status
-        );
-
-        error.retryable =
-          response.status === 429 ||
-          response.status >= 500;
-
-        throw error;
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error.retryable === false || attempt === 3) {
-        throw error;
-      }
-
-      await wait(1500 * (attempt + 1));
-    }
-  }
-}
-
-// Store card/filter information.
-// The full description is fetched when opening a job.
-function compactJob(job) {
-  return {
-    uuid: job.uuid,
-    title: job.title,
-    skills: job.skills || [],
-    categories: job.categories || [],
-    employmentTypes: job.employmentTypes || [],
-    minimumYearsExperience: job.minimumYearsExperience,
-    salary: job.salary,
-    address: job.address,
-    metadata: job.metadata,
-
-    postedCompany: job.postedCompany
-      ? { name: job.postedCompany.name }
-      : null,
-  };
-}
-
-async function collectJobs() {
-  const collected = new Map();
-
-  progress = {
-    loaded: 0,
-    expected: 0,
-  };
-
-  let page = 0;
-
-  while (true) {
-    const data = await fetchUpstream(
-      upstreamUrl +
-        "?limit=100&page=" +
-        page +
-        "&sortBy=new_posting_date"
-    );
-
-    if (
-      !Array.isArray(data.results) ||
-      !Number.isFinite(data.total)
-    ) {
-      throw new Error("Unexpected job API response");
-    }
-
-    progress.expected = data.total;
-
-    for (const job of data.results) {
-      if (job.uuid) {
-        collected.set(job.uuid, compactJob(job));
-      }
-    }
-
-    progress.loaded = collected.size;
-
-    const hasNextPage = Boolean(
-      data._links?.next?.href
-    );
-
-    if (!hasNextPage) {
-      if ((page + 1) * 100 < data.total) {
-        throw new Error(
-          "Collection stopped before all reported pages were read"
-        );
-      }
-
-      break;
-    }
-
-    if (data.results.length === 0) {
-      throw new Error("An intermediate job page was empty");
-    }
-
-    page++;
-    await wait(250);
-  }
-
-  const nextSnapshot = {
-    updatedAt: new Date().toISOString(),
-    jobs: [...collected.values()],
-  };
-
-  await mkdir(dirname(cachePath), {
-    recursive: true,
-  });
-
-  await writeFile(
-    cachePath + ".tmp",
-    JSON.stringify(nextSnapshot)
-  );
-
-  await rename(cachePath + ".tmp", cachePath);
-
-  snapshot = nextSnapshot;
-  collectionError = "";
-}
-
-async function initializeCache() {
-  try {
-    const saved = JSON.parse(
-      await readFile(cachePath, "utf8")
-    );
-
-    if (
-      Array.isArray(saved.jobs) &&
-      Number.isFinite(Date.parse(saved.updatedAt))
-    ) {
-      snapshot = saved;
-    }
-  } catch {
-    // First run, or no usable cache.
-  }
-}
-
-export async function prepareSnapshot() {
-  if (!initialization) {
-    initialization = initializeCache();
-  }
-
-  await initialization;
-
-  const needsRefresh =
-    !snapshot ||
-    Date.now() - Date.parse(snapshot.updatedAt) >
-      60 * 60 * 1000;
-
-  if (
-    needsRefresh &&
-    !collecting &&
-    Date.now() - lastFailure > 60000
-  ) {
-    collecting = collectJobs()
-      .catch((error) => {
-        collectionError = error.message;
-        lastFailure = Date.now();
-
-        console.error(
-          "[Job collection]",
-          error.message
-        );
-      })
-      .finally(() => {
-        collecting = null;
-      });
-  }
-}
-
 function normalize(value) {
   return String(value || "").trim().toLowerCase();
 }
 
 function uniqueNames(values) {
-  const result = [];
+  if (!Array.isArray(values)) return [];
 
-  if (!Array.isArray(values)) {
-    return result;
-  }
-
-  for (const value of values) {
-    if (typeof value === "string") {
-      const name = normalize(value);
-
-      if (name && !result.includes(name)) {
-        result.push(name);
-      }
-    }
-  }
-
-  return result;
+  return [
+    ...new Set(
+      values
+        .filter((value) => typeof value === "string")
+        .map(normalize)
+        .filter(Boolean)
+    ),
+  ];
 }
 
 function getSkills(job) {
@@ -244,9 +34,7 @@ function getSkills(job) {
 }
 
 function getRegions(job) {
-  if (job.metadata?.isHideCompanyAddress) {
-    return [];
-  }
+  if (job.metadata?.isHideCompanyAddress) return [];
 
   return uniqueNames(
     (job.address?.districts || []).map(
@@ -256,9 +44,7 @@ function getRegions(job) {
 }
 
 function getCompanyName(job) {
-  if (job.metadata?.isHideEmployerName) {
-    return "";
-  }
+  if (job.metadata?.isHideEmployerName) return "";
 
   return normalize(job.postedCompany?.name);
 }
@@ -298,7 +84,7 @@ function getClosingTime(job) {
   return Number.isFinite(time) ? time : null;
 }
 
-// Missing values go last in either direction.
+// Missing values remain last in both directions.
 function compareValues(first, second, direction = 1) {
   if (first === null && second === null) return 0;
   if (first === null) return 1;
@@ -323,7 +109,7 @@ function readAmount(value) {
   return Number(value);
 }
 
-function searchSnapshot(input) {
+function searchSnapshot(input, snapshot) {
   const selectedSkills = uniqueNames(input.skills);
   const resumeSkills = uniqueNames(input.resumeSkills);
 
@@ -351,7 +137,6 @@ function searchSnapshot(input) {
     throw error;
   }
 
-  // Search the collected snapshot, not a single API page.
   const keywordJobs = snapshot.jobs.filter((job) => {
     const street = job.metadata?.isHideCompanyAddress
       ? ""
@@ -373,7 +158,7 @@ function searchSnapshot(input) {
     return !keyword || text.includes(keyword);
   });
 
-  // Provide options from all keyword results.
+  // Suggestions come from all keyword results.
   const regions = new Set();
   const categories = new Set();
   const skills = new Set();
@@ -381,9 +166,7 @@ function searchSnapshot(input) {
   for (const job of keywordJobs) {
     if (!job.metadata?.isHideCompanyAddress) {
       for (const district of job.address?.districts || []) {
-        if (district.region) {
-          regions.add(district.region);
-        }
+        if (district.region) regions.add(district.region);
       }
     }
 
@@ -394,9 +177,7 @@ function searchSnapshot(input) {
     }
 
     for (const skill of job.skills || []) {
-      if (skill.skill) {
-        skills.add(skill.skill);
-      }
+      if (skill.skill) skills.add(skill.skill);
     }
   }
 
@@ -477,7 +258,7 @@ function searchSnapshot(input) {
   }
 
   matches.sort((first, second) => {
-    // Selected-skill count is the first ranking rule.
+    // Selected-skill matches take priority.
     if (selectedSkills.length > 0) {
       const difference =
         second.selectedCount - first.selectedCount;
@@ -549,25 +330,25 @@ function searchSnapshot(input) {
     );
   });
 
-  // Only divide into pages AFTER filtering and sorting.
-  const limit = Math.max(
-    1,
-    Math.min(100, Math.floor(Number(input.limit) || 10))
-  );
+  const requestedLimit = Number(input.limit);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(100, Math.floor(requestedLimit || 10)))
+    : 10;
 
   const total = matches.length;
   const totalPages = Math.ceil(total / limit);
 
-  const requestedPage = Math.max(
-    0,
-    Math.floor(Number(input.page) || 0)
-  );
+  const pageNumber = Number(input.page);
+  const requestedPage = Number.isFinite(pageNumber)
+    ? Math.max(0, Math.floor(pageNumber))
+    : 0;
 
   const page = Math.min(
     requestedPage,
     Math.max(0, totalPages - 1)
   );
 
+  // Paginate only after filtering and sorting.
   return {
     results: matches
       .slice(page * limit, (page + 1) * limit)
@@ -602,29 +383,26 @@ function searchSnapshot(input) {
 router.post("/search", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
+  let snapshot;
+
   try {
-    await prepareSnapshot();
+    snapshot = await loadPublishedSnapshot();
+  } catch {
+    console.error("[Jobs search] Dataset unavailable.");
 
-    if (!snapshot) {
-      if (!collecting && collectionError) {
-        return res.status(503).json({
-          error:
-            "Job collection failed. Retry after one minute.",
-        });
-      }
+    return res.status(503).json({
+      error:
+        "Job listings are temporarily unavailable. " +
+        "A completed background sync is required.",
+    });
+  }
 
-      return res.status(202).json({
-        status: "collecting",
-        loaded: progress.loaded,
-        expected: progress.expected,
-      });
-    }
-
+  try {
     return res.json(
-      searchSnapshot(req.body || {})
+      searchSnapshot(req.body || {}, snapshot)
     );
   } catch (error) {
-    return res.status(error.status || 502).json({
+    return res.status(error.status || 500).json({
       error:
         error.status === 400
           ? error.message
@@ -634,7 +412,9 @@ router.post("/search", async (req, res) => {
 });
 
 export async function fetchJobDetail(uuid) {
-  return fetchUpstream(upstreamUrl + "/" + uuid);
+  return fetchMcfJson(
+    upstreamUrl + "/" + encodeURIComponent(uuid)
+  );
 }
 
 router.get("/:id", async (req, res) => {
@@ -646,7 +426,6 @@ router.get("/:id", async (req, res) => {
 
   try {
     const job = await fetchJobDetail(req.params.id);
-
     return res.json(job);
   } catch {
     return res.status(502).json({
