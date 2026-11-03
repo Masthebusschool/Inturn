@@ -91,7 +91,7 @@ onMounted(() => {
       :data-bs-target="'#missing-' + app._id"
       v-on:pointerdown.stop
     >
-      <small class="text-decoration-underline">View Missing</small>
+      <small class="text-decoration-underline">View Missing Skills</small>
       <i class="bi small" :class="missingOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
     </button>
 
@@ -127,7 +127,7 @@ onMounted(() => {
       View Intel ({{ app.intelCount }})
     </button>
     <!-- Interview with no matching intel -->
-    <small v-else-if="app.status === 'Interview'" class="d-block text-center text-secondary mt-2">No intel found</small>
+    <small v-else-if="app.status === 'Interview'" class="d-block text-center text-secondary mt-2">No Intel Found</small>
     </div>
 
     <slot>
