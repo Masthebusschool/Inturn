@@ -142,7 +142,7 @@ async function remove(r) {
                         <template v-if="creatingSeed === 'profile'"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Creating…</template>
                         <template v-else>Start from Profile</template>
                       </span>
-                      <span class="d-block small text-body-secondary mt-1">Copies your saved summary, skills, experience, projects and education. Edit anything afterwards.</span>
+                      <span class="d-block small text-body-secondary mt-1">Copies your skills and education from your profile. Edit anything afterwards.</span>
                     </span>
                   </span>
                 </button>
