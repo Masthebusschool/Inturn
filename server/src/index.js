@@ -49,7 +49,6 @@ app.use('/api/intel', intelRouter);
 app.use('/api/applications', applicationsRouter);
 app.use('/api/resumes', resumesRouter);
 app.use('/api/learning-tasks', learningTasksRouter);
-app.use('/api/applications', applicationsRouter);
 
 // JSON 404 for unknown /api routes (no '*' wildcard: Express 5 rejects it).
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found', path: req.originalUrl }));
