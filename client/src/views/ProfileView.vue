@@ -2,7 +2,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
-import { notificationStore } from '../stores/notifications.js'
 import { getActivity } from '../api/profile.js'
 
 const router = useRouter()
@@ -145,7 +144,6 @@ async function confirmDelete() {
   deleteError.value = ''
   try {
     await authStore.deleteAccount(typedEmail.value)
-    notificationStore.clear()
     router.replace({ name: 'login' })
   } catch (e) {
     deleteError.value = e.errors?.[0] ?? e.message ?? 'Could not delete your profile.'

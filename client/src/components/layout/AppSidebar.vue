@@ -2,30 +2,21 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authStore } from '../../stores/auth.js'
-import { notificationStore } from '../../stores/notifications.js'
-import NotificationBell from './NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 // Small screens only: the menu is hidden behind the hamburger button
 const menuOpen = ref(false)
-const notificationsOpen = ref(false)
 
-// Only one of the two drop-downs is open at a time
-watch(menuOpen, (isOpen) => { if (isOpen) notificationsOpen.value = false })
-watch(notificationsOpen, (isOpen) => { if (isOpen) menuOpen.value = false })
-
-// Close both after moving to another page
+// Close the menu after moving to another page
 watch(() => route.fullPath, () => {
   menuOpen.value = false
-  notificationsOpen.value = false
 })
 
 function closeOnEscape(event) {
   if (event.key !== 'Escape') return
   menuOpen.value = false
-  notificationsOpen.value = false
 }
 onMounted(() => document.addEventListener('keydown', closeOnEscape))
 onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape))
@@ -44,7 +35,6 @@ const links = [
 async function handleLogout() {
   menuOpen.value = false
   await authStore.logout()
-  notificationStore.clear()
   router.push({ name: 'login' })
 }
 </script>
@@ -58,9 +48,6 @@ async function handleLogout() {
         </span>
         <span class="brand-name">Inturn</span>
       </div>
-
-      <!-- Next to "Inturn" on large screens; next to the hamburger on small screens -->
-      <NotificationBell v-if="authStore.isLoggedIn" v-model:open="notificationsOpen" class="header-bell" />
 
       <!-- Hamburger: only shown on small screens -->
       <button
@@ -125,7 +112,7 @@ async function handleLogout() {
   padding:12px;
 }
 
-/* Large screens: brand with the bell right next to it */
+/* Large screens: brand at the top */
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -224,7 +211,7 @@ async function handleLogout() {
     padding: 0.4rem 0.5rem 0.4rem 1rem;
   }
 
-  /* Push the bell and hamburger to the right (works with or without the bell) */
+  /* Push the hamburger to the right */
   .brand {
     margin-right: auto;
   }
