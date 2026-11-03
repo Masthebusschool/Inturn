@@ -1,0 +1,39 @@
+name: Sync MyCareersFuture jobs
+
+on:
+  schedule:
+    - cron: "17 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcf-jobs-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install server dependencies
+        run: npm install --omit=dev --ignore-scripts --workspaces=false --package-lock=false
+
+      - name: Collect and publish jobs
+        run: npm run sync:jobs
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}

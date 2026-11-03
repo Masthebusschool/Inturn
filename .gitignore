@@ -146,6 +146,3 @@ vite.config.ts.timestamp-*
 .DS_Store
 client/package-lock.json
 
-# cache from job data
-/data/mcf-jobs-cache.json
-/data/mcf-jobs-cache.json.tmp 
