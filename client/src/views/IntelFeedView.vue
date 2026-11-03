@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import VueMultiselect from "vue-multiselect";
+
+const route = useRoute();
 
 // Posts list and auth/notice states
 const posts = ref([]);
@@ -31,9 +34,22 @@ async function loadPosts() {
   }
 }
 
-onMounted(() => {
+// Find the matching dropdown option, or "All"
+function findOption(options, text) {
+  const clean = (text || "").trim().toLowerCase();
+  const match = options.find((option) => option.toLowerCase() === clean);
+  return match || "All";
+}
+
+onMounted(async () => {
   checkAuth();
-  loadPosts();
+  await loadPosts();
+
+  // From a tracker board card, filter to that job
+  if (route.query.company || route.query.role) {
+    selectedCompany.value = findOption(companyOptions.value, route.query.company);
+    selectedRole.value = findOption(roleOptions.value, route.query.role);
+  }
 });
 
 // Filter dropdown selections

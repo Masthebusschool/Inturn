@@ -3,6 +3,7 @@ import {
     updateStatus, 
     updateInterviewDate,
     addApplication,
+    updateApplicationDetails,
     updateFavourite,
     addTask,
     updateTask,
@@ -10,9 +11,9 @@ import {
     deleteApplication
 } from '../../services/applicationsApi.js'
 
-const mobileWidth = 768; // fixed bp for mobile px
+const mobileAndTabletWidth = 992; // below bootstrap lg = phones and tablets
 
-export function isMobileScreen () { return window.innerWidth < mobileWidth; }
+export function isMobileOrTabletScreen () { return window.innerWidth < mobileAndTabletWidth; }
 
 // only the applications that belong in this column
 export function applicationsInColumn (applications, col) {
@@ -85,12 +86,14 @@ export async function saveInterviewDate (card, date) {
 }
 
 // true if the board already has a card with the same title and company, ignores capitals
-export function isDuplicateApplication (applications, details) {
+// ignoreId skips the card being edited so it isn't a duplicate of itself
+export function isDuplicateApplication (applications, details, ignoreId = null) {
   const title = details.title.toLowerCase();
   const company = details.companyName.toLowerCase();
 
   let isDuplicate = false;
   applications.forEach(app => {
+    if (app._id === ignoreId) return;
     if (app.title.toLowerCase() === title && app.company.toLowerCase() === company) {
       isDuplicate = true;
     }
@@ -101,6 +104,12 @@ export function isDuplicateApplication (applications, details) {
 // add an application typed in by the user, then fetch the board again
 export async function addNewApplication (details) {
   await addApplication(details);
+  return await getApplications();
+}
+
+// save the edit form, then fetch the board again
+export async function editApplication (card, details) {
+  await updateApplicationDetails(card._id, details);
   return await getApplications();
 }
 
@@ -148,6 +157,14 @@ export async function deleteChecklistTask (card, task) {
   countPrep(card);
 
   await deleteTask(card._id, task._id);
+}
+
+// datetime-local inputs need 'YYYY-MM-DDTHH:mm' in local time, e.g. for min or a prefilled value
+export function toDateTimeInput (value) {
+  if (!value) return '';
+  const date = new Date(value);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); // shift so toISOString shows local time
+  return date.toISOString().slice(0, 16);
 }
 
 export function formatDate (value) {

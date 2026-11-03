@@ -19,6 +19,17 @@
   --inturn-text-soft: #495057;
   --inturn-text-muted: #6c757d;
 
+  /* Application status colours (tracker board cards)
+     -bg is the card background, a light tint so text stays readable; the strong colour is for badges or text */
+  --status-saved: #64748b;        /* slate */
+  --status-saved-bg: #f1f5f9;
+  --status-applied: #8b5cf6;      /* purple */
+  --status-applied-bg: #ede9fe;
+  --status-interview: #f97316;    /* orange */
+  --status-interview-bg: #ffedd5;
+  --status-offered: #10b981;      /* green */
+  --status-offered-bg: #d1fae5;
+
   /* Corner radius: only these three */
   --r-sm: 8px;     /* buttons, inputs, small blocks */
   --r-md: 12px;    /* cards, modals, page header */
@@ -84,6 +95,12 @@
   border-radius: var(--r-sm);
   padding: 0.75rem 1rem;
 }
+
+/* Status colours, add next to a card class, e.g. class="card-muted-inturn status-applied" */
+.status-saved { background: var(--status-saved-bg); }
+.status-applied { background: var(--status-applied-bg); }
+.status-interview { background: var(--status-interview-bg); }
+.status-offered { background: var(--status-offered-bg); }
 
 /* Light blue tip / info box */
 .callout-inturn {

@@ -13,6 +13,7 @@ router.delete("/discovery-saved/:jobId", removeDiscoverySavedJob);
 router.get('/:id', isLoggedIn, applcationController.getApplicationById);
 router.patch('/:id', isLoggedIn, applcationController.updateStatus);
 router.patch('/:id/interview', isLoggedIn, applcationController.updateInterviewDate);
+router.patch('/:id/details', isLoggedIn, applcationController.editApplication);
 router.patch('/:id/favourite', isLoggedIn, applcationController.updateFavourite);
 router.post('/:id/tasks', isLoggedIn, applcationController.addTask);
 router.patch('/:id/tasks/:taskId', isLoggedIn, applcationController.updateTask);

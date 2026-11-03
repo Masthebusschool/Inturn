@@ -1,22 +1,36 @@
 <script setup>
 import { ref } from 'vue';
+import { toDateTimeInput } from '../../../helpers/apptrackingboard/KanbanViewHelper';
 
-// error from the page if saving to the backend fails
-defineProps({ errorMessage: { type: String, default: '' } });
+// error from the page if saving to the backend fails, startStatus is the column whose + was clicked
+// card is the card being edited, null when adding a new one
+const props = defineProps({
+  errorMessage: { type: String, default: '' },
+  startStatus: { type: String, default: 'Saved' },
+  card: { type: Object, default: null }
+});
 
 const emit = defineEmits(['submit', 'cancel']);
 
-const statuses = ['Saved', 'Applied', 'Interview', 'Offered'];
-const today = new Date().toISOString().split('T')[0]; 
+const isEdit = props.card !== null;
+const card = props.card || {}; // so the prefills below work when adding too
 
-// job application fields to fill up manually
-const title = ref('');
-const companyName = ref('');
-const expiryDate = ref('');
-const jobDetailsUrl = ref('');
-const skills = ref ('');
-const status = ref('Saved'); // default saved bookmark
-const interviewAt = ref(''); // only used when status is Interview
+const statuses = ['Saved', 'Applied', 'Interview', 'Offered'];
+const today = new Date().toISOString().split('T')[0];
+const now = toDateTimeInput(new Date()); // earliest interview date allowed
+
+// job application fields, prefilled from the card when editing
+const title = ref(card.title || '');
+const companyName = ref(card.company || '');
+const expiryDate = ref(card.expiryDate ? card.expiryDate.slice(0, 10) : ''); // 'YYYY-MM-DD' for the date input
+const jobDetailsUrl = ref(card.jobDetailsUrl || '');
+const skills = ref((card.skills || []).join(', '));
+const status = ref(card.status || props.startStatus); // starts in the clicked column (Saved from the top button)
+const interviewAt = ref(toDateTimeInput(card.interviewAt)); // only used when status is Interview
+
+// the starting dates, so an edit can keep a date that has already passed
+const originalExpiryDate = expiryDate.value;
+const originalInterviewAt = interviewAt.value;
 
 const errors = ref({}); // e.g. { title: 'Please enter the job title.' }
 
@@ -30,8 +44,13 @@ function validate() {
     if (expiryDate.value === '') {
       newErrors.expiryDate = 'Please pick the application deadline.';
     }
-    else if (expiryDate.value < today) {
+    else if (expiryDate.value < today && expiryDate.value !== originalExpiryDate) {
       newErrors.expiryDate = 'The deadline can\'t be in the past.';
+    }
+
+    // same format, so the strings compare in date order
+    if (status.value === 'Interview' && interviewAt.value !== '' && interviewAt.value < now && interviewAt.value !== originalInterviewAt) {
+      newErrors.interviewAt = 'The interview date can\'t be in the past.';
     }
 
     const link = jobDetailsUrl.value.trim();
@@ -47,7 +66,7 @@ function validate() {
 function submitApplication() {
     if (!validate()) return; // stop and show the errors
 
-    emit('submit', {
+    const details = {
         title: title.value.trim(),
         companyName: companyName.value.trim(),
         expiryDate: expiryDate.value,
@@ -55,9 +74,18 @@ function submitApplication() {
         skills: skills.value.split(',').map(
           skill => skill.trim()
         ).filter(skill => skill !== ''), // 'Python, , SQL' -> ['Python', 'SQL']
-        status: status.value,
-        interviewAt: status.value === 'Interview' && interviewAt.value ? new Date(interviewAt.value).toISOString() : null
-    });
+    };
+    const interviewIso = interviewAt.value ? new Date(interviewAt.value).toISOString() : null;
+
+    if (isEdit) {
+        // status is changed by moving the card, the interview date is only sent if it changed
+        if (status.value === 'Interview' && interviewAt.value !== originalInterviewAt) details.interviewAt = interviewIso;
+    } else {
+        details.status = status.value;
+        details.interviewAt = status.value === 'Interview' ? interviewIso : null;
+    }
+
+    emit('submit', details);
 }
 
 function cancel() { emit('cancel'); }
@@ -70,7 +98,7 @@ function cancel() { emit('cancel'); }
       <!-- novalidate: show our own messages instead of the browser's pop-ups -->
       <form class="modal-content" novalidate v-on:submit.prevent="submitApplication">
         <div class="modal-header">
-          <h2 class="modal-title h5">Add Application</h2>
+          <h2 class="modal-title h5">{{ isEdit ? 'Edit Application' : 'Add Application' }}</h2>
           <button type="button" class="btn-close" v-on:click="cancel"></button>
         </div>
 
@@ -96,17 +124,19 @@ function cancel() { emit('cancel'); }
             <div class="invalid-feedback">{{ errors.expiryDate }}</div>
           </div>
 
-          <div class="mb-3">
+          <!-- adding only, an existing card changes status by moving it -->
+          <div v-if="!isEdit" class="mb-3">
             <label class="form-label">Status <span class="text-danger">*</span></label>
             <select v-model="status" class="input-inturn">
               <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
 
-          <!-- only shown when the card starts in Interview -->
+          <!-- only shown when the card is in Interview -->
           <div v-if="status === 'Interview'" class="mb-3">
             <label class="form-label">Interview date</label>
-            <input v-model="interviewAt" type="datetime-local" class="input-inturn" />
+            <input v-model="interviewAt" type="datetime-local" class="input-inturn" :class="{ 'is-invalid': errors.interviewAt }" :min="now" />
+            <div class="invalid-feedback">{{ errors.interviewAt }}</div>
             <div class="form-text">Optional. You can add it later.</div>
           </div>
 
@@ -126,7 +156,7 @@ function cancel() { emit('cancel'); }
         <div class="modal-footer">
           <button type="button" class="btn-neutral-inturn" v-on:click="cancel">Cancel</button>
           <!-- type="submit" already runs submitApplication through the form, no v-on:click needed -->
-          <button type="submit" class="btn-primary-inturn">Add</button>
+          <button type="submit" class="btn-primary-inturn">{{ isEdit ? 'Save' : 'Add' }}</button>
         </div>
       </form>
     </div>

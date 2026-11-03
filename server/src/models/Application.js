@@ -53,10 +53,12 @@ export function toCard(application, skills) {
         if (task.done) completedTasks++;
     });
 
-    // get skills matched count
+    // get skills matched count and missing
     let skillsMatched = 0;
+    let skillsMissing = [];
     application.skills.forEach(skill => {
         if(skills.includes(skill.toLowerCase())) skillsMatched++;
+        else skillsMissing.push(skill);
     });
 
     // add to application cards list
@@ -72,7 +74,10 @@ export function toCard(application, skills) {
         tasks: application.tasks, // [{ _id, text, done }] for the checklist modal
         prep: `${completedTasks} / ${application.tasks.length}`,
         matched: skillsMatched,
+        missing: skillsMissing,
         total: application.skills.length,
+        skills: application.skills, // prefills the edit form
+        jobDetailsUrl: application.jobDetailsUrl, // prefills the edit form
         // null until a Skill Gap Analysis is linked (see skillGapResultId); populated by getApplicationsByUser.
         // Prefer the tailored draft's score, same as the Skill Gap page's history badge.
         skillGapScore: application.skillGapResultId?.draftScore?.atsScore ?? application.skillGapResultId?.atsScore ?? null,
@@ -100,14 +105,21 @@ export function updateApplicationStatusById(id, uid, status) {
     if (status === STATUS.APPLIED) update.appliedDate = new Date();
 
     return Application.findOneAndUpdate(
-        { _id: id, user: uid }, update, { after: true, runValidators: true} // rv ensures enum is valid status type exist
+        { _id: id, user: uid }, update, { returnDocument: 'after', runValidators: true } // rv ensures enum is valid status type exist
     );
 } 
 
 // update interview date when user gets one
 export function updateApplicationInterviewDateById(id, uid, interviewAt) {
     return Application.findOneAndUpdate(
-        { _id: id, user: uid }, { interviewAt: interviewAt }, { after: true, runValidators: true }
+        { _id: id, user: uid }, { interviewAt: interviewAt }, { returnDocument: 'after', runValidators: true }
+    );
+}
+
+// update the details typed in the edit form
+export function updateApplicationDetailsById(id, uid, details) {
+    return Application.findOneAndUpdate(
+        { _id: id, user: uid }, details, { returnDocument: 'after', runValidators: true }
     );
 }
 
@@ -125,7 +137,7 @@ export function getApplicationByIdAndUser(id, uid) {
 
 // favourite or unfavourite a card
 export function updateApplicationFavouriteById(id, userId, isFavourite) {
-    return Application.findOneAndUpdate({ _id: id, user: userId }, { isFavourite: isFavourite }, { after: true, runValidators: true });
+    return Application.findOneAndUpdate({ _id: id, user: userId }, { isFavourite: isFavourite }, { returnDocument: 'after', runValidators: true });
 }
 
 // add a (note checklist) to the card's checklist

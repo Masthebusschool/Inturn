@@ -3,7 +3,7 @@
 defineProps(
     {
         card: Object,
-        errorMessage: { type: String, default: ' '}
+        errorMessage: { type: String, default: '' }
     }
 );
 
