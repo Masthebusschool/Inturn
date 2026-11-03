@@ -45,7 +45,7 @@ const skillGapResultSchema = new mongoose.Schema(
       title: String,
       company: String,
       description: String,
-      applicationDeadline: Date, // "apply by" date, typed in manually until the real job board exists
+      applicationDeadline: Date, 
     },
     // The live link back to the Tracker board card this analysis was started from, if any.
     // (job.jobId/job.source above already existed for this purpose but were never populated —

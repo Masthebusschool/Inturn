@@ -39,7 +39,6 @@ const form = reactive({
 const errors = ref([]);
 const saving = ref(false);
 const ready = ref(false);
-// Temporary: "Edit profile" reuses these steps until a dedicated edit page exists
 const isEditing = ref(false);
 
 // The optional resume step only appears for new users; the profile page has its own upload

@@ -110,7 +110,7 @@ onMounted(async () => {
   }
 })
 
-// TODO(edit profile step): point to a dedicated edit page once it exists.
+
 function editProfile() {
   router.push('/onboarding')
 }
