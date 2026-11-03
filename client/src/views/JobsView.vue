@@ -333,8 +333,8 @@
 
 <script setup>
 
-import JobsFilter from "./JobsFilter.vue";
-import JobsSelect from "./JobsSelect.vue";
+import JobsFilter from "../components/jobs/JobsFilter.vue";
+import JobsSelect from "../components/jobs/JobsSelect.vue";
 
 import { useJobsView } from "../helpers/useJobsView.js";
 
