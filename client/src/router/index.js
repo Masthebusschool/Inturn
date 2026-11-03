@@ -12,26 +12,36 @@ import ProfileView from '../views/ProfileView.vue'
 import ResumeAnalysisView from '../views/ResumeAnalysisView.vue'
 import ResumesView from '../views/ResumesView.vue'
 import ResumeEditorView from '../views/ResumeEditorView.vue'
+import { authStore } from '../stores/auth.js' 
 
 const routes = [
-  { path: '/', name: 'home', component: KanbanView },
+  { path: '/', name: 'home', redirect: '/jobs'},
+  { path: '/applications', name: 'applications' , component: KanbanView},
   { path: '/jobs', name: 'jobs', component: JobsView },
   { path: '/skill-gap', name: 'skill-gap', component: SkillGapView },
   { path: '/mock-interview', name: 'mock-interview', component: MockInterviewView },
   { path: '/intel', name: 'intel', component: IntelFeedView },
 // meta.fullPage: shown without the sidebar (see App.vue)
-  { path: '/login', name: 'login', component: LoginView, meta: { fullPage: true } },
-  { path: '/signup', name: 'signup', component: SignupView, meta: { fullPage: true } },
+  { path: '/login', name: 'login', component: LoginView, meta: { fullPage: true , public:true } },
+  { path: '/signup', name: 'signup', component: SignupView, meta: { fullPage: true , public:true} },
   { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { fullPage: true } },
 
   { path: '/profile', name: 'profile', component: ProfileView },
-  { path: '/profile/resume-analysis', name: 'resume-analysis', component: ResumeAnalysisView },
   { path: '/resumes', name: 'resumes', component: ResumesView },
   { path: '/resumes/:id', name: 'resume-editor', component: ResumeEditorView, props: true },
+  { path: '/resumes/:id/analysis', name: 'resume-analysis', component: ResumeAnalysisView, props: true },
 
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
+router.beforeEach(async (to) => { 
+  if (!authStore.checked) await authStore.fetchMe()
+  if (authStore.isLoggedIn && (to.name === 'login' || to.name === 'signup')) {
+    return authStore.user.educationLevel ? '/jobs' : '/onboarding'}
+  if (to.meta.public) return true
+  if (!authStore.isLoggedIn) return { name: 'login', query: { redirect: to.fullPath } }
+  return true
+})
 
 export default router

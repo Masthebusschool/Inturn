@@ -13,8 +13,8 @@
     <JobsFilter
       v-else-if="showFilters"
       :model-value="filters"
-      :jobs="jobs"
-      :result-count="filteredJobs.length"
+      :jobs="filterOptionsJobs"
+      :result-count="total"
       @update:model-value="updateFilters"
       @close="showFilters = false"
     />
@@ -24,25 +24,25 @@
         <div>
           <h1 class="header-title">Job Discovery</h1>
           <p class="header-subtitle">
-            Live internship and job listings from public job boards, searchable by
-            keyword, role, and location.
+            Live internship and job listings from public job boards, sort and filter to your needs.
           </p>
         </div>
       </header>
 
-      <form class="search-bar" @submit.prevent="searchJobs">
+      <form class="card-inturn search-bar" @submit.prevent="searchJobs">
         <label for="job-search">Search jobs</label>
 
         <input
           id="job-search"
           v-model.trim="searchInput"
           type="search"
+          class="input-inturn"
           placeholder="Search jobs or internships..."
           :disabled="loading"
         />
 
         <button
-          class="search-button"
+          class="btn-primary-inturn"
           type="submit"
           :disabled="loading"
         >
@@ -50,7 +50,7 @@
         </button>
 
         <button
-          class="filter-button"
+          class="btn-secondary-inturn"
           type="button"
           :disabled="loading"
           @click="showFilters = true"
@@ -62,12 +62,38 @@
         </button>
       </form>
 
-      <section class="results-panel">
+      <p v-if="matchingResumeName" class="matching-source">
+        Matching against: {{ matchingResumeName }}
+      </p>
+
+      <div v-if="activeFilters.length > 0" class="active-filter-tags">
+        <button
+          v-for="filter in activeFilters"
+          :key="filter.key"
+          class="chip-inturn is-active"
+          type="button"
+          :aria-label="'Remove filter: ' + filter.label"
+          @click="removeSearchFilter(filter)"
+        >
+          {{ filter.label }}
+          <span aria-hidden="true">×</span>
+        </button>
+
+        <button
+          class="btn-link-inturn"
+          type="button"
+          @click="clearSearchFilters"
+        >
+          Clear all
+        </button>
+      </div>
+
+      <section class="card-inturn results-panel">
         <header class="results-header">
           <div>
-            <h2>Search Results</h2>
+            <h2 class="section-title mb-0">Search Results</h2>
 
-            <p v-if="loading">Loading opportunities...</p>
+            <p v-if="loading">{{ loadingMessage }}</p>
 
             <p v-else-if="error">Results unavailable</p>
 
@@ -76,21 +102,35 @@
               {{ total }} jobs found by keyword
             </p>
 
-            <p v-if="!loading && !error && resumeSkills.length > 0">
-              Ranked by resume skill matches within this results page.
+            <p v-if="!loading && !error">
+              Sort and filters apply to the results.
             </p>
 
-            <p v-else-if="!loading && !error">
-              Connect your resume skills to rank jobs by match.
+            <p v-else-if="!loading && !error && resumeSkills.length === 0">
+              Upload your resume to rank jobs by match.
             </p>
           </div>
 
-          <span class="source-label">MyCareersFuture</span>
+          <div class="sort-control">
+          <label for="job-sort">Sort by</label>
+
+          <select id="job-sort" v-model="sortBy" class="input-inturn">
+            <option value="skills">Best Skill Match</option>
+            <option value="closing-earliest">Closing Date: Earliest first</option>
+            <option value="closing-latest">Closing Date: Latest first</option>
+            <option value="pay-highest">Monthly Pay: Highest first</option>
+            <option value="pay-lowest">Monthly Pay: Lowest first</option>
+            <option value="company-az">Company Name: A-Z</option>
+            <option value="company-za">Company Name: Z-A</option>
+          </select>
+        </div>
+
+          <span class="badge rounded-pill bg-success-subtle text-success-emphasis">MyCareersFuture</span>
         </header>
 
         <div class="results-body">
           <div v-if="loading" class="message" role="status">
-            <p>Loading jobs. Please wait...</p>
+            <p>{{ loadingMessage }}</p>
           </div>
 
           <div v-else-if="error" class="message" role="alert">
@@ -98,7 +138,7 @@
             <p>{{ error }}</p>
 
             <button
-              class="search-button"
+              class="btn-neutral-inturn"
               type="button"
               @click="loadJobs"
             >
@@ -107,14 +147,14 @@
           </div>
 
           <div v-else-if="filteredJobs.length === 0" class="message">
-            <h3>No matching jobs on this page</h3>
+            <h3>No matching jobs</h3>
             <p>
               Try another keyword, change your filters, or check the next page.
             </p>
 
             <button
               v-if="activeFilterCount > 0"
-              class="filter-button"
+              class="btn-secondary-inturn"
               type="button"
               @click="showFilters = true"
             >
@@ -126,7 +166,7 @@
             <article
               v-for="job in filteredJobs"
               :key="job.uuid"
-              class="job-card"
+              class="card-inturn job-card"
             >
               <div class="job-header">
                 <div class="job-heading">
@@ -146,29 +186,56 @@
                 </div>
 
                 <button
-                  class="save-button"
-                  :class="{ saved: isSaved(job.uuid) }"
+                  class="btn-sm-inturn"
+                  :class="isSaved(job.uuid) ? 'btn-primary-inturn' : 'btn-secondary-inturn'"
                   :aria-pressed="isSaved(job.uuid)"
+                  :disabled="!savedStateReady || isSaving(job.uuid)"
                   type="button"
                   @click="toggleSaved(job.uuid)"
                 >
-                  {{ isSaved(job.uuid) ? "Saved" : "Save" }}
+                  {{isSaving(job.uuid) ? "Updating..." : isSaved(job.uuid) ? "Saved" : "Save"}}
                 </button>
               </div>
 
-              <p v-if="resumeSkills.length > 0" class="resume-match">
-                {{ getMatchCount(job) }} resume skills matched
+              <!-- filters skill match -->
+              <p
+                v-if="filters.skills.length > 0"
+                class="resume-match"
+              >
+                {{ getSelectedSkillMatchCount(job) }} of
+                {{ filters.skills.length }} selected skills matched
               </p>
 
+              <!-- resume skill match -->
+              <div
+                v-if="resumeSkills.length > 0"
+                class="resume-match"
+              >
+                <template v-if="getMatchPercentage(job) !== null">
+                  <strong>
+                    {{ getMatchPercentage(job) }}% skills matched
+                  </strong>
+
+                  <span>
+                    {{ getMatchCount(job) }} of
+                    {{ getJobSkillNames(job).length }} listed skills
+                  </span>
+                </template>
+
+                <span v-else>
+                  No listed skills available for comparison
+                </span>
+              </div>
+
               <div class="job-info">
-                <span>{{ getEmployment(job) }}</span>
-                <span>{{ getSalary(job) }}</span>
-                <span>{{ getExperience(job) }}</span>
+                <span class="tag-inturn">{{ getEmployment(job) }}</span>
+                <span class="tag-inturn">{{ getSalary(job) }}</span>
+                <span class="tag-inturn">{{ getExperience(job) }}</span>
               </div>
 
               <div
                 v-if="job.skills && job.skills.length > 0"
-                class="skills-box"
+                class="card-muted-inturn skills-box"
               >
                 <p class="skills-heading">Required skills</p>
 
@@ -176,7 +243,7 @@
                   <span
                     v-for="skill in job.skills.slice(0, 6)"
                     :key="skill.uuid || skill.skill"
-                    class="skill"
+                    class="tag-inturn"
                   >
                     {{ skill.skill }}
                   </span>
@@ -203,13 +270,20 @@
           </div>
         </div>
 
+        <p
+          v-if="!loading && !error && !hasNextPage"
+          class="message"
+        >
+          You have reached the end of the available search results.
+        </p>
+
         <nav
           v-if="!loading && !error && totalPages > 1"
           class="page-controls"
           aria-label="Job result pages"
         >
           <button
-            class="page-button"
+            class="btn-neutral-inturn btn-sm-inturn"
             type="button"
             :disabled="page === 0"
             @click="changePage(page - 1)"
@@ -219,10 +293,30 @@
 
           <span>Page {{ page + 1 }} of {{ totalPages }}</span>
 
+          <form class="page-jump" @submit.prevent="goToPage">
+            <label for="page-number">Go to page</label>
+
+            <input
+              id="page-number"
+              v-model="pageInput"
+              type="number"
+              min="1"
+              :max="totalPages"
+              step="1"
+              class="input-inturn"
+              placeholder="Page"
+              required
+            />
+
+            <button class="btn-neutral-inturn btn-sm-inturn" type="submit">
+              Go
+            </button>
+          </form>
+
           <button
-            class="page-button"
+            class="btn-neutral-inturn btn-sm-inturn"
             type="button"
-            :disabled="page + 1 >= totalPages"
+            :disabled="loading || !hasNextPage"
             @click="changePage(page + 1)"
           >
             Next
@@ -238,414 +332,63 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import axios from "axios";
+
 import JobsFilter from "./JobsFilter.vue";
 import JobsSelect from "./JobsSelect.vue";
 
-const apiUrl = "/api/mcf/v2/jobs";
-const storageKey = "inturn-saved-job-ids";
-const jobsPerPage = 10;
-
-const searchInput = ref("");
-const searchKeyword = ref("");
-const jobs = ref([]);
-const total = ref(0);
-const page = ref(0);
-const loading = ref(false);
-const error = ref("");
-
-const selectedJob = ref(null);
-
-// Populate this with actual extracted or user-confirmed resume skills.
-const resumeSkills = ref([]);
-
-function selectJob(job) {
-  selectedJob.value = job;
-}
-
-const savedJobs = ref([]);
-const saveMessage = ref("");
-const showFilters = ref(false);
-
-const filters = ref({
-  location: "",
-  category: "",
-  skills: [],
-});
-
-const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(total.value / jobsPerPage));
-});
-
-const activeFilterCount = computed(() => {
-  let count = filters.value.skills.length;
-
-  if (filters.value.location !== "") {
-    count++;
-  }
-
-  if (filters.value.category !== "") {
-    count++;
-  }
-
-  return count;
-});
-
-const filteredJobs = computed(() => {
-  const results = [];
-
-  for (let i = 0; i < jobs.value.length; i++) {
-    const job = jobs.value[i];
-    let matches = true;
-
-    // Location filter
-    if (filters.value.location !== "") {
-      let locationMatches = false;
-
-      const addressHidden =
-        job.metadata && job.metadata.isHideCompanyAddress;
-
-      if (!addressHidden && job.address && job.address.districts) {
-        for (let j = 0; j < job.address.districts.length; j++) {
-          if (
-            job.address.districts[j].region ===
-            filters.value.location
-          ) {
-            locationMatches = true;
-          }
-        }
-      }
-
-      if (!locationMatches) {
-        matches = false;
-      }
-    }
-
-    // Category filter
-    if (filters.value.category !== "") {
-      let categoryMatches = false;
-
-      if (job.categories) {
-        for (let j = 0; j < job.categories.length; j++) {
-          if (
-            job.categories[j].category === filters.value.category
-          ) {
-            categoryMatches = true;
-          }
-        }
-      }
-
-      if (!categoryMatches) {
-        matches = false;
-      }
-    }
-
-    // Job must include every skill selected in JobsFilter.
-    for (let j = 0; j < filters.value.skills.length; j++) {
-      let skillMatches = false;
-
-      if (job.skills) {
-        for (let k = 0; k < job.skills.length; k++) {
-          if (job.skills[k].skill === filters.value.skills[j]) {
-            skillMatches = true;
-          }
-        }
-      }
-
-      if (!skillMatches) {
-        matches = false;
-      }
-    }
-
-    if (matches) {
-      results.push(job);
-    }
-  }
-
-  // Rank the filtered jobs by resume skill matches.
-  // Higher counts appear first.
-  // Jobs with equal counts keep their original API order.
-  for (let i = 1; i < results.length; i++) {
-    const currentJob = results[i];
-    const currentCount = getMatchCount(currentJob);
-
-    let position = i - 1;
-
-    while (
-      position >= 0 &&
-      getMatchCount(results[position]) < currentCount
-    ) {
-      results[position + 1] = results[position];
-      position--;
-    }
-
-    results[position + 1] = currentJob;
-  }
-
-  return results;
-});
-
-function updateFilters(newFilters) {
-  filters.value = newFilters;
-}
-
-async function loadJobs() {
-  if (loading.value) {
-    return;
-  }
-
-  loading.value = true;
-  error.value = "";
-
-  try {
-    const response = await axios.get(apiUrl, {
-      params: {
-        search: searchKeyword.value,
-        page: page.value,
-        limit: jobsPerPage,
-        sortBy: "new_posting_date",
-      },
-    });
-
-    if (
-      !response.data ||
-      !Array.isArray(response.data.results) ||
-      typeof response.data.total !== "number"
-    ) {
-      throw new Error("Unexpected API response");
-    }
-
-    jobs.value = response.data.results;
-    total.value = response.data.total;
-  } catch (err) {
-    console.error(err);
-
-    jobs.value = [];
-    total.value = 0;
-    error.value = "Jobs could not be loaded. Please try again.";
-  }
-
-  loading.value = false;
-}
-
-function searchJobs() {
-  if (loading.value) {
-    return;
-  }
-
-  searchKeyword.value = searchInput.value;
-  page.value = 0;
-  loadJobs();
-}
-
-function changePage(newPage) {
-  if (
-    loading.value ||
-    newPage < 0 ||
-    newPage >= totalPages.value
-  ) {
-    return;
-  }
-
-  page.value = newPage;
-  loadJobs();
-}
-
-function getCompany(job) {
-  if (job.metadata && job.metadata.isHideEmployerName) {
-    return "Company undisclosed";
-  }
-
-  if (job.postedCompany && job.postedCompany.name) {
-    return job.postedCompany.name;
-  }
-
-  return "Company not specified";
-}
-
-function getLocation(job) {
-  if (job.metadata && job.metadata.isHideCompanyAddress) {
-    return "Location not disclosed";
-  }
-
-  if (!job.address) {
-    return "Location not specified";
-  }
-
-  if (job.address.isOverseas) {
-    if (typeof job.address.overseasCountry === "string") {
-      return job.address.overseasCountry;
-    }
-
-    return "Overseas";
-  }
-
-  if (job.address.street) {
-    if (job.address.block) {
-      return job.address.block + " " + job.address.street;
-    }
-
-    return job.address.street;
-  }
-
-  if (job.address.districts && job.address.districts.length > 0) {
-    return job.address.districts[0].location;
-  }
-
-  return "Singapore";
-}
-
-function getEmployment(job) {
-  if (!job.employmentTypes || job.employmentTypes.length === 0) {
-    return "Employment type not specified";
-  }
-
-  let employment = "";
-
-  for (let i = 0; i < job.employmentTypes.length; i++) {
-    if (i > 0) {
-      employment += " / ";
-    }
-
-    employment += job.employmentTypes[i].employmentType;
-  }
-
-  return employment;
-}
-
-function getSalary(job) {
-  if (job.metadata && job.metadata.isHideSalary) {
-    return "Salary not disclosed";
-  }
-
-  if (!job.salary) {
-    return "Salary not disclosed";
-  }
-
-  const minimum = job.salary.minimum;
-  const maximum = job.salary.maximum;
-  let salary = "";
-
-  if (minimum > 0 && maximum > 0) {
-    if (minimum === maximum) {
-      salary = "S$" + minimum;
-    } else {
-      salary = "S$" + minimum + " – S$" + maximum;
-    }
-  } else if (minimum > 0) {
-    salary = "From S$" + minimum;
-  } else if (maximum > 0) {
-    salary = "Up to S$" + maximum;
-  } else {
-    return "Salary not disclosed";
-  }
-
-  if (job.salary.type && job.salary.type.salaryType) {
-    salary += " / " + job.salary.type.salaryType;
-  }
-
-  return salary;
-}
-
-function getExperience(job) {
-  const years = job.minimumYearsExperience;
-
-  if (years === null || years === undefined || years === "") {
-    return "Experience not specified";
-  }
-
-  if (years === 0) {
-    return "No minimum experience";
-  }
-
-  if (years === 1) {
-    return "1 year experience";
-  }
-
-  return years + " years experience";
-}
-
-function getMatchCount(job) {
-  if (!job.skills || resumeSkills.value.length === 0) {
-    return 0;
-  }
-
-  const matchedSkills = [];
-
-  for (let i = 0; i < job.skills.length; i++) {
-    const jobSkill = job.skills[i].skill;
-
-    if (typeof jobSkill === "string") {
-      const skillName = jobSkill.trim().toLowerCase();
-
-      for (let j = 0; j < resumeSkills.value.length; j++) {
-        const resumeSkill = resumeSkills.value[i];
-
-        if (typeof resumeSkill === "string" && resumeSkill.trim().toLowerCase() === skillName
-        && !matchedSkills.includes(skillName)) {
-          matchedSkills.push(skillName);
-        }
-      }
-    }
-  }
-
-  return matchedSkills.length;
-
-}
-
-function isSaved(jobId) {
-  return savedJobs.value.includes(jobId);
-}
-
-function toggleSaved(jobId) {
-  const index = savedJobs.value.indexOf(jobId);
-
-  if (index === -1) {
-    savedJobs.value.push(jobId);
-    saveMessage.value = "Job saved.";
-  } else {
-    savedJobs.value.splice(index, 1);
-    saveMessage.value = "Job removed from saved jobs.";
-  }
-
-  try {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify(savedJobs.value)
-    );
-  } catch (err) {
-    console.error(err);
-    saveMessage.value =
-      "Your selection changed, but could not be stored in this browser.";
-  }
-}
-
-onMounted(() => {
-  try {
-    const storedJobs = localStorage.getItem(storageKey);
-
-    if (storedJobs) {
-      const parsedJobs = JSON.parse(storedJobs);
-
-      if (Array.isArray(parsedJobs)) {
-        savedJobs.value = parsedJobs;
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    savedJobs.value = [];
-  }
-
-  loadJobs();
-});
+import { useJobsView } from "../helpers/useJobsView.js";
+
+const {
+  searchInput,
+  jobs,
+  filteredJobs,
+  filterOptionsJobs,
+  total,
+  totalPages,
+  page,
+  pageInput,
+  hasNextPage,
+  loading,
+  loadingMessage,
+  error,
+  updatedAt,
+  selectedJob,
+  showFilters,
+  filters,
+  sortBy,
+  resumeSkills,
+  matchingResumeName,
+  activeFilters,
+  activeFilterCount,
+  saveMessage,
+  savedStateReady,
+  loadJobs,
+  updateFilters,
+  removeSearchFilter,
+  clearSearchFilters,
+  searchJobs,
+  changePage,
+  goToPage,
+  selectJob,
+  getCompany,
+  getLocation,
+  getEmployment,
+  getSalary,
+  getExperience,
+  getJobSkillNames,
+  getMatchCount,
+  getMatchPercentage,
+  getSelectedSkillMatchCount,
+  isSaved,
+  toggleSaved,
+  isSaving,
+} = useJobsView();
 </script>
 
 <style scoped>
 .jobs-view {
   width: 100%;
   min-width: 0;
-  max-width: 1100px;
 }
 
 .jobs-view,
@@ -653,115 +396,29 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-}
-
-.header-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.15rem;
-}
-
-.header-subtitle {
-  font-size: 0.8rem;
-  margin-bottom: 0;
-}
-
-@media (max-width: 576px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .search-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  width: 100%;
-  margin-bottom: 24px;
-  padding: 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 12px;
-  background: white;
+  margin-bottom: 1.5rem;
 }
 
 .search-bar label {
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   font-weight: 600;
 }
 
 .search-bar input {
   flex: 1;
+  width: auto;
   min-width: 150px;
-  padding: 12px 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 10px;
-  background: #f5f8ff;
-  color: #17234b;
-  font-size: 14px;
 }
 
-.search-button,
-.filter-button,
-.page-button {
-  padding: 11px 18px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.search-button {
-  background: #2563eb;
-  color: white;
-}
-
-.search-button:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.filter-button,
-.page-button {
-  border-color: #dfe7fa;
-  background: #edf3ff;
-  color: #234b94;
-}
-
-.filter-button:hover:not(:disabled),
-.page-button:hover:not(:disabled) {
-  background: #dfeaff;
-}
-
+/* Header and body have their own padding */
 .results-panel {
-  width: 100%;
-  border-radius: 16px;
-  background: #f3f3f3;
+  padding: 0;
 }
 
 .results-header {
@@ -770,33 +427,19 @@ button:disabled {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 14px;
-  padding: 22px;
-  border-bottom: 1px solid #e9edf5;
-}
-
-.results-header h2 {
-  margin: 0;
-  font-size: 20px;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--inturn-border);
 }
 
 .results-header p {
   margin: 7px 0 0;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
   line-height: 1.6;
 }
 
-.source-label {
-  padding: 7px 11px;
-  border-radius: 20px;
-  background: #ccf7e7;
-  color: #075b46;
-  font-size: 12px;
-  font-weight: 600;
-}
-
 .results-body {
-  padding: 18px;
+  padding: 1.25rem;
 }
 
 .job-list {
@@ -807,10 +450,6 @@ button:disabled {
 
 .job-card {
   min-width: 0;
-  padding: 22px;
-  border: 1px solid #e9edf5;
-  border-radius: 16px;
-  background: white;
 }
 
 .job-header {
@@ -827,15 +466,29 @@ button:disabled {
 
 .job-heading h3 {
   margin: 0;
-  color: #2459ce;
   font-size: 18px;
   line-height: 1.5;
   word-wrap: break-word;
 }
 
+.job-title-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--inturn-primary-hover);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.job-title-button:hover {
+  text-decoration: underline;
+}
+
 .company-name {
   margin: 5px 0;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   line-height: 1.5;
   word-wrap: break-word;
@@ -843,30 +496,10 @@ button:disabled {
 
 .job-location {
   margin: 0;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
   line-height: 1.5;
   word-wrap: break-word;
-}
-
-.save-button {
-  padding: 8px 12px;
-  border: 1px solid #dfe7fa;
-  border-radius: 8px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.save-button:hover {
-  background: #dfeaff;
-}
-
-.save-button.saved {
-  border-color: #81dfbd;
-  background: #ccf7e7;
-  color: #075b46;
 }
 
 .job-info {
@@ -876,25 +509,13 @@ button:disabled {
   margin-top: 16px;
 }
 
-.job-info span {
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .skills-box {
   margin-top: 16px;
-  padding: 14px;
-  border-radius: 10px;
-  background: #edf3ff;
 }
 
 .skills-heading {
   margin: 0 0 10px;
-  color: #234b94;
+  color: var(--inturn-text-soft);
   font-size: 12px;
   font-weight: 600;
 }
@@ -906,20 +527,8 @@ button:disabled {
   gap: 8px;
 }
 
-.skill {
-  max-width: 100%;
-  padding: 6px 10px;
-  border: 1px solid #d6f1e6;
-  border-radius: 8px;
-  background: #effcf6;
-  color: #075b46;
-  font-size: 12px;
-  line-height: 1.5;
-  word-wrap: break-word;
-}
-
 .more-skills {
-  color: #526079;
+  color: var(--inturn-text-muted);
   font-size: 12px;
 }
 
@@ -929,8 +538,53 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
+}
+
+/* Skill match result (green = good news) */
+.resume-match {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--r-sm);
+  background: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
+  font-size: 12px;
+}
+
+.matching-source {
+  margin: 0 0 14px;
+  color: var(--inturn-text-soft);
+  font-size: 13px;
+}
+
+.active-filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sort-control label {
+  color: var(--inturn-text-soft);
+  font-size: 13px;
+}
+
+.sort-control select {
+  width: auto;
+  max-width: 100%;
 }
 
 .page-controls {
@@ -939,24 +593,40 @@ button:disabled {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 18px 22px;
-  border-top: 1px solid #e9edf5;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--inturn-border);
 }
 
 .page-controls span {
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-jump label {
+  color: var(--inturn-text-soft);
+  font-size: 13px;
+}
+
+.page-jump input {
+  width: 85px;
 }
 
 .message {
   padding: 36px 16px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   text-align: center;
 }
 
 .message h3 {
   margin: 0 0 12px;
-  color: #17234b;
+  color: var(--inturn-text);
   font-size: 18px;
 }
 
@@ -968,33 +638,7 @@ button:disabled {
 
 .save-message {
   margin-top: 14px;
-  color: #075b46;
+  color: var(--bs-success-text-emphasis);
   font-size: 13px;
-}
-
-.job-title-button {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #2459ce;
-  font: inherit;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-
-.job-title-button:hover {
-  text-decoration: underline;
-}
-
-.resume-match {
-  display: inline-block;
-  margin: 12px 0 0;
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: #ccf7e7;
-  color: #075b46;
-  font-size: 12px;
-  font-weight: 600;
 }
 </style>

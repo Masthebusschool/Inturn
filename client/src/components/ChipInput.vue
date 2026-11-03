@@ -37,23 +37,23 @@ function onKeydown(e) {
 <template>
   <div>
     <label v-if="label" :for="id" class="form-label">{{ label }}</label>
-    <div class="input-group">
+    <div class="d-flex gap-2">
       <input
         :id="id"
         v-model="draft"
         type="text"
-        class="form-control"
+        class="input-inturn"
         :placeholder="placeholder"
         autocomplete="off"
         @keydown="onKeydown"
       />
-      <button type="button" class="btn btn-outline-primary" :disabled="!draft.trim()" @click="add">Add</button>
+      <button type="button" class="btn-secondary-inturn" :disabled="!draft.trim()" @click="add">Add</button>
     </div>
     <ul class="list-unstyled d-flex flex-wrap gap-2 mt-2 mb-0" aria-label="Added items">
       <li
         v-for="(item, i) in modelValue"
         :key="item.toLowerCase()"
-        class="badge rounded-pill text-bg-light border d-inline-flex align-items-center gap-1 fs-6 fw-normal py-2 ps-3 pe-2"
+        class="tag-inturn gap-1"
       >
         {{ item }}
         <button

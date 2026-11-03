@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import ApplicationCard from '../components/apptrackingboard/ApplicationCard.vue'
 import CardMenu from '../components/apptrackingboard/CardMenu.vue';
 import { getApplications } from '../services/applicationsApi.js';
@@ -27,7 +28,12 @@ import {
 } from '../helpers/apptrackingboard/KanbanViewHelper.js';
 
 const user = computed(() => authStore.user);
+const router = useRouter();
 const kanbanColumns = ['Saved', 'Applied', 'Interview', 'Offered'];
+
+function goToSkillGap (card) {
+  router.push({ path: '/skill-gap', query: { applicationId: card._id } });
+}
 
 // loaded from the backend in onMounted
 const applications = ref([]);
@@ -241,7 +247,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-<div class="bg-light min-vh-100 p-3 p-md-4">
+<div>
   <!-- spinner in the page area while the apps are being fetched, the nav stays visible -->
   <div v-if="isLoading" class="d-flex flex-column justify-content-center align-items-center text-secondary" style="min-height: 70vh">
     <div class="spinner-border text-primary mb-3" role="status"></div>
@@ -251,7 +257,7 @@ onUnmounted(() => {
   <!-- the apps cannot be fetched -->
   <div v-else-if="loadFailed" class="d-flex flex-column justify-content-center align-items-center text-center" style="min-height: 70vh">
     <p class="mb-3">Could not load your applications. Please check your connection.</p>
-    <button class="btn btn-dark rounded-3" v-on:click="loadApplications">Try again</button>
+    <button class="btn-neutral-inturn" v-on:click="loadApplications">Try again</button>
   </div>
   <!-- no user in auth store -->
   <div v-else-if="!user">
@@ -260,38 +266,37 @@ onUnmounted(() => {
 
   <!-- the whole page, only shows once the apps are loaded -->
   <template v-else>
-    <!-- Top Area -->
-    <div class="bg-white border rounded-4 p-3 p-md-4 mb-3">
-      <!-- first row, user's applications on the left and add application on the right -->
-      <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-        <div>
-          <h1 class="h5 fw-semibold mb-1">{{user.name}}'s Applications</h1>
-          <p class="small text-secondary mb-0">{{ applications.length }} internships tracked</p>
-        </div>
-
-        <!-- top button always starts in Saved, flex-shrink-0 stops it squashing on small screens -->
-        <button class="btn btn-primary rounded-3 flex-shrink-0" v-on:click="openAddModal('Saved')">
-          Add Application +
-        </button>
+    <!-- Top Area: page title on the left and add application on the right -->
+    <header class="page-header">
+      <div>
+        <h1 class="header-title">Tracker Board</h1>
+        <p class="header-subtitle">{{ applications.length }} internships tracked</p>
       </div>
 
-      <!-- second row, search, sort, favourites and reset -->
+      <!-- top button always starts in Saved, flex-shrink-0 stops it squashing on small screens -->
+      <button class="btn-primary-inturn flex-shrink-0" v-on:click="openAddModal('Saved')">
+        Add Application +
+      </button>
+    </header>
+
+    <!-- search, sort, favourites and reset -->
+    <div class="card-inturn mb-3">
       <div class="d-flex flex-wrap gap-2 align-items-center">
         <!-- search by job title or company, filters the board as you type -->
-        <input v-model="searchText" type="search" class="form-control rounded-3 w-auto" placeholder="Search title or company"/>
+        <input v-model="searchText" type="search" class="input-inturn w-auto" placeholder="Search title or company"/>
 
         <!-- sort the cards inside each column -->
-        <select v-model="sortBy" class="form-select rounded-3 w-auto" aria-label="Sort applications">
+        <select v-model="sortBy" class="input-inturn w-auto" aria-label="Sort applications">
           <option value="default">Sort by default</option>
           <option value="deadline">Deadline, soonest first</option>
           <option value="latest">Latest saved</option>
         </select>
 
-        <!-- show only favourites, btn-warning when it's on -->
+        <!-- show only favourites, is-active when it's on -->
         <button
           type="button"
-          class="btn rounded-3"
-          :class="favouritesOnly ? 'btn-warning' : 'btn-outline-secondary'"
+          class="chip-inturn"
+          :class="{ 'is-active': favouritesOnly }"
           v-on:click="favouritesOnly = !favouritesOnly"
         >
           &#9733; Favourites
@@ -301,7 +306,7 @@ onUnmounted(() => {
         <button
           v-if="hasChanges"
           type="button"
-          class="btn btn-outline-danger rounded-3"
+          class="btn-neutral-inturn"
           v-on:click="resetFilters"
         >
           &#8634; Reset
@@ -336,7 +341,7 @@ onUnmounted(() => {
       v-on:pointerleave="setSelectedColumn(null)"
       >
         <!-- border-primary highlights the column the dragged card is over -->
-        <div class="bg-white border rounded-4 p-3" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+        <div class="card-inturn" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
           <!-- column header, the count only includes cards that match the search and filter -->
           <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
             <h2 class="h6 fw-semibold mb-0">
@@ -344,7 +349,7 @@ onUnmounted(() => {
               <span class="text-secondary fw-normal">({{ applicationsInColumn(visibleApplications, col).length }})</span>
             </h2>
             <!-- column + button starts the form in this column -->
-            <button class="btn btn-primary btn-sm rounded-3 px-3" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
+            <button class="btn-secondary-inturn btn-sm-inturn" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
           </div>
 
           <!-- handle card dragging -->
@@ -356,12 +361,12 @@ onUnmounted(() => {
               :style="{ opacity: draggedCard == app ? 0.5 : 1 }"
               v-on:pointerdown="startDrag($event, app)"
           >
-              <ApplicationCard :app="app">
+              <ApplicationCard :app="app" v-on:tailor-resume="goToSkillGap">
                 <select v-if="isMobile" 
                   :value="app.status" 
                   v-on:change="onMoveCard(app, $event.target.value)" 
                   v-on:pointerdown.stop
-                  class="form-select form-select-sm mt-3">
+                  class="input-inturn mt-3">
                   <option v-for="col in kanbanColumns" :key="col" :value="col">Move to {{ col }}</option>
                 </select>
               </ApplicationCard>
@@ -375,7 +380,7 @@ onUnmounted(() => {
               />
           </div>
 
-          <div v-if="!isMobile" class="border-dashed rounded-4 p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+          <div v-if="!isMobile" class="border-dashed p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
               <p class="small text-secondary mb-0">Drag card here</p>
           </div>
         </div>
@@ -434,7 +439,8 @@ onUnmounted(() => {
 <style scoped>
   /* bootstrap has no dashed border or grab cursor */
   .border-dashed {
-      border: 2px dashed #d5def0;
+      border: 2px dashed var(--inturn-border-strong);
+      border-radius: var(--r-md);
   }
 
   .cursor-grab { 

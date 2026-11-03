@@ -35,10 +35,10 @@ function sourceHint(t) {
 </script>
 
 <template>
-  <div class="card shadow-sm">
-    <div class="card-body p-4 pb-2">
+  <div class="card-inturn p-0">
+    <div class="p-4 pb-2">
       <div class="d-flex align-items-center gap-2">
-        <h2 class="h4 fw-semibold mb-0">Skill to-do</h2>
+        <h2 class="section-title mb-0">Skill to-do</h2>
         <span v-if="pending.length" class="badge text-bg-primary">{{ pending.length }}</span>
       </div>
       <p class="small text-body-secondary mb-0">Missing and partial skills from all your analyses</p>
@@ -60,11 +60,11 @@ function sourceHint(t) {
                 <span v-if="sourceHint(t)" class="text-truncate">· {{ sourceHint(t) }}</span>
               </div>
             </div>
-            <ConfirmButton :class="armedId === t._id ? 'w-100' : 'ms-auto flex-shrink-0'" label="Remove" trigger-class="btn btn-sm btn-link text-body-secondary p-0" :trigger-aria-label="`Remove ${t.skillText || t.skillKey}`" prompt="Remove from your to-do list?" confirm-label="Remove" :disabled="busyId === t._id" @armed="(on) => { armedId = on ? t._id : (armedId === t._id ? '' : armedId) }" @confirm="emit('remove', t)" />
+            <ConfirmButton :class="armedId === t._id ? 'w-100' : 'ms-auto flex-shrink-0'" label="Remove" trigger-class="btn-link-inturn text-body-secondary" :trigger-aria-label="`Remove ${t.skillText || t.skillKey}`" prompt="Remove from your to-do list?" confirm-label="Remove" :disabled="busyId === t._id" @armed="(on) => { armedId = on ? t._id : (armedId === t._id ? '' : armedId) }" @confirm="emit('remove', t)" />
           </li>
         </ul>
         <div v-if="done.length" class="px-4 py-2 border-top">
-          <button type="button" class="btn btn-sm btn-link p-0" :aria-expanded="showDone" @click="showDone = !showDone">{{ showDone ? 'Hide' : 'Show' }} completed ({{ done.length }})</button>
+          <button type="button" class="btn-link-inturn" :aria-expanded="showDone" @click="showDone = !showDone">{{ showDone ? 'Hide' : 'Show' }} completed ({{ done.length }})</button>
         </div>
       </template>
     </template>

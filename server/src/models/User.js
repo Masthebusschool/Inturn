@@ -10,6 +10,37 @@ import Application from './Application.js';
 // EDUCATION_LEVELS in client/src/utils/profileOptions.js.
 export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate', 'PhD'];
 
+// Default starter questions for a new user's Interview Journal
+const DEFAULT_QUESTIONS = [
+  {
+    sourceId: 'default-1',
+    category: 'Technical',
+    company: '',
+    text: 'Explain a full-stack feature you built and how you implemented it.',
+    tip: 'Outline how you plan before coding, and give one real example.',
+    savedResponse: '',
+    savedAt: '',
+  },
+  {
+    sourceId: 'default-2',
+    category: 'Collaboration',
+    company: '',
+    text: 'Tell me about a disagreement with a teammate over a technical approach.',
+    tip: 'Focus on how you listened, compromised and what the outcome was.',
+    savedResponse: '',
+    savedAt: '',
+  },
+  {
+    sourceId: 'default-3',
+    category: 'Problem Solving',
+    company: '',
+    text: 'Describe a difficult bug you encountered and how you diagnosed and fixed it.',
+    tip: 'Walk through your debugging process, the tools you used, and what you learned from it.',
+    savedResponse: '',
+    savedAt: '',
+  },
+];
+
 const userSchema = new mongoose.Schema(
   {
     // Account: filled at sign up
@@ -57,13 +88,6 @@ const userSchema = new mongoose.Schema(
       validate: [(arr) => arr.length <= 10, 'You can add at most 10 industries'],
     },
     targetRoles: [String], // From the team scaffold; not asked in the UI yet.
-    resume:{
-      fileName: String,
-      pageCount:Number,
-      wordCount:Number,
-      text:String,
-      uploadedAt:Date,
-    },
     // Resume profile from the Skill Gap feature (Mas). Read by toProfile() in utils/profile.js;
     // no page edits these on the User yet. Dates are free text ("Jan 2024", "Present").
     summary: String,
@@ -80,6 +104,22 @@ const userSchema = new mongoose.Schema(
     ],
     projects: [{ name: String, bullets: [String], skills: [String], url: String }],
     education: [{ school: String, degree: String, field: String, startDate: String, endDate: String }],
+
+   // Mock Interview Journal questions & saved reflections
+    journalQuestions: {
+      type: [
+        {
+          sourceId: { type: String, default: '' },
+          category: { type: String, default: 'General', trim: true, maxLength: 50 },
+          company: { type: String, default: '', trim: true, maxLength: 80 },
+          text: { type: String, required: true, trim: true, maxLength: 500 },
+          tip: { type: String, default: '', trim: true, maxLength: 500 },
+          savedResponse: { type: String, default: '', maxLength: 4000 },
+          savedAt: { type: String, default: '' },
+        },
+      ],
+      default: () => DEFAULT_QUESTIONS,
+    },
   },
   { timestamps: true }
 );

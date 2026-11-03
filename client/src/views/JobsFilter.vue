@@ -1,8 +1,8 @@
 <template>
   <section class="filter-panel">
-    <header class="filter-header">
+    <header class="page-header filter-header">
       <button
-        class="back-button"
+        class="btn-neutral-inturn"
         type="button"
         @click="emit('close')"
       >
@@ -10,12 +10,12 @@
       </button>
 
       <div class="heading">
-        <h2>Filter Jobs</h2>
-        <p>Find opportunities that suit your needs.</p>
+        <h2 class="header-title">Filter Jobs</h2>
+        <p class="header-subtitle">Find opportunities that suit your needs.</p>
       </div>
 
       <button
-        class="reset-button"
+        class="btn-neutral-inturn"
         type="button"
         @click="resetFilters"
       >
@@ -23,17 +23,16 @@
       </button>
     </header>
 
-    <div class="active-summary">
+    <div class="card-inturn active-summary">
       <div class="summary-counts">
         <strong>{{ activeFilters.length }} active filters</strong>
-        <span>{{ resultCount }} matches on this page</span>
       </div>
 
       <div v-if="activeFilters.length > 0" class="filter-tags">
         <button
           v-for="filter in activeFilters"
           :key="filter.key"
-          class="filter-tag"
+          class="chip-inturn is-active"
           type="button"
           @click="removeFilter(filter)"
         >
@@ -48,14 +47,14 @@
     </div>
 
     <!-- Location -->
-    <section class="filter-section">
-      <h3>Location</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Location</h3>
       <p class="section-description">Choose a region.</p>
 
       <div class="options">
         <button
-          class="option"
-          :class="{ selected: modelValue.location === '' }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.location === '' }"
           :aria-pressed="modelValue.location === ''"
           type="button"
           @click="changeLocation('')"
@@ -66,8 +65,8 @@
         <button
           v-for="location in locations"
           :key="location"
-          class="option"
-          :class="{ selected: modelValue.location === location }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.location === location }"
           :aria-pressed="modelValue.location === location"
           type="button"
           @click="changeLocation(location)"
@@ -79,30 +78,43 @@
     </section>
 
     <!-- Skills -->
-    <section class="filter-section">
-      <h3>Skills</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Skills</h3>
 
       <p class="section-description">
-        Jobs must include every skill you select.
+        Jobs will include at least one selected skill. Ranked from most to least number of skills selected
       </p>
 
       <label for="skill-search" class="input-label">
-        Find a skill
+        Find or add a skill
       </label>
 
-      <input
-        id="skill-search"
-        v-model.trim="skillSearch"
-        type="search"
-        placeholder="Search Python, SQL, communication..."
-      />
+      <div class="skill-search-row">
+        <input
+          id="skill-search"
+          v-model.trim="skillSearch"
+          type="search"
+          class="input-inturn"
+          placeholder="Search or add a skill, e.g. Python..."
+          @keydown.enter.prevent="addCustomSkill"
+        />
+
+        <button
+          class="btn-primary-inturn"
+          type="button"
+          :disabled="!skillSearch.trim()"
+          @click="addCustomSkill"
+        >
+          Add skill
+        </button>
+      </div>
 
       <div class="options skill-options">
         <button
           v-for="skill in availableSkills"
           :key="skill"
-          class="option skill-option"
-          :class="{ selected: modelValue.skills.includes(skill) }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.skills.includes(skill) }"
           :aria-pressed="modelValue.skills.includes(skill)"
           type="button"
           @click="toggleSkill(skill)"
@@ -113,13 +125,13 @@
       </div>
 
       <p v-if="availableSkills.length === 0" class="empty-message">
-        No skills found.
+        No suggested skills found. Use Add skill to add your own.
       </p>
     </section>
 
     <!-- Category -->
-    <section class="filter-section">
-      <h3>Job Category</h3>
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Job Category</h3>
 
       <p class="section-description">
         Choose the type of work you are interested in.
@@ -127,8 +139,8 @@
 
       <div class="options">
         <button
-          class="option"
-          :class="{ selected: modelValue.category === '' }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.category === '' }"
           :aria-pressed="modelValue.category === ''"
           type="button"
           @click="changeCategory('')"
@@ -139,8 +151,8 @@
         <button
           v-for="category in categories"
           :key="category"
-          class="option"
-          :class="{ selected: modelValue.category === category }"
+          class="chip-inturn"
+          :class="{ 'is-active': modelValue.category === category }"
           :aria-pressed="modelValue.category === category"
           type="button"
           @click="changeCategory(category)"
@@ -151,15 +163,65 @@
       </div>
     </section>
 
+    <!-- Pay range -->
+    <section class="card-inturn filter-section">
+      <h3 class="section-title mb-0">Monthly Pay Range</h3>
+
+      <p class="section-description">
+        Enter amounts in SGD. Leave either field blank for no limit.
+        Jobs whose advertised monthly pay overlaps your range are included.
+      </p>
+
+      <label for="minimum-pay" class="input-label">
+        Minimum monthly pay
+      </label>
+
+      <input
+        id="minimum-pay"
+        type="number"
+        class="input-inturn pay-input"
+        min="0"
+        step="any"
+        placeholder="For example, 2000"
+        :value="modelValue.minSalary ?? ''"
+        @input="changePay('minSalary', $event.target.value)"
+      />
+
+      <label for="maximum-pay" class="input-label">
+        Maximum monthly pay
+      </label>
+
+      <input
+        id="maximum-pay"
+        type="number"
+        class="input-inturn pay-input"
+        min="0"
+        step="any"
+        placeholder="For example, 5000"
+        :value="modelValue.maxSalary ?? ''"
+        @input="changePay('maxSalary', $event.target.value)"
+      />
+
+      <p class="section-description">
+        Hidden, unavailable and non-monthly salaries are excluded when a pay
+        filter is selected.
+      </p>
+
+      <p v-if="payRangeInvalid" class="pay-error" role="alert">
+        Enter valid non-negative amounts. Minimum pay cannot exceed maximum pay.
+      </p>
+    </section>
+
     <footer class="filter-footer">
       <p>Search results are reflected from the filters chosen.</p>
 
       <button
-        class="show-results"
+        class="btn-primary-inturn w-100"
         type="button"
+        :disabled="payRangeInvalid"
         @click="emit('close')"
       >
-        Show {{ resultCount }} Results
+        Show All Results
       </button>
     </footer>
   </section>
@@ -177,46 +239,20 @@ const props = defineProps({
     type: Array,
     required: true,
   },
-  resultCount: {
-    type: Number,
-    required: true,
-  },
 });
 
 const emit = defineEmits(["update:modelValue", "close"]);
 
 const skillSearch = ref("");
 
-// Region options from the current API page.
-const locations = computed(() => {
-  const values = [];
-
-  for (let i = 0; i < props.jobs.length; i++) {
-    const job = props.jobs[i];
-
-    const addressHidden =
-      job.metadata && job.metadata.isHideCompanyAddress;
-
-    if (!addressHidden && job.address && job.address.districts) {
-      for (let j = 0; j < job.address.districts.length; j++) {
-        const region = job.address.districts[j].region;
-
-        if (region && !values.includes(region)) {
-          values.push(region);
-        }
-      }
-    }
-  }
-
-  // Keep a selected region visible after changing API pages.
-  const selected = props.modelValue.location;
-
-  if (selected && !values.includes(selected)) {
-    values.push(selected);
-  }
-
-  return values.sort();
-});
+const locations = [
+  "Central",
+  "East",
+  "North",
+  "North-East",
+  "West",
+  "Islandwide",
+];
 
 // Category options from the current API page.
 const categories = computed(() => {
@@ -285,10 +321,46 @@ const availableSkills = computed(() => {
 });
 
 // Tags for the selected filters.
+function hasPayValue(value) {
+  return (
+    value !== undefined &&
+    value !== null &&
+    String(value).trim() !== ""
+  );
+}
+
+const payRangeInvalid = computed(() => {
+  const minimum = props.modelValue.minSalary;
+  const maximum = props.modelValue.maxSalary;
+
+  if (hasPayValue(minimum)) {
+    const amount = Number(minimum);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      return true;
+    }
+  }
+
+  if (hasPayValue(maximum)) {
+    const amount = Number(maximum);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      return true;
+    }
+  }
+
+  return (
+    hasPayValue(minimum) &&
+    hasPayValue(maximum) &&
+    Number(minimum) > Number(maximum)
+  );
+});
+
+// Tags appear only for selected filters.
 const activeFilters = computed(() => {
   const tags = [];
 
-  if (props.modelValue.location !== "") {
+  if (props.modelValue.location) {
     tags.push({
       key: "location",
       type: "location",
@@ -296,7 +368,7 @@ const activeFilters = computed(() => {
     });
   }
 
-  if (props.modelValue.category !== "") {
+  if (props.modelValue.category) {
     tags.push({
       key: "category",
       type: "category",
@@ -314,41 +386,60 @@ const activeFilters = computed(() => {
     });
   }
 
+  if (hasPayValue(props.modelValue.minSalary)) {
+    tags.push({
+      key: "minSalary",
+      type: "minSalary",
+      label: "Minimum S$" + props.modelValue.minSalary + "/month",
+    });
+  }
+
+  if (hasPayValue(props.modelValue.maxSalary)) {
+    tags.push({
+      key: "maxSalary",
+      type: "maxSalary",
+      label: "Maximum S$" + props.modelValue.maxSalary + "/month",
+    });
+  }
+
   return tags;
 });
 
+// Preserve all filter fields whenever one field changes.
+function updateFilter(field, value) {
+  const updatedFilters = {
+    location: props.modelValue.location ?? "",
+    category: props.modelValue.category ?? "",
+    skills: props.modelValue.skills ?? [],
+    minSalary: props.modelValue.minSalary ?? "",
+    maxSalary: props.modelValue.maxSalary ?? "",
+  };
+
+  updatedFilters[field] = value;
+
+  emit("update:modelValue", updatedFilters);
+}
+
 function changeLocation(location) {
-  let selectedLocation = location;
-
   if (props.modelValue.location === location) {
-    selectedLocation = "";
+    updateFilter("location", "");
+  } else {
+    updateFilter("location", location);
   }
-
-  emit("update:modelValue", {
-    location: selectedLocation,
-    category: props.modelValue.category,
-    skills: props.modelValue.skills,
-  });
 }
 
 function changeCategory(category) {
-  let selectedCategory = category;
-
   if (props.modelValue.category === category) {
-    selectedCategory = "";
+    updateFilter("category", "");
+  } else {
+    updateFilter("category", category);
   }
-
-  emit("update:modelValue", {
-    location: props.modelValue.location,
-    category: selectedCategory,
-    skills: props.modelValue.skills,
-  });
 }
 
 function toggleSkill(skill) {
   const selectedSkills = [];
 
-  // Copy the skills instead of changing props directly.
+  // Copy the array instead of changing props.
   for (let i = 0; i < props.modelValue.skills.length; i++) {
     selectedSkills.push(props.modelValue.skills[i]);
   }
@@ -361,20 +452,18 @@ function toggleSkill(skill) {
     selectedSkills.splice(index, 1);
   }
 
-  emit("update:modelValue", {
-    location: props.modelValue.location,
-    category: props.modelValue.category,
-    skills: selectedSkills,
-  });
+  updateFilter("skills", selectedSkills);
+}
+
+function changePay(field, value) {
+  updateFilter(field, value);
 }
 
 function removeFilter(filter) {
-  if (filter.type === "location") {
-    changeLocation("");
-  } else if (filter.type === "category") {
-    changeCategory("");
-  } else {
+  if (filter.type === "skill") {
     toggleSkill(filter.label);
+  } else {
+    updateFilter(filter.type, "");
   }
 }
 
@@ -385,20 +474,41 @@ function resetFilters() {
     location: "",
     category: "",
     skills: [],
+    minSalary: "",
+    maxSalary: "",
   });
+}
+
+function addCustomSkill() {
+  const skill = skillSearch.value.trim();
+
+  if (!skill) {
+    return;
+  }
+
+  const selectedSkills = [];
+  let alreadySelected = false;
+
+  for (const selected of props.modelValue.skills) {
+    selectedSkills.push(selected);
+
+    if (selected.toLowerCase() === skill.toLowerCase()) {
+      alreadySelected = true;
+    }
+  }
+
+  if (!alreadySelected) {
+    selectedSkills.push(skill);
+    updateFilter("skills", selectedSkills);
+  }
+
+  skillSearch.value = "";
 }
 </script>
 
 <style scoped>
 .filter-panel {
   width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  background: #f6f8ff;
-  color: #17234b;
 }
 
 .filter-panel,
@@ -407,11 +517,7 @@ function resetFilters() {
 }
 
 .filter-header {
-  display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 24px;
 }
 
 .heading {
@@ -419,48 +525,8 @@ function resetFilters() {
   min-width: 160px;
 }
 
-.heading h2 {
-  margin: 0;
-  font-size: 23px;
-}
-
-.heading p {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-.back-button,
-.reset-button {
-  padding: 9px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #2459ce;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.back-button:hover,
-.reset-button:hover {
-  background: #e6edff;
-}
-
 .active-summary {
-  margin-bottom: 22px;
-  padding: 16px;
-  border-radius: 14px;
-  background: #eaf0ff;
+  margin-bottom: 1.25rem;
 }
 
 .summary-counts {
@@ -472,11 +538,7 @@ button {
 }
 
 .summary-counts strong {
-  color: #2459ce;
-}
-
-.summary-counts span {
-  color: #086b56;
+  color: var(--inturn-primary-hover);
 }
 
 .filter-tags {
@@ -486,51 +548,19 @@ button {
   margin-top: 14px;
 }
 
-.filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 100%;
-  padding: 7px 11px;
-  border: none;
-  border-radius: 20px;
-  background: #c8f7e7;
-  color: #075b46;
-  font-size: 13px;
-  text-align: left;
-  word-wrap: break-word;
-}
-
-.filter-tag:hover {
-  background: #a7efd6;
-}
-
-.filter-tag span {
-  font-size: 17px;
-}
-
 .empty-summary {
   margin: 12px 0 0;
-  color: #526079;
+  color: var(--inturn-text-muted);
   font-size: 13px;
 }
 
 .filter-section {
-  margin-bottom: 20px;
-  padding: 22px;
-  border: 1px solid #e9edf5;
-  border-radius: 16px;
-  background: white;
-}
-
-.filter-section h3 {
-  margin: 0;
-  font-size: 18px;
+  margin-bottom: 1.25rem;
 }
 
 .section-description {
   margin: 8px 0 18px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -541,49 +571,16 @@ button {
   gap: 9px;
 }
 
-.option {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 9px 13px;
-  border: 1px solid #dfe7fa;
-  border-radius: 10px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 14px;
-  line-height: 1.4;
-  text-align: left;
-  word-wrap: break-word;
-}
-
-.option:hover {
-  background: #dfeaff;
-}
-
-.option.selected {
-  border-color: #2563eb;
-  background: #2563eb;
-  color: white;
-}
-
 .input-label {
   display: block;
   margin-bottom: 8px;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   font-weight: 600;
 }
 
-input {
-  width: 100%;
+.pay-input {
   margin-bottom: 16px;
-  padding: 12px 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 10px;
-  background: #f5f8ff;
-  color: #17234b;
-  font-size: 14px;
 }
 
 .skill-options {
@@ -592,36 +589,37 @@ input {
   padding: 4px;
 }
 
-.skill-option.selected {
-  border-color: #81dfbd;
-  background: #ccf7e7;
-  color: #075b46;
-}
-
 .empty-message {
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 14px;
 }
 
 .filter-footer p {
   margin: 0 0 14px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
   line-height: 1.5;
   text-align: center;
 }
 
-.show-results {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
-  font-weight: 600;
+.pay-error {
+  margin: 0;
+  color: var(--inturn-danger);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-.show-results:hover {
-  background: #1d4ed8;
+.skill-search-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.skill-search-row input {
+  flex: 1;
+  width: auto;
+  min-width: 150px;
 }
 </style>

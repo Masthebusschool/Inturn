@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api } from '../lib/api.js'
 import ResumePreview from '../components/resumes/ResumePreview.vue'
 import ConfirmButton from '../components/common/ConfirmButton.vue'
+import { setMatchingResume } from "../stores/jobMatch.js";
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
@@ -60,11 +61,12 @@ function applyResume(r = {}) {
   form.experience = (r.experience || []).map(expToForm)
   form.projects = (r.projects || []).map(projToForm)
   form.education = (r.education || []).map(eduToForm)
+  updateJobMatchingSkills();
   dirty.value = false
   nextTick(() => { loaded = true })
 }
 
-watch(form, () => { if (loaded) { dirty.value = true; saved.value = false } }, { deep: true })
+watch(form, () => {if (loaded) {dirty.value = true; saved.value = false; updateJobMatchingSkills();}}, { deep: true });
 
 onMounted(async () => {
   try {
@@ -185,6 +187,36 @@ async function onFile(e) {
     parsing.value = false
   }
 }
+
+function updateJobMatchingSkills() {
+  const resume = payload();
+  const skills = [];
+
+  // Main resume skills
+  for (let i = 0; i < resume.skills.length; i++) {
+    skills.push(resume.skills[i]);
+  }
+
+  // Experience skills
+  for (let i = 0; i < resume.experience.length; i++) {
+    const experienceSkills = resume.experience[i].skills || [];
+
+    for (let j = 0; j < experienceSkills.length; j++) {
+      skills.push(experienceSkills[j]);
+    }
+  }
+
+  // Project skills
+  for (let i = 0; i < resume.projects.length; i++) {
+    const projectSkills = resume.projects[i].skills || [];
+
+    for (let j = 0; j < projectSkills.length; j++) {
+      skills.push(projectSkills[j]);
+    }
+  }
+
+  setMatchingResume(resume.name, skills);
+}
 </script>
 
 <template>
@@ -195,10 +227,10 @@ async function onFile(e) {
     <div v-if="loadError" class="alert alert-danger" role="alert">{{ loadError }}</div>
 
     <template v-if="!loading && !loadError">
-      <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+      <div class="page-header flex-wrap">
         <ConfirmButton
           label="←"
-          trigger-class="btn btn-outline-secondary btn-sm"
+          trigger-class="btn-neutral-inturn btn-sm-inturn"
           trigger-aria-label="Back to My resumes"
           prompt="Discard unsaved changes?"
           confirm-label="Discard"
@@ -209,7 +241,7 @@ async function onFile(e) {
         <div class="flex-grow-1 min-w-0">
           <input
             v-model="form.name"
-            class="form-control form-control-lg border-0 px-0 fw-semibold"
+            class="input-inturn border-0 px-0 fw-semibold"
             style="font-size: 1.4rem"
             placeholder="Resume name"
             aria-label="Resume name"
@@ -217,12 +249,12 @@ async function onFile(e) {
           <div class="text-body-secondary small">Resume details</div>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0 mw-100">
-          <label class="btn btn-outline-secondary btn-sm mb-0">
+          <label class="btn-neutral-inturn btn-sm-inturn mb-0">
             <span v-if="parsing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ parsing ? 'Parsing…' : 'Upload PDF' }}
             <input type="file" accept="application/pdf" class="d-none" :disabled="parsing" @change="onFile" />
           </label>
-          <ConfirmButton label="Cancel" trigger-class="btn btn-outline-secondary btn-sm" prompt="Discard unsaved changes?" confirm-label="Discard" cancel-label="Keep editing" :skip="!dirty" @confirm="leave" />
-          <button type="button" class="btn btn-primary btn-sm" :disabled="saving" @click="save">
+          <ConfirmButton label="Cancel" trigger-class="btn-neutral-inturn btn-sm-inturn" prompt="Discard unsaved changes?" confirm-label="Discard" cancel-label="Keep editing" :skip="!dirty" @confirm="leave" />
+          <button type="button" class="btn-primary-inturn btn-sm-inturn" :disabled="saving" @click="save">
             <span v-if="saving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ saving ? 'Saving…' : 'Save' }}
           </button>
         </div>
@@ -234,50 +266,51 @@ async function onFile(e) {
 
       <div class="row g-4">
         <div class="col-12 col-lg-6">
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <h2 class="h5 mb-3">Contact</h2>
+          <div class="card-inturn mb-4">
+            <div>
+              <h2 class="section-title mb-3">Contact</h2>
               <div class="row g-3">
                 <div class="col-12 col-md-6">
                   <label for="r-name" class="form-label">Full name</label>
-                  <input id="r-name" v-model="form.contact.fullName" class="form-control" />
+                  <input id="r-name" v-model="form.contact.fullName" class="input-inturn" />
                 </div>
                 <div class="col-12 col-md-6">
                   <label for="r-phone" class="form-label">Phone</label>
-                  <input id="r-phone" v-model="form.contact.phone" class="form-control" />
+                  <input id="r-phone" v-model="form.contact.phone" class="input-inturn" />
                 </div>
                 <div class="col-12 col-md-6">
                   <label for="r-email" class="form-label">Email</label>
-                  <input id="r-email" v-model="form.contact.email" type="email" class="form-control" />
+                  <input id="r-email" v-model="form.contact.email" type="email" class="input-inturn" />
                 </div>
                 <div class="col-12 col-md-6">
                   <label for="r-linkedin" class="form-label">LinkedIn</label>
-                  <input id="r-linkedin" v-model="form.contact.linkedin" class="form-control" />
+                  <input id="r-linkedin" v-model="form.contact.linkedin" class="input-inturn" />
                 </div>
                 <div class="col-12 col-md-6">
                   <label for="r-github" class="form-label">GitHub</label>
-                  <input id="r-github" v-model="form.contact.github" class="form-control" />
+                  <input id="r-github" v-model="form.contact.github" class="input-inturn" />
                 </div>
                 <div class="col-12 col-md-6">
                   <label for="r-portfolio" class="form-label">Portfolio</label>
-                  <input id="r-portfolio" v-model="form.contact.portfolio" class="form-control" />
+                  <input id="r-portfolio" v-model="form.contact.portfolio" class="input-inturn" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <h2 class="h5 mb-3">Summary</h2>
-              <textarea v-model="form.summary" class="form-control" rows="4" placeholder="A few sentences about you, your strengths and what you're aiming for."></textarea>
+          <div class="card-inturn mb-4">
+            <div>
+              <h2 class="section-title mb-3">Summary</h2>
+              <textarea v-model="form.summary" class="input-inturn" rows="4" placeholder="A few sentences about you, your strengths and what you're aiming for."></textarea>
             </div>
           </div>
 
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <h2 class="h5 mb-3">Skills</h2>
+          <div class="card-inturn mb-4">
+            <div>
+              <h2 class="section-title mb-3">Skills</h2>
+              <p>Be specific - Microsoft Excel instead of Excel</p>
               <input
-                class="form-control"
+                class="input-inturn"
                 placeholder="Comma-separated, e.g. Python, SQL, Figma"
                 :value="form.skills.join(', ')"
                 @change="form.skills = csv($event.target.value)"
@@ -285,34 +318,34 @@ async function onFile(e) {
             </div>
           </div>
 
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
+          <div class="card-inturn mb-4">
+            <div>
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">Experience</h2>
-                <button type="button" class="btn btn-sm btn-outline-primary" @click="addExp">+ Add experience</button>
+                <h2 class="section-title mb-0">Experience</h2>
+                <button type="button" class="btn-secondary-inturn btn-sm-inturn" @click="addExp">+ Add experience</button>
               </div>
               <p v-if="!form.experience.length" class="text-body-secondary mb-0">No experience yet.</p>
-              <div v-for="(x, i) in form.experience" :key="x.key" class="border rounded p-3 mb-3 bg-body-tertiary">
+              <div v-for="(x, i) in form.experience" :key="x.key" class="card-muted-inturn mb-3">
                 <div class="row g-2">
                   <div class="col-12 col-md-6">
                     <label :for="`re-title-${x.key}`" class="form-label small">Title</label>
-                    <input :id="`re-title-${x.key}`" v-model="x.title" class="form-control" />
+                    <input :id="`re-title-${x.key}`" v-model="x.title" class="input-inturn" />
                   </div>
                   <div class="col-12 col-md-6">
                     <label :for="`re-co-${x.key}`" class="form-label small">Company</label>
-                    <input :id="`re-co-${x.key}`" v-model="x.company" class="form-control" />
+                    <input :id="`re-co-${x.key}`" v-model="x.company" class="input-inturn" />
                   </div>
                   <div class="col-12 col-md-6">
                     <label :for="`re-loc-${x.key}`" class="form-label small">Location</label>
-                    <input :id="`re-loc-${x.key}`" v-model="x.location" class="form-control" />
+                    <input :id="`re-loc-${x.key}`" v-model="x.location" class="input-inturn" />
                   </div>
                   <div class="col-6 col-md-3">
                     <label :for="`re-s-${x.key}`" class="form-label small">Start</label>
-                    <input :id="`re-s-${x.key}`" v-model="x.startDate" class="form-control" placeholder="Jan 2024" />
+                    <input :id="`re-s-${x.key}`" v-model="x.startDate" class="input-inturn" placeholder="Jan 2024" />
                   </div>
                   <div class="col-6 col-md-3">
                     <label :for="`re-e-${x.key}`" class="form-label small">End</label>
-                    <input :id="`re-e-${x.key}`" v-model="x.endDate" class="form-control" placeholder="Aug 2024" :disabled="x.current" />
+                    <input :id="`re-e-${x.key}`" v-model="x.endDate" class="input-inturn" placeholder="Aug 2024" :disabled="x.current" />
                   </div>
                   <div class="col-12 d-flex align-items-center">
                     <div class="form-check">
@@ -322,92 +355,92 @@ async function onFile(e) {
                   </div>
                   <div class="col-12">
                     <label :for="`re-b-${x.key}`" class="form-label small">Bullets (one per line)</label>
-                    <textarea :id="`re-b-${x.key}`" v-model="x.bulletsText" class="form-control" rows="4"></textarea>
+                    <textarea :id="`re-b-${x.key}`" v-model="x.bulletsText" class="input-inturn" rows="4"></textarea>
                   </div>
                   <div class="col-12">
                     <label :for="`re-k-${x.key}`" class="form-label small">Skills used (comma-separated)</label>
-                    <input :id="`re-k-${x.key}`" v-model="x.skillsText" class="form-control" />
+                    <input :id="`re-k-${x.key}`" v-model="x.skillsText" class="input-inturn" />
                   </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger mt-3" @click="removeAt(form.experience, i)">Remove experience</button>
+                <button type="button" class="btn-danger-inturn btn-sm-inturn mt-3" @click="removeAt(form.experience, i)">Remove experience</button>
               </div>
             </div>
           </div>
 
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
+          <div class="card-inturn mb-4">
+            <div>
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">Projects</h2>
-                <button type="button" class="btn btn-sm btn-outline-primary" @click="addProj">+ Add project</button>
+                <h2 class="section-title mb-0">Projects</h2>
+                <button type="button" class="btn-secondary-inturn btn-sm-inturn" @click="addProj">+ Add project</button>
               </div>
               <p v-if="!form.projects.length" class="text-body-secondary mb-0">No projects yet.</p>
-              <div v-for="(x, i) in form.projects" :key="x.key" class="border rounded p-3 mb-3 bg-body-tertiary">
+              <div v-for="(x, i) in form.projects" :key="x.key" class="card-muted-inturn mb-3">
                 <div class="row g-2">
                   <div class="col-12">
                     <label :for="`rp-n-${x.key}`" class="form-label small">Name</label>
-                    <input :id="`rp-n-${x.key}`" v-model="x.name" class="form-control" />
+                    <input :id="`rp-n-${x.key}`" v-model="x.name" class="input-inturn" />
                   </div>
                   <div class="col-6">
                     <label :for="`rp-s-${x.key}`" class="form-label small">Start</label>
-                    <input :id="`rp-s-${x.key}`" v-model="x.startDate" class="form-control" />
+                    <input :id="`rp-s-${x.key}`" v-model="x.startDate" class="input-inturn" />
                   </div>
                   <div class="col-6">
                     <label :for="`rp-e-${x.key}`" class="form-label small">End</label>
-                    <input :id="`rp-e-${x.key}`" v-model="x.endDate" class="form-control" />
+                    <input :id="`rp-e-${x.key}`" v-model="x.endDate" class="input-inturn" />
                   </div>
                   <div class="col-12">
                     <label :for="`rp-b-${x.key}`" class="form-label small">Bullets (one per line)</label>
-                    <textarea :id="`rp-b-${x.key}`" v-model="x.bulletsText" class="form-control" rows="3"></textarea>
+                    <textarea :id="`rp-b-${x.key}`" v-model="x.bulletsText" class="input-inturn" rows="3"></textarea>
                   </div>
                   <div class="col-12">
                     <label :for="`rp-k-${x.key}`" class="form-label small">Skills / tech stack (comma-separated)</label>
-                    <input :id="`rp-k-${x.key}`" v-model="x.skillsText" class="form-control" />
+                    <input :id="`rp-k-${x.key}`" v-model="x.skillsText" class="input-inturn" />
                   </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger mt-3" @click="removeAt(form.projects, i)">Remove project</button>
+                <button type="button" class="btn-danger-inturn btn-sm-inturn mt-3" @click="removeAt(form.projects, i)">Remove project</button>
               </div>
             </div>
           </div>
 
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
+          <div class="card-inturn mb-4">
+            <div>
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">Education</h2>
-                <button type="button" class="btn btn-sm btn-outline-primary" @click="addEdu">+ Add school</button>
+                <h2 class="section-title mb-0">Education</h2>
+                <button type="button" class="btn-secondary-inturn btn-sm-inturn" @click="addEdu">+ Add school</button>
               </div>
               <p v-if="!form.education.length" class="text-body-secondary mb-0">No education yet.</p>
-              <div v-for="(x, i) in form.education" :key="x.key" class="border rounded p-3 mb-3 bg-body-tertiary">
+              <div v-for="(x, i) in form.education" :key="x.key" class="card-muted-inturn mb-3">
                 <div class="row g-2">
                   <div class="col-12 col-md-6">
                     <label :for="`red-sc-${x.key}`" class="form-label small">School</label>
-                    <input :id="`red-sc-${x.key}`" v-model="x.school" class="form-control" />
+                    <input :id="`red-sc-${x.key}`" v-model="x.school" class="input-inturn" />
                   </div>
                   <div class="col-12 col-md-6">
                     <label :for="`red-d-${x.key}`" class="form-label small">Degree</label>
-                    <input :id="`red-d-${x.key}`" v-model="x.degree" class="form-control" />
+                    <input :id="`red-d-${x.key}`" v-model="x.degree" class="input-inturn" />
                   </div>
                   <div class="col-12 col-md-6">
                     <label :for="`red-f-${x.key}`" class="form-label small">Field of study</label>
-                    <input :id="`red-f-${x.key}`" v-model="x.field" class="form-control" />
+                    <input :id="`red-f-${x.key}`" v-model="x.field" class="input-inturn" />
                   </div>
                   <div class="col-12 col-md-6">
                     <label :for="`red-g-${x.key}`" class="form-label small">Grade / GPA</label>
-                    <input :id="`red-g-${x.key}`" v-model="x.grade" class="form-control" placeholder="3.6 / 4.0" />
+                    <input :id="`red-g-${x.key}`" v-model="x.grade" class="input-inturn" placeholder="3.6 / 4.0" />
                   </div>
                   <div class="col-6 col-md-3">
                     <label :for="`red-s-${x.key}`" class="form-label small">Start</label>
-                    <input :id="`red-s-${x.key}`" v-model="x.startDate" class="form-control" />
+                    <input :id="`red-s-${x.key}`" v-model="x.startDate" class="input-inturn" />
                   </div>
                   <div class="col-6 col-md-3">
                     <label :for="`red-e-${x.key}`" class="form-label small">End</label>
-                    <input :id="`red-e-${x.key}`" v-model="x.endDate" class="form-control" />
+                    <input :id="`red-e-${x.key}`" v-model="x.endDate" class="input-inturn" />
                   </div>
                   <div class="col-12">
                     <label :for="`red-b-${x.key}`" class="form-label small">Coursework / bullets (one per line)</label>
-                    <textarea :id="`red-b-${x.key}`" v-model="x.bulletsText" class="form-control" rows="2"></textarea>
+                    <textarea :id="`red-b-${x.key}`" v-model="x.bulletsText" class="input-inturn" rows="2"></textarea>
                   </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-danger mt-3" @click="removeAt(form.education, i)">Remove school</button>
+                <button type="button" class="btn-danger-inturn btn-sm-inturn mt-3" @click="removeAt(form.education, i)">Remove school</button>
               </div>
             </div>
           </div>

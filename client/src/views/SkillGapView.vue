@@ -54,6 +54,16 @@ const paperProfile = computed(() => {
 const route = useRoute()
 const resumes = ref([])
 const selectedResumeId = ref('')
+const applicationId = ref(typeof route.query.applicationId === 'string' ? route.query.applicationId : '')
+const applicationJob = ref(null) // { mcfUuid, title, company } of that Tracker card, once loaded
+
+// Link an analysis back to the card only while the form still describes the card's job,
+// so a different posting typed in later (via "New analysis") doesn't overwrite the card's link.
+function linksToApplication() {
+  const a = applicationJob.value
+  const same = (x, y) => (x || '').trim().toLowerCase() === (y || '').trim().toLowerCase()
+  return !!a && same(job.value.title, a.title) && same(job.value.company, a.company)
+}
 
 async function loadResumes() {
   try {
@@ -65,6 +75,28 @@ async function loadResumes() {
     else if (!selectedResumeId.value && r.length) selectedResumeId.value = r[0]._id // already sorted updatedAt desc
   } catch {
     // Non-fatal: the form just falls back to "Use base Profile" if this fails.
+  }
+}
+
+// Coming from the Tracker board's "Tailor Resume" button: either resume the analysis
+// already linked to this card, or prefill the job form from the card's saved details.
+async function loadFromApplication() {
+  if (!applicationId.value) return
+  try {
+    const app = await api(`/api/applications/${applicationId.value}`)
+    applicationJob.value = { mcfUuid: app.mcfUuid || '', title: app.title || '', company: app.companyName || '' }
+    if (app.skillGapResultId) {
+      await openResult(app.skillGapResultId)
+      return
+    }
+    job.value = {
+      title: app.title || '',
+      company: app.companyName || '',
+      description: app.description || '',
+      applicationDeadline: app.expiryDate ? app.expiryDate.slice(0, 10) : '',
+    }
+  } catch {
+    // application missing/deleted since the link was created — leave the blank form
   }
 }
 
@@ -300,6 +332,7 @@ async function analyze() {
   analyzing.value = true
   elapsed.value = 0
   elapsedTimer = setInterval(() => elapsed.value++, 1000)
+  const linked = linksToApplication()
   try {
     const { result: r } = await api('/api/skillgap', {
       method: 'POST',
@@ -309,8 +342,10 @@ async function analyze() {
           company: job.value.company.trim(),
           description: job.value.description.trim(),
           applicationDeadline: job.value.applicationDeadline || undefined,
+          ...(linked && { jobId: applicationJob.value.mcfUuid || undefined, source: 'tracker' }),
         },
         ...(selectedResumeId.value && { resumeId: selectedResumeId.value }),
+        ...(linked && { applicationId: applicationId.value }),
       },
     })
     openLoaded(r)
@@ -419,6 +454,7 @@ onMounted(() => {
   loadHistory()
   loadTodos()
   loadResumes()
+  loadFromApplication()
   window.addEventListener('keydown', onKey)
 })
 onBeforeUnmount(() => {
@@ -430,12 +466,14 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="sg-page">
-    <div class="mb-3">
-      <h1 class="h3 fw-semibold mb-1">Skill Gap Analysis</h1>
-      <p class="text-body-secondary mb-0">
-        Paste a job posting to see how your profile scores, then tailor a resume draft and watch its score move.
-      </p>
-    </div>
+    <header class="page-header">
+      <div>
+        <h1 class="header-title">Skill Gap Analysis</h1>
+        <p class="header-subtitle">
+          Paste a job posting to see how your profile scores, then tailor a resume draft and watch its score move.
+        </p>
+      </div>
+    </header>
 
     <div v-if="profileEmpty" class="alert alert-warning" role="status">
       Add your skills or import your resume first —
@@ -445,49 +483,49 @@ onBeforeUnmount(() => {
 
     <!-- Compact bar once a result is open -->
     <div v-if="result" class="d-flex flex-wrap gap-2 mb-3">
-      <button type="button" class="btn btn-sm btn-outline-primary" :aria-expanded="setupPanel === 'form'" @click="setupPanel = setupPanel === 'form' ? null : 'form'">New analysis</button>
-      <button type="button" class="btn btn-sm btn-outline-secondary" :aria-expanded="setupPanel === 'history'" @click="setupPanel = setupPanel === 'history' ? null : 'history'">History ({{ history.length }})</button>
+      <button type="button" class="btn-secondary-inturn btn-sm-inturn" :aria-expanded="setupPanel === 'form'" @click="setupPanel = setupPanel === 'form' ? null : 'form'">New analysis</button>
+      <button type="button" class="btn-neutral-inturn btn-sm-inturn" :aria-expanded="setupPanel === 'history'" @click="setupPanel = setupPanel === 'history' ? null : 'history'">History ({{ history.length }})</button>
     </div>
 
     <div aria-live="assertive">
       <div v-if="err" class="alert alert-danger d-flex justify-content-between align-items-center gap-2" role="alert">
         <span>{{ err.message }}</span>
-        <button v-if="!quota(err) && err.retry" type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" @click="err.retry()">Retry</button>
+        <button v-if="!quota(err) && err.retry" type="button" class="btn-danger-inturn btn-sm-inturn flex-shrink-0" @click="err.retry()">Retry</button>
       </div>
     </div>
 
     <div v-if="!result || setupPanel" class="row g-4 g-xl-5 mb-4">
       <div v-if="!result || setupPanel === 'form'" class="col-12 col-lg-7">
-        <form class="card shadow-sm" novalidate @submit.prevent="analyze">
-          <div class="card-body p-4">
-            <h2 class="h4 fw-semibold mb-3">Job posting</h2>
+        <form class="card-inturn p-0" novalidate @submit.prevent="analyze">
+          <div class="p-4">
+            <h2 class="section-title">Job posting</h2>
             <div class="mb-3">
               <label for="sg-title" class="form-label">Job title <span class="text-danger" aria-hidden="true">*</span></label>
-              <input id="sg-title" v-model="job.title" class="form-control" :class="{ 'is-invalid': titleInvalid }" required aria-required="true" :disabled="analyzing" />
+              <input id="sg-title" v-model="job.title" class="input-inturn" :class="{ 'is-invalid': titleInvalid }" required aria-required="true" :disabled="analyzing" />
               <div class="invalid-feedback">Enter the job title.</div>
             </div>
             <div class="mb-3">
               <label for="sg-company" class="form-label">Company</label>
-              <input id="sg-company" v-model="job.company" class="form-control" :disabled="analyzing" />
+              <input id="sg-company" v-model="job.company" class="input-inturn" :disabled="analyzing" />
             </div>
             <div class="mb-3">
               <label for="sg-desc" class="form-label">Job description <span class="text-danger" aria-hidden="true">*</span></label>
-              <textarea id="sg-desc" v-model="job.description" rows="9" class="form-control" :class="{ 'is-invalid': descInvalid }" required aria-required="true" placeholder="Paste the full job posting here" :disabled="analyzing"></textarea>
+              <textarea id="sg-desc" v-model="job.description" rows="9" class="input-inturn" :class="{ 'is-invalid': descInvalid }" required aria-required="true" placeholder="Paste the full job posting here" :disabled="analyzing"></textarea>
               <div class="invalid-feedback">Paste the job description.</div>
             </div>
             <div class="mb-3">
               <label for="sg-deadline" class="form-label">Application deadline <span class="text-body-secondary">(optional)</span></label>
-              <input id="sg-deadline" v-model="job.applicationDeadline" type="date" class="form-control" :disabled="analyzing" />
+              <input id="sg-deadline" v-model="job.applicationDeadline" type="date" class="input-inturn" :disabled="analyzing" />
               <div class="form-text">Used to set deadlines on your skill-gap to-do list.</div>
             </div>
             <div v-if="resumes.length" class="mb-3">
               <label for="sg-resume" class="form-label">Resume to use</label>
-              <select id="sg-resume" v-model="selectedResumeId" class="form-select" :disabled="analyzing">
+              <select id="sg-resume" v-model="selectedResumeId" class="input-inturn" :disabled="analyzing">
                 <option value="">Use base Profile</option>
                 <option v-for="r in resumes" :key="r._id" :value="r._id">{{ r.name }}</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary w-100" :disabled="analyzing">
+            <button type="submit" class="btn-primary-inturn w-100" :disabled="analyzing">
               <span v-if="analyzing" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
               {{ analyzing ? 'Analyzing…' : 'Analyze' }}
             </button>
@@ -496,8 +534,8 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="col-12 col-lg-5 d-flex flex-column gap-4">
-        <div v-if="!result || setupPanel === 'history'" class="card shadow-sm">
-          <div class="card-body p-4 pb-2"><h2 class="h4 fw-semibold mb-0">History</h2></div>
+        <div v-if="!result || setupPanel === 'history'" class="card-inturn p-0 overflow-hidden">
+          <div class="p-4 pb-2"><h2 class="section-title mb-0">History</h2></div>
           <div v-if="historyLoading" class="px-4 pb-3 text-body-secondary small" role="status">Loading…</div>
           <div v-else-if="historyError" class="px-4 pb-3 text-danger-emphasis small">{{ historyError }}</div>
           <p v-else-if="!history.length" class="px-4 pb-3 mb-0 text-body-secondary">No analyses yet.</p>
@@ -533,8 +571,8 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Honest loading state: first-time analyses are slow -->
-    <div v-if="analyzing" class="card shadow-sm mb-4" role="status">
-      <div class="card-body py-4 text-center">
+    <div v-if="analyzing" class="card-inturn mb-4 text-center" role="status">
+      <div>
         <span class="spinner-border mb-3" aria-hidden="true"></span>
         <p class="h5 mb-1">{{ stage }}</p>
         <p class="text-body-secondary mb-2"><span class="fw-semibold">{{ elapsed }}s</span> elapsed (stage is an estimate)</p>
@@ -543,13 +581,13 @@ onBeforeUnmount(() => {
         </p>
       </div>
     </div>
-    <div v-else-if="loadingResult" class="card shadow-sm mb-4" role="status">
-      <div class="card-body text-center py-4"><span class="spinner-border me-2" aria-hidden="true"></span>Loading result…</div>
+    <div v-else-if="loadingResult" class="card-inturn mb-4" role="status">
+      <div class="text-center"><span class="spinner-border me-2" aria-hidden="true"></span>Loading result…</div>
     </div>
 
-    <div v-if="!result && !analyzing && !loadingResult" class="card shadow-sm">
-      <div class="card-body text-center py-5">
-        <h2 class="h5">No analysis yet</h2>
+    <div v-if="!result && !analyzing && !loadingResult" class="card-inturn">
+      <div class="text-center py-4">
+        <h2 class="section-title">No analysis yet</h2>
         <p class="text-body-secondary mb-0 mx-auto" style="max-width: 34rem">
           Submit a job posting and you'll get a requirement-by-requirement match score, a tailored resume draft you can edit with a live score, and an AI assistant to close the gaps truthfully.
         </p>
@@ -558,8 +596,8 @@ onBeforeUnmount(() => {
 
     <!-- Workspace -->
     <template v-if="result && !analyzing">
-      <header class="sg-head card shadow-sm mb-4">
-        <div class="card-body py-3 px-4 d-flex flex-wrap align-items-center gap-3">
+      <header class="sg-head card-inturn mb-4">
+        <div class="d-flex flex-wrap align-items-center gap-3">
           <div class="me-auto min-w-0">
             <h2 class="h4 fw-semibold mb-0">{{ result.job.title }}<template v-if="result.job.company"> · {{ result.job.company }}</template></h2>
             <small class="text-body-secondary">
@@ -570,18 +608,18 @@ onBeforeUnmount(() => {
             <span v-if="!canRescore"></span>
             <span v-else-if="rescoreErr && !dirty && !rescoring" class="text-danger-emphasis">
               {{ rescoreErr.message }}
-              <button v-if="!quota(rescoreErr)" type="button" class="btn btn-sm btn-outline-danger ms-1 py-0" @click="runRescore">Retry</button>
+              <button v-if="!quota(rescoreErr)" type="button" class="btn-danger-inturn btn-sm-inturn ms-1" @click="runRescore">Retry</button>
             </span>
             <span v-else-if="dirty" class="text-body-secondary">Changes pending…</span>
             <span v-else-if="rescoring" class="text-body-secondary"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Re-scoring draft… usually 5–20s, instant if nothing changed</span>
             <span v-else class="text-success-emphasis">Draft score up to date</span>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="savingCopy || !canRescore" @click="saveAsNew">
+            <button type="button" class="btn-neutral-inturn btn-sm-inturn" :disabled="savingCopy || !canRescore" @click="saveAsNew">
               <span v-if="savingCopy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Save as new version
             </button>
-            <button type="button" class="btn btn-sm btn-primary d-xxl-none" @click="showPane('chat')">Tailor chat</button>
-            <button type="button" class="btn btn-sm btn-outline-primary d-xxl-none" @click="showPane('preview')">Preview</button>
+            <button type="button" class="btn-primary-inturn btn-sm-inturn d-xxl-none" @click="showPane('chat')">Tailor chat</button>
+            <button type="button" class="btn-secondary-inturn btn-sm-inturn d-xxl-none" @click="showPane('preview')">Preview</button>
           </div>
         </div>
       </header>
@@ -638,8 +676,8 @@ onBeforeUnmount(() => {
               </div>
               <div v-if="rightTab === 'preview'" id="sg-panel-preview" class="h-100 overflow-auto p-3" role="tabpanel" aria-labelledby="sg-tab-preview">
                 <div class="d-flex flex-wrap gap-2 mb-2">
-                  <button type="button" class="btn btn-sm btn-outline-secondary" @click="copyText">{{ copied ? 'Copied' : 'Copy as text' }}</button>
-                  <button type="button" class="btn btn-sm btn-primary" @click="printResume">Print / Save as PDF</button>
+                  <button type="button" class="btn-neutral-inturn btn-sm-inturn" @click="copyText">{{ copied ? 'Copied' : 'Copy as text' }}</button>
+                  <button type="button" class="btn-primary-inturn btn-sm-inturn" @click="printResume">Print / Save as PDF</button>
                 </div>
                 <p class="small text-body-secondary">AI draft built only from your profile — review it before using.</p>
                 <ResumePaper :draft="draft" :profile="paperProfile" />
@@ -685,13 +723,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Page canvas: full-bleed (breaks out of App.vue's centered .container) so the workspace uses the
-   whole screen width instead of leaving empty margins on wide monitors — light-gray surface so
-   white cards still separate by contrast, not just borders. */
-/* App.vue's <main> is a fluid container now, so this page already gets the full width without
-   needing its own breakout — just a light-gray canvas so white cards separate by contrast. */
-.sg-page { background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius-lg); padding: 1.5rem; }
-@media (max-width: 767.98px) { .sg-page { padding: 1rem; } }
 .min-w-0 { min-width: 0; }
 .sg-history { max-height: 26rem; overflow-y: auto; --bs-list-group-item-padding-x: 1.5rem; }
 .sg-stale { opacity: 0.7; transition: opacity 0.15s; }
@@ -715,8 +746,8 @@ onBeforeUnmount(() => {
     /* Bootstrap makes .offcanvas-xxl transparent (!important) at xxl; keep the pane white on the gray canvas. */
     background-color: var(--bs-body-bg) !important;
     position: sticky; top: 1rem; height: calc(100dvh - 2rem);
-    border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius);
-    box-shadow: var(--bs-box-shadow-sm); overflow: hidden;
+    border: 1px solid var(--inturn-border); border-radius: var(--r-md);
+    overflow: hidden;
   }
 }
 @media (prefers-reduced-motion: reduce) { .sg-stale { transition: none; } }
@@ -736,14 +767,12 @@ onBeforeUnmount(() => {
 }
 .sg-edge-tab {
   writing-mode: vertical-rl; transform: rotate(180deg);
-  border: none; border-radius: 999px; padding: 1.25rem 0.5rem;
+  border: none; border-radius: var(--r-pill); padding: 1.25rem 0.5rem;
   font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
   color: #fff; cursor: pointer; white-space: nowrap; transition: filter 0.15s, box-shadow 0.15s;
 }
 .sg-edge-tab:hover { filter: brightness(1.08); }
 .sg-edge-tab:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
-.sg-edge-tab-chat { background: #0d9488; }
-.sg-edge-tab-chat.active { background: #0f766e; box-shadow: 0 0 0 2px #0d948866; }
-.sg-edge-tab-preview { background: #ea580c; }
-.sg-edge-tab-preview.active { background: #c2410c; box-shadow: 0 0 0 2px #ea580c66; }
+.sg-edge-tab { background: var(--inturn-primary); }
+.sg-edge-tab.active { background: var(--inturn-primary-hover); box-shadow: 0 0 0 2px rgba(78, 139, 230, 0.4); }
 </style>

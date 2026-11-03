@@ -98,18 +98,18 @@ async function remove(r) {
 
 <template>
   <section class="pb-5">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <header class="page-header">
       <div>
-        <h1 class="h3 mb-1">My resumes</h1>
-        <p class="text-body-secondary mb-0">Keep a few versions ready for the roles you're targeting, then tailor one per application.</p>
+        <h1 class="header-title">My Resumes</h1>
+        <p class="header-subtitle">Keep a few versions ready for the roles you're targeting, then tailor one per application.</p>
       </div>
-      <button v-if="!showCreate" ref="newBtn" type="button" class="btn btn-primary" @click="openCreate">+ New resume</button>
-    </div>
+      <button v-if="!showCreate" ref="newBtn" type="button" class="btn-primary-inturn" @click="openCreate">+ New resume</button>
+    </header>
 
-    <div v-if="showCreate" id="new-resume-panel" class="card shadow-sm border-primary-subtle mb-4">
-      <div class="card-body p-4">
+    <div v-if="showCreate" id="new-resume-panel" class="card-inturn mb-4">
+      <div>
         <form novalidate @submit.prevent="createResume('profile')" @keydown.esc="closeCreate">
-          <h2 class="h5 mb-1">New resume</h2>
+          <h2 class="section-title mb-1">New resume</h2>
           <p class="small text-body-secondary mb-3">Name it after the role you're targeting so it's easy to pick later.</p>
 
           <label for="new-resume-name" class="form-label fw-semibold">Resume name</label>
@@ -118,7 +118,7 @@ async function remove(r) {
             ref="nameInput"
             v-model="newName"
             name="resumeName"
-            class="form-control"
+            class="input-inturn"
             :class="{ 'is-invalid': nameError }"
             maxlength="80"
             autocomplete="off"
@@ -168,7 +168,7 @@ async function remove(r) {
           <div v-if="createError" class="alert alert-danger py-2 small mt-3 mb-0" role="alert">{{ createError }}</div>
 
           <div class="d-flex justify-content-end mt-3">
-            <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="!!creatingSeed" @click="closeCreate">Cancel</button>
+            <button type="button" class="btn-neutral-inturn btn-sm-inturn" :disabled="!!creatingSeed" @click="closeCreate">Cancel</button>
           </div>
         </form>
       </div>
@@ -181,23 +181,24 @@ async function remove(r) {
     </div>
 
     <div v-else-if="!resumes.length">
-      <div v-if="!showCreate" class="card shadow-sm">
-        <div class="card-body text-center py-5">
-          <h2 class="h5">No resumes yet</h2>
+      <div v-if="!showCreate" class="card-inturn">
+        <div class="text-center py-4">
+          <h2 class="section-title">No resumes yet</h2>
           <p class="text-body-secondary mb-0">Create one to get a split-view editor with a live preview.</p>
-          <button type="button" class="btn btn-primary btn-sm mt-3" @click="openCreate">Create your first resume</button>
+          <button type="button" class="btn-primary-inturn mt-3" @click="openCreate">Create your first resume</button>
         </div>
       </div>
     </div>
 
-    <div v-else class="list-group shadow-sm">
+    <div v-else class="list-group list-group-flush card-inturn p-0 overflow-hidden">
       <div v-for="r in resumes" :key="r._id" class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
         <RouterLink :to="`/resumes/${r._id}`" class="text-decoration-none flex-grow-1 min-w-0">
           <div class="fw-semibold text-truncate">{{ r.name }}</div>
           <small class="text-body-secondary">Updated {{ fmtDate(r.updatedAt) }}</small>
         </RouterLink>
         <div class="d-flex flex-wrap align-items-center gap-2">
-          <button v-if="armedId !== r._id" type="button" class="btn btn-sm btn-outline-secondary" :disabled="busyId === r._id" @click="duplicate(r)">Duplicate</button>
+          <RouterLink v-if="armedId !== r._id" :to="`/resumes/${r._id}/analysis`" class="btn-secondary-inturn btn-sm-inturn">Analyze</RouterLink>
+          <button v-if="armedId !== r._id" type="button" class="btn-neutral-inturn btn-sm-inturn" :disabled="busyId === r._id" @click="duplicate(r)">Duplicate</button>
           <ConfirmButton
             label="Delete"
             prompt="Delete this resume? This can't be undone."
@@ -215,7 +216,7 @@ async function remove(r) {
 </template>
 
 <style scoped>
-.nr-option { display: block; padding: 0.875rem 1rem; border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius-lg); background: var(--bs-body-bg); color: var(--bs-body-color); transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s; }
+.nr-option { display: block; padding: 0.875rem 1rem; border: 1px solid var(--bs-border-color); border-radius: var(--r-md); background: var(--inturn-surface); color: var(--bs-body-color); transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s; }
 .nr-option.is-default { border-color: var(--bs-primary-border-subtle); }
 .nr-option:hover:not(:disabled) { border-color: var(--bs-primary); background: var(--bs-primary-bg-subtle); }
 .nr-option:focus-visible { outline: 0; border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25); }

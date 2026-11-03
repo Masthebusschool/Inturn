@@ -2,7 +2,7 @@
   <section class="jobs-select">
     <header class="page-header">
       <button
-        class="back-button"
+        class="btn-neutral-inturn"
         type="button"
         @click="emit('close')"
       >
@@ -10,8 +10,7 @@
       </button>
 
       <button
-        class="save-button"
-        :class="{ saved: saved }"
+        :class="saved ? 'btn-primary-inturn' : 'btn-secondary-inturn'"
         :aria-pressed="saved"
         type="button"
         @click="emit('save', job.uuid)"
@@ -21,7 +20,7 @@
     </header>
 
     <!-- Job heading -->
-    <section class="job-banner">
+    <section class="card-inturn job-banner">
       <p class="company-name">{{ companyName }}</p>
 
       <h1>{{ job.title }}</h1>
@@ -32,20 +31,20 @@
         <span
           v-for="type in employmentTypes"
           :key="type.id || type.employmentType"
-          class="info-tag"
+          class="tag-inturn"
         >
           {{ type.employmentType }}
         </span>
 
-        <span class="info-tag">{{ salary }}</span>
+        <span class="tag-inturn">{{ salary }}</span>
       </div>
 
       <p class="source-note">Source: MyCareersFuture</p>
     </section>
 
     <!-- Job information -->
-    <section class="detail-section">
-      <h2>Job Information</h2>
+    <section class="card-inturn detail-section">
+      <h2 class="section-title">Job Information</h2>
 
       <div class="job-facts">
         <div>
@@ -76,8 +75,8 @@
     </section>
 
     <!-- Employer's description -->
-    <section class="detail-section">
-      <h2>About This Role</h2>
+    <section class="card-inturn detail-section">
+      <h2 class="section-title">About This Role</h2>
 
       <p class="job-description">
         {{
@@ -88,15 +87,15 @@
     </section>
 
     <!-- Resume skills -->
-    <section class="detail-section">
-      <h2>Skills and Resume Match</h2>
+    <section class="card-inturn detail-section">
+      <h2 class="section-title">Skills and Resume Match</h2>
 
       <p v-if="jobSkills.length === 0" class="section-description">
         No structured skills were provided for this listing.
       </p>
 
       <template v-else>
-        <div v-if="resumeSkills.length > 0" class="match-summary">
+        <div v-if="resumeSkills.length > 0" class="callout-inturn match-summary">
           <strong>
             {{ matchedSkills.length }} of {{ jobSkills.length }}
             listed skills matched
@@ -116,7 +115,7 @@
           <span
             v-for="skill in jobSkills"
             :key="skill"
-            class="skill-tag"
+            class="tag-inturn skill-tag"
             :class="{
               matched:
                 resumeSkills.length > 0 && hasResumeSkill(skill)
@@ -143,8 +142,8 @@
     </section>
 
     <!-- Application questions -->
-    <section class="detail-section">
-      <h2>Application Questions</h2>
+    <section class="card-inturn detail-section">
+      <h2 class="section-title">Application Questions</h2>
 
       <p
         v-if="loadingQuestions"
@@ -158,7 +157,7 @@
         <p class="section-description">{{ questionError }}</p>
 
         <button
-          class="secondary-button"
+          class="btn-neutral-inturn"
           type="button"
           @click="loadQuestions"
         >
@@ -184,6 +183,7 @@
           <textarea
             :id="'answer-' + index"
             v-model="answers[index]"
+            class="input-inturn"
             rows="4"
             placeholder="Draft your answer..."
           ></textarea>
@@ -206,7 +206,7 @@
     <footer class="apply-footer">
       <a
         v-if="applicationUrl"
-        class="apply-button"
+        class="btn-primary-inturn w-100"
         :href="applicationUrl"
         target="_blank"
         rel="noopener noreferrer"
@@ -510,9 +510,6 @@ onMounted(() => {
 <style scoped>
 .jobs-select {
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  color: #17234b;
 }
 
 .jobs-select,
@@ -520,70 +517,13 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-button,
-textarea {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
 .page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.back-button {
-  padding: 9px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #2459ce;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.back-button:hover {
-  background: #e6edff;
-}
-
-.save-button,
-.secondary-button {
-  padding: 10px 14px;
-  border: 1px solid #dfe7fa;
-  border-radius: 10px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.save-button:hover,
-.secondary-button:hover {
-  background: #dfeaff;
-}
-
-.save-button.saved {
-  border-color: #81dfbd;
-  background: #ccf7e7;
-  color: #075b46;
-}
-
-.job-banner {
-  padding: 24px;
-  border: 1px solid #dce8f5;
-  border-radius: 18px;
-  background: #eaf8f5;
 }
 
 .company-name {
   margin: 0 0 8px;
-  color: #2459ce;
+  color: var(--inturn-primary-hover);
   font-size: 14px;
   word-wrap: break-word;
 }
@@ -597,7 +537,7 @@ button {
 
 .job-location {
   margin: 10px 0 0;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -610,32 +550,14 @@ button {
   margin-top: 16px;
 }
 
-.info-tag {
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: white;
-  color: #234b94;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .source-note {
   margin: 16px 0 0;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
 }
 
 .detail-section {
-  margin-top: 20px;
-  padding: 22px;
-  border: 1px solid #e9edf5;
-  border-radius: 16px;
-  background: white;
-}
-
-.detail-section h2 {
-  margin: 0 0 16px;
-  font-size: 18px;
+  margin-top: 1.25rem;
 }
 
 .job-facts > div {
@@ -644,13 +566,13 @@ button {
   flex-wrap: wrap;
   gap: 10px;
   padding: 12px 0;
-  border-bottom: 1px solid #e9edf5;
+  border-bottom: 1px solid var(--inturn-border);
   font-size: 13px;
   line-height: 1.6;
 }
 
 .job-facts span {
-  color: #64748b;
+  color: var(--inturn-text-muted);
 }
 
 .job-facts strong {
@@ -659,7 +581,7 @@ button {
 
 .job-description {
   margin: 0;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 14px;
   line-height: 1.8;
   white-space: pre-line;
@@ -668,45 +590,32 @@ button {
 
 .section-description {
   margin: 0 0 14px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
   line-height: 1.7;
 }
 
 .match-summary {
-  padding: 16px;
-  border-radius: 12px;
-  background: #eaf0ff;
-  color: #2459ce;
   font-size: 14px;
 }
 
 .match-summary p {
   margin: 8px 0 0;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 12px;
   line-height: 1.6;
 }
 
 .skill-tag {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
   max-width: 100%;
-  padding: 9px 12px;
-  border: 1px solid #dfe7fa;
-  border-radius: 10px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 13px;
   word-wrap: break-word;
 }
 
+/* Skill also on the resume (green = good news) */
 .skill-tag.matched {
-  border-color: #81dfbd;
-  background: #ccf7e7;
-  color: #075b46;
+  background: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
 }
 
 .skill-tag span {
@@ -725,44 +634,15 @@ button {
   line-height: 1.6;
 }
 
-.question-box textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 10px;
-  background: #f5f8ff;
-  color: #17234b;
-  font-size: 14px;
-  line-height: 1.6;
-  resize: vertical;
-}
-
 .small-note {
   margin: 14px 0 0;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
   line-height: 1.7;
 }
 
 .apply-footer {
-  margin-top: 22px;
+  margin-top: 1.5rem;
   text-align: center;
-}
-
-.apply-button {
-  display: block;
-  width: 100%;
-  padding: 15px;
-  border-radius: 12px;
-  background: #086b56;
-  color: white;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-}
-
-.apply-button:hover {
-  background: #075b46;
 }
 </style>

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { formatDate } from '../../helpers/apptrackingboard/KanbanViewHelper';
 
 const props = defineProps({ app: Object });
+const emit = defineEmits(['tailor-resume']);
 
 // which date to show depends on the column
 const dateLabel = computed(() => {
@@ -22,7 +23,7 @@ const matchPercent = computed(() => {
 </script>
 
 <template>
-  <div class="app-card p-3">
+  <div class="card-muted-inturn">
     <!-- title + favourite star (pe-5 leaves room for the 3 dot menu) -->
     <div class="d-flex align-items-start gap-2 pe-5 mb-2">
       <p class="card-title fw-semibold mb-0">{{ app.title }}</p>
@@ -47,6 +48,18 @@ const matchPercent = computed(() => {
     </div>
     <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
 
+    <!-- only while the card is still in Saved: this is a pre-decision tool, not an ongoing one -->
+    <button
+      v-if="app.status === 'Saved'"
+      type="button"
+      class="btn-secondary-inturn btn-sm-inturn w-100 mt-2"
+      v-on:pointerdown.stop
+      v-on:click="emit('tailor-resume', app)"
+    >
+      <span v-if="app.skillGapScore != null" class="badge text-bg-light border me-1">{{ app.skillGapScore }}</span>
+      Tailor Resume
+    </button>
+
     <slot>
       <!-- Insert Dropdown Button to shift to other columns -->
     </slot>
@@ -54,14 +67,8 @@ const matchPercent = computed(() => {
 </template>
 
 <style scoped>
-  .app-card {
-      border-radius: 18px;
-      background: #eef5ff;
-      border: 1px solid #dbe7fb;
-  }
-
   .card-title {
-      color: #0f1b3d;
+      color: var(--inturn-text);
       line-height: 1.35;
   }
 
@@ -71,12 +78,12 @@ const matchPercent = computed(() => {
 
   .progress {
       height: 6px;
-      border-radius: 80px;
-      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--r-pill);
+      background: var(--inturn-surface);
   }
 
   .progress-bar {
-      border-radius: 99px;
-      background: #2563eb;
+      border-radius: var(--r-pill);
+      background: var(--inturn-primary);
   }
 </style>

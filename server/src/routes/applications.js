@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import { isLoggedIn } from '../middleware/authMiddleware.js';
 import * as applcationController from '../controllers/applicationController.js';
+import { getDiscoverySavedJobs, saveDiscoveryJob, removeDiscoverySavedJob} from "../controllers/applicationController.js";
 
 const router = Router();
 
 router.get('/', isLoggedIn, applcationController.getApplications);
 router.post('/', isLoggedIn, applcationController.addApplication);
+router.get("/discovery-saved", getDiscoverySavedJobs);
+router.post("/discovery-saved", saveDiscoveryJob);
+router.delete("/discovery-saved/:jobId", removeDiscoverySavedJob);
+router.get('/:id', isLoggedIn, applcationController.getApplicationById);
 router.patch('/:id', isLoggedIn, applcationController.updateStatus);
 router.patch('/:id/interview', isLoggedIn, applcationController.updateInterviewDate);
 router.patch('/:id/favourite', isLoggedIn, applcationController.updateFavourite);

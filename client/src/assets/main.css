@@ -1,0 +1,414 @@
+/* Inturn global styles: every shared look is defined here once.
+   Each component type has ONE class name; .vue files use that class instead of Bootstrap button/card styles.
+   Page files keep only layout that is unique to that page. */
+
+/* ========== Design tokens ========== */
+:root {
+  /* Colors */
+  --inturn-primary: #4e8be6;
+  --inturn-primary-hover: #3c70b3;
+  --inturn-primary-soft: #e3ecfb;
+  --inturn-danger: #dc3545;
+  --inturn-danger-hover: #bb2d3b;
+  --inturn-page-bg: #f6f8fb;
+  --inturn-surface: #fff;
+  --inturn-surface-muted: #f1f4f9;
+  --inturn-border: #dee2e6;
+  --inturn-border-strong: #ced4da;
+  --inturn-text: #212529;
+  --inturn-text-soft: #495057;
+  --inturn-text-muted: #6c757d;
+
+  /* Corner radius: only these three */
+  --r-sm: 8px;     /* buttons, inputs, small blocks */
+  --r-md: 12px;    /* cards, modals, page header */
+  --r-pill: 999px; /* tags, chips */
+
+  /* Bootstrap colors only (links, badges like text-bg-primary-subtle) */
+  --bs-primary: #4e8be6;
+  --bs-primary-rgb: 78, 139, 230;
+  --bs-primary-bg-subtle: #e3ecfb;
+  --bs-primary-border-subtle: #b8cff3;
+  --bs-primary-text-emphasis: #3c70b3;
+  --bs-link-color: #4e8be6;
+  --bs-link-color-rgb: 78, 139, 230;
+  --bs-link-hover-color: #3c70b3;
+  --bs-link-hover-color-rgb: 60, 112, 179;
+}
+
+/* ========== Page header ========== */
+/* <div class="page-header"><div><h1 class="header-title">…</h1><p class="header-subtitle">…</p></div> actions </div> */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border);
+  border-radius: var(--r-md);
+}
+
+.header-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.header-subtitle {
+  font-size: 0.8rem;
+  color: var(--inturn-text-muted);
+  margin-bottom: 0;
+}
+
+/* Heading inside a card */
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+/* ========== Cards ========== */
+/* White card: every box on a page */
+.card-inturn {
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border);
+  border-radius: var(--r-md);
+  padding: 1.25rem;
+}
+
+/* Small grey block inside a card (stat boxes, read-only info) */
+.card-muted-inturn {
+  background: var(--inturn-surface-muted);
+  border-radius: var(--r-sm);
+  padding: 0.75rem 1rem;
+}
+
+/* Light blue tip / info box */
+.callout-inturn {
+  background: var(--inturn-primary-soft);
+  color: var(--inturn-primary-hover);
+  border-radius: var(--r-sm);
+  padding: 0.75rem 1rem;
+}
+
+/* ========== Buttons: one class per type ========== */
+
+/* A: the main action of a section (submit, add, save, search, share) */
+.btn-primary-inturn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #fff;
+  background: var(--inturn-primary);
+  border: 1px solid var(--inturn-primary);
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-primary-inturn:hover:not(:disabled) {
+  color: #fff;
+  background: var(--inturn-primary-hover);
+  border-color: var(--inturn-primary-hover);
+}
+
+/* B: secondary positive action (edit, filters, save job) */
+.btn-secondary-inturn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--inturn-primary);
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-primary);
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-secondary-inturn:hover:not(:disabled) {
+  color: var(--inturn-primary-hover);
+  background: var(--inturn-primary-soft);
+}
+
+/* C: cancel, back, reset, try again */
+.btn-neutral-inturn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--inturn-text-soft);
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border);
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-neutral-inturn:hover:not(:disabled) {
+  color: var(--inturn-text);
+  background: var(--inturn-surface-muted);
+  border-color: var(--inturn-border-strong);
+}
+
+/* D: delete, remove */
+.btn-danger-inturn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--inturn-danger);
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-danger);
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-danger-inturn:hover:not(:disabled) {
+  color: #fff;
+  background: var(--inturn-danger);
+}
+
+/* E: small text action (skip, clear, mark all as read, replace) */
+.btn-link-inturn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  font: inherit;
+  color: var(--inturn-primary);
+  background: none;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-link-inturn:hover:not(:disabled) {
+  color: var(--inturn-primary-hover);
+  text-decoration: underline;
+}
+
+/* Smaller size: add next to any button class, e.g. class="btn-secondary-inturn btn-sm-inturn" */
+.btn-sm-inturn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* States shared by every button type */
+.btn-primary-inturn:disabled,
+.btn-secondary-inturn:disabled,
+.btn-neutral-inturn:disabled,
+.btn-danger-inturn:disabled,
+.btn-link-inturn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary-inturn:focus-visible,
+.btn-secondary-inturn:focus-visible,
+.btn-neutral-inturn:focus-visible,
+.btn-danger-inturn:focus-visible,
+.btn-link-inturn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(78, 139, 230, 0.35);
+}
+
+/* ========== Chip (F): selectable option ========== */
+/* Filters, suggested skills, education level, favourites. Selected: add .is-active */
+.chip-inturn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--inturn-text-soft);
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+
+.chip-inturn:hover {
+  color: var(--inturn-primary-hover);
+  border-color: var(--inturn-primary);
+}
+
+.chip-inturn.is-active {
+  color: #fff;
+  background: var(--inturn-primary);
+  border-color: var(--inturn-primary);
+}
+
+/* ========== Tag: read-only label ========== */
+/* Skills, company, role, industry. Status badges keep Bootstrap: badge rounded-pill text-bg-*-subtle */
+.tag-inturn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--inturn-primary-hover);
+  background: var(--inturn-primary-soft);
+  border-radius: var(--r-pill);
+}
+
+/* ========== Inputs ========== */
+/* Use on <input>, <select> and <textarea> instead of form-control / form-select */
+.input-inturn {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  line-height: 1.5;
+  color: var(--inturn-text);
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border-strong);
+  border-radius: var(--r-sm);
+}
+
+.input-inturn:focus {
+  outline: none;
+  border-color: var(--inturn-primary);
+  box-shadow: 0 0 0 0.2rem rgba(78, 139, 230, 0.25);
+}
+
+.input-inturn::placeholder {
+  color: var(--inturn-text-muted);
+}
+
+.input-inturn:disabled {
+  background: var(--inturn-surface-muted);
+}
+
+/* Validation: add .is-invalid; a following .invalid-feedback shows the message */
+.input-inturn.is-invalid {
+  border-color: var(--inturn-danger);
+}
+
+textarea.input-inturn {
+  resize: vertical;
+}
+
+/* Dropdown arrow for <select class="input-inturn"> */
+select.input-inturn {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+}
+
+/* ========== Bootstrap parts that hard-code #0d6efd (colors only) ========== */
+/* Same border as .input-inturn, so unchecked boxes are visible */
+.form-check-input {
+  border-color: var(--inturn-border-strong);
+}
+
+.form-check-input:checked {
+  background-color: var(--inturn-primary);
+  border-color: var(--inturn-primary);
+}
+
+.progress,
+.progress-stacked {
+  --bs-progress-bar-bg: var(--inturn-primary);
+}
+
+.dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--inturn-primary);
+}
+
+/* Bootstrap modals: same corner radius as cards */
+.modal {
+  --bs-modal-border-radius: var(--r-md);
+  --bs-modal-inner-border-radius: calc(var(--r-md) - 1px);
+}
+
+/* ========== vue-multiselect (searchable dropdown): looks like .input-inturn ========== */
+/* main.js imports this file after vue-multiselect.css, so these win */
+.multiselect {
+  min-height: 42px;
+  color: var(--inturn-text);
+}
+
+.multiselect__tags {
+  min-height: 42px;
+  padding: 9px 40px 0 12px;
+  border: 1px solid var(--inturn-border-strong);
+  border-radius: var(--r-sm);
+}
+
+.multiselect__single,
+.multiselect__input,
+.multiselect__placeholder {
+  padding-left: 0;
+  font-size: 1rem;
+}
+
+.multiselect__placeholder {
+  color: var(--inturn-text-muted);
+}
+
+.multiselect--active .multiselect__tags {
+  border-color: var(--inturn-primary);
+}
+
+.multiselect__select {
+  height: 40px;
+}
+
+.multiselect__content-wrapper {
+  border-color: var(--inturn-border-strong);
+  border-bottom-left-radius: var(--r-sm);
+  border-bottom-right-radius: var(--r-sm);
+}
+
+.multiselect__option--highlight,
+.multiselect__option--highlight::after {
+  background: var(--inturn-primary-soft);
+  color: var(--inturn-primary-hover);
+}
+
+.multiselect__option--selected {
+  background: var(--inturn-surface-muted);
+  color: var(--inturn-text);
+}
+
+.multiselect__option--selected.multiselect__option--highlight,
+.multiselect__option--selected.multiselect__option--highlight::after {
+  background: var(--inturn-primary);
+  color: #fff;
+}
+
+/* ========== Mobile ========== */
+@media (max-width: 576px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

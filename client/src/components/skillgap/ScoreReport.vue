@@ -44,8 +44,8 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
 
 <template>
   <div class="d-flex flex-column gap-4">
-    <section class="card shadow-sm" aria-labelledby="sg-score-h">
-      <div class="card-body p-4">
+    <section class="card-inturn p-0" aria-labelledby="sg-score-h">
+      <div class="p-4">
         <h2 id="sg-score-h" class="sg-eyebrow mb-2">{{ isDraft ? 'Resume draft score' : 'Profile score' }}</h2>
         <div class="d-flex align-items-center gap-3">
           <div class="sg-big" :class="`sg-tone-${meta.variant}`" role="img" :aria-label="`Score ${score.atsScore} out of 100`">
@@ -78,8 +78,8 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
       </div>
     </section>
 
-    <section v-if="cats.length" class="card shadow-sm" aria-labelledby="sg-cat-h">
-      <div class="card-body p-4">
+    <section v-if="cats.length" class="card-inturn p-0" aria-labelledby="sg-cat-h">
+      <div class="p-4">
         <h2 id="sg-cat-h" class="sg-eyebrow mb-2">By category</h2>
         <table class="table table-sm align-middle mb-0 sg-cats">
           <thead>
@@ -101,8 +101,8 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
     </section>
 
     <template v-if="reqs.length">
-      <section v-for="g in groups" :key="g.id" class="card shadow-sm">
-        <component :is="g.id === 'met' ? 'details' : 'div'" class="card-body p-4">
+      <section v-for="g in groups" :key="g.id" class="card-inturn p-0">
+        <component :is="g.id === 'met' ? 'details' : 'div'" class="p-4">
           <component :is="g.id === 'met' ? 'summary' : 'h2'" class="sg-eyebrow mb-0" :class="{ 'sg-summary': g.id === 'met' }">{{ g.title }}</component>
           <p v-if="!g.rows.length && g.empty" class="small text-body-secondary mt-2 mb-0">{{ g.empty }}</p>
           <ul v-else class="list-unstyled mt-2 mb-0 d-flex flex-column gap-3">
@@ -123,9 +123,9 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
                 <span v-if="r.reason" class="d-block small text-body-secondary mt-1">{{ r.reason }}</span>
                 <span v-if="g.id === 'partial' && r.evidence" class="d-block small fst-italic sg-quote mt-1">"{{ r.evidence }}"</span>
               </component>
-              <div v-if="editable" class="btn-group btn-group-sm sg-ovr" role="group" :aria-label="`Self-report for ${r.text}`">
-                <button type="button" class="btn btn-outline-success" :class="{ active: ovr(r) === 'confirmed_have' }" :aria-pressed="ovr(r) === 'confirmed_have'" @click="toggle(r, 'confirmed_have')">I have this</button>
-                <button type="button" class="btn btn-outline-secondary" :class="{ active: ovr(r) === 'confirmed_missing' }" :aria-pressed="ovr(r) === 'confirmed_missing'" @click="toggle(r, 'confirmed_missing')">I don't</button>
+              <div v-if="editable" class="d-flex flex-wrap gap-2 sg-ovr" role="group" :aria-label="`Self-report for ${r.text}`">
+                <button type="button" class="chip-inturn" :class="{ 'is-active': ovr(r) === 'confirmed_have' }" :aria-pressed="ovr(r) === 'confirmed_have'" @click="toggle(r, 'confirmed_have')">I have this</button>
+                <button type="button" class="chip-inturn" :class="{ 'is-active': ovr(r) === 'confirmed_missing' }" :aria-pressed="ovr(r) === 'confirmed_missing'" @click="toggle(r, 'confirmed_missing')">I don't</button>
               </div>
             </li>
           </ul>
@@ -133,16 +133,16 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
       </section>
     </template>
 
-    <section v-if="eligibility.length" class="card shadow-sm" aria-labelledby="sg-elig-h">
-      <div class="card-body p-4">
+    <section v-if="eligibility.length" class="card-inturn p-0" aria-labelledby="sg-elig-h">
+      <div class="p-4">
         <h2 id="sg-elig-h" class="sg-eyebrow mb-1">Eligibility checklist</h2>
         <p class="small text-body-secondary">Self-reported — not AI-graded and not saved. Recruiters often filter on these.</p>
         <ul class="list-unstyled mb-0 d-flex flex-column gap-3">
           <li v-for="e in eligibility" :key="e.key">
             <div :id="`sg-el-${e.key}`" class="small mb-1">{{ e.text }}</div>
-            <div class="btn-group btn-group-sm" role="group" :aria-labelledby="`sg-el-${e.key}`">
-              <button type="button" class="btn btn-outline-success" :class="{ active: answers[e.key] === 'yes' }" :aria-pressed="answers[e.key] === 'yes'" @click="answer(e.key, 'yes')">Yes</button>
-              <button type="button" class="btn btn-outline-danger" :class="{ active: answers[e.key] === 'no' }" :aria-pressed="answers[e.key] === 'no'" @click="answer(e.key, 'no')">No</button>
+            <div class="d-flex flex-wrap gap-2" role="group" :aria-labelledby="`sg-el-${e.key}`">
+              <button type="button" class="chip-inturn" :class="{ 'is-active': answers[e.key] === 'yes' }" :aria-pressed="answers[e.key] === 'yes'" @click="answer(e.key, 'yes')">Yes</button>
+              <button type="button" class="chip-inturn" :class="{ 'is-active': answers[e.key] === 'no' }" :aria-pressed="answers[e.key] === 'no'" @click="answer(e.key, 'no')">No</button>
             </div>
           </li>
         </ul>
@@ -165,15 +165,14 @@ const answer = (k, v) => { answers[k] = answers[k] === v ? null : v }
 .sg-bar .progress-bar { transition: width 0.3s ease-out; }
 .sg-mini { height: 0.25rem; margin-top: 0.25rem; }
 .sg-cats { font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-.sg-note { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); border-left: 3px solid var(--bs-warning); border-radius: var(--bs-border-radius); padding: 0.5rem 0.75rem; font-size: 0.875rem; }
-.sg-row { border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); background: var(--bs-body-bg); transition: border-color 0.15s, box-shadow 0.15s; }
+.sg-note { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); border-left: 3px solid var(--bs-warning); border-radius: var(--r-sm); padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+.sg-row { border: 1px solid var(--bs-border-color); border-radius: var(--r-sm); background: var(--bs-body-bg); transition: border-color 0.15s, box-shadow 0.15s; }
 .sg-row.is-focused { border-color: var(--bs-primary); box-shadow: 0 0 0 0.15rem var(--bs-primary-bg-subtle); }
-.sg-row-main { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 1rem; color: inherit; font-size: 0.9rem; line-height: 1.6; border-radius: var(--bs-border-radius); }
+.sg-row-main { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 1rem; color: inherit; font-size: 0.9rem; line-height: 1.6; border-radius: var(--r-sm); }
 button.sg-row-main { cursor: pointer; }
 button.sg-row-main:hover { background: var(--bs-tertiary-bg); }
 button.sg-row-main:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }
 .sg-quote { border-left: 2px solid var(--bs-border-color); padding-left: 0.5rem; }
 .sg-ovr { margin: 0 1rem 1rem; }
-.sg-ovr .btn { min-height: 2rem; }
 @media (prefers-reduced-motion: reduce) { .sg-bar .progress-bar, .sg-row { transition: none; } }
 </style>

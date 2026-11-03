@@ -25,7 +25,7 @@ function addTask () {
 <template>
   <div class="modal d-block" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-4">
+      <div class="modal-content">
         <div class="modal-header">
           <div>
             <h2 class="modal-title h5 mb-0">{{ card.title }}</h2>
@@ -46,19 +46,19 @@ function addTask () {
             <li v-for="(task, index) in card.tasks" :key="index" class="list-group-item d-flex align-items-center gap-2">
               <input type="checkbox" class="form-check-input mt-0" :checked="task.done" :disabled="!task._id" v-on:change="emit('toggle', task)" />
               <span class="flex-grow-1" :class="{ 'text-decoration-line-through text-secondary': task.done }">{{ task.text }}</span>
-              <button type="button" class="btn btn-sm text-danger" :disabled="!task._id" v-on:click="emit('delete', task)">&#10005;</button>
+              <button type="button" class="btn-link-inturn text-danger" :disabled="!task._id" v-on:click="emit('delete', task)">&#10005;</button>
             </li>
           </ul>
 
           <!-- add a new task -->
           <form class="d-flex gap-2" v-on:submit.prevent="addTask">
-            <input v-model="newTask" class="form-control" placeholder="e.g. Research the company" maxlength="200" />
-            <button type="submit" class="btn btn-primary">Add</button>
+            <input v-model="newTask" class="input-inturn" placeholder="e.g. Research the company" maxlength="200" />
+            <button type="submit" class="btn-primary-inturn">Add</button>
           </form>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" v-on:click="emit('close')">Done</button>
+          <button type="button" class="btn-neutral-inturn" v-on:click="emit('close')">Done</button>
         </div>
       </div>
     </div>

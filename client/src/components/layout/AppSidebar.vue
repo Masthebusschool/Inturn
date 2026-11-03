@@ -2,30 +2,21 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authStore } from '../../stores/auth.js'
-import { notificationStore } from '../../stores/notifications.js'
-import NotificationBell from './NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 // Small screens only: the menu is hidden behind the hamburger button
 const menuOpen = ref(false)
-const notificationsOpen = ref(false)
 
-// Only one of the two drop-downs is open at a time
-watch(menuOpen, (isOpen) => { if (isOpen) notificationsOpen.value = false })
-watch(notificationsOpen, (isOpen) => { if (isOpen) menuOpen.value = false })
-
-// Close both after moving to another page
+// Close the menu after moving to another page
 watch(() => route.fullPath, () => {
   menuOpen.value = false
-  notificationsOpen.value = false
 })
 
 function closeOnEscape(event) {
   if (event.key !== 'Escape') return
   menuOpen.value = false
-  notificationsOpen.value = false
 }
 onMounted(() => document.addEventListener('keydown', closeOnEscape))
 onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape))
@@ -35,7 +26,7 @@ const links = [
   { to: '/jobs', label: 'Job Discovery', icon: 'M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM1.5 8h13M8 1.5c-2 2-2.8 4-2.8 6.5S6 12.5 8 14.5M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5' },
   { to: '/applications', label: 'Tracker Board', icon: 'M5.5 2h5v1.5h-5zM4 3H3v11.5h10V3h-1M5.5 7.5h5M5.5 10h5M5.5 12.5h3' },
   { to: '/intel', label: 'Interview Intel', icon: 'M1.5 2.5h13v8h-13zM8 10.5v3M5 14.5h6M4 5h4M4 7.5h7' },
-  { to: '/mock-interview', label: 'Mock Interview', icon: 'M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2ZM3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.5' },
+  { to: '/mock-interview', label: 'Interview Journal', icon: 'M3.5 1.5h9v13h-9zM6 1.5v13M8 5h2.5M8 8h2.5M2 4h1.5M2 8h1.5M2 12h1.5' },
   { to: '/skill-gap', label: 'Skill Gap Analysis', icon: 'M3 1.5h7l3 3v10H3zM10 1.5v3h3M5.5 8h5M5.5 10.5h5M5.5 13h3' },
   { to: '/resumes', label: 'My Resumes', icon: 'M5 3.5h5.5l2.5 2.5v8.5H5zM10.5 3.5V6H13M3 12V1.5h6' },
   { to: '/profile', label: 'Profile', icon: 'M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.5 6.5c0-2.6 2.5-4.5 5.5-4.5s5.5 1.9 5.5 4.5' },
@@ -44,7 +35,6 @@ const links = [
 async function handleLogout() {
   menuOpen.value = false
   await authStore.logout()
-  notificationStore.clear()
   router.push({ name: 'login' })
 }
 </script>
@@ -58,9 +48,6 @@ async function handleLogout() {
         </span>
         <span class="brand-name">Inturn</span>
       </div>
-
-      <!-- Next to "Inturn" on large screens; next to the hamburger on small screens -->
-      <NotificationBell v-if="authStore.isLoggedIn" v-model:open="notificationsOpen" class="header-bell" />
 
       <!-- Hamburger: only shown on small screens -->
       <button
@@ -119,13 +106,13 @@ async function handleLogout() {
   min-height: 100vh;
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--inturn-surface);
   color:black;
   border-right: 1px solid rgb(221, 219, 219);
   padding:12px;
 }
 
-/* Large screens: brand with the bell right next to it */
+/* Large screens: brand at the top */
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -178,22 +165,22 @@ async function handleLogout() {
   font-weight: 500;
   background: none;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   text-align: left;
 }
 
 .nav-item:hover {
-  background: #f1f5fd;
+  background: var(--inturn-surface-muted);
 }
 
 .nav-item.active {
-  background: #e3ecfb;
+  background: var(--inturn-primary-soft);
   color: #2f5f9e; 
   font-weight: 600;
 }
 
 .nav-item:focus-visible {
-  outline: 2px solid #4e8be6;
+  outline: 2px solid var(--inturn-primary);
   outline-offset: -2px;
 }
 
@@ -224,7 +211,7 @@ async function handleLogout() {
     padding: 0.4rem 0.5rem 0.4rem 1rem;
   }
 
-  /* Push the bell and hamburger to the right (works with or without the bell) */
+  /* Push the hamburger to the right */
   .brand {
     margin-right: auto;
   }
@@ -242,15 +229,15 @@ async function handleLogout() {
     color: black;
     background: none;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 
   .menu-toggle:hover {
-    background: #f1f5fd;
+    background: var(--inturn-surface-muted);
   }
 
   .menu-toggle:focus-visible {
-    outline: 2px solid #4e8be6;
+    outline: 2px solid var(--inturn-primary);
   }
 
   .menu-toggle svg {
@@ -269,9 +256,9 @@ async function handleLogout() {
     left: 16px;
     right: 16px;
     padding: 0.5rem;
-    background: #fff;
-    border: 1px solid #eef0f3;
-    border-radius: 16px;
+    background: var(--inturn-surface);
+    border: 1px solid var(--inturn-border);
+    border-radius: var(--r-md);
     box-shadow: 0 30px 40px rgba(15, 23, 42, 0.08);
   }
 
