@@ -100,7 +100,8 @@ function back() {
   stepIndex.value--
 }
 
-async function finish(skipIndustries = false) {
+// "Skip for now" only skips the resume upload; everything already filled in is still saved
+async function finish() {
   errors.value = []
   saving.value = true
   try {
@@ -108,7 +109,6 @@ async function finish(skipIndustries = false) {
       ...form,
       institution: form.institution.trim(),
       fieldOfStudy: form.fieldOfStudy.trim(),
-      targetIndustries: skipIndustries ? [] : form.targetIndustries,
     })
     router.push('/jobs')
   } catch (err) {
@@ -228,7 +228,7 @@ async function finish(skipIndustries = false) {
 
         <button v-if="!isLastStep" type="button" class="btn-primary-inturn" @click="next">Next</button>
         <div v-else class="d-flex align-items-center gap-3">
-          <button v-if="!isEditing" type="button" class="btn-link-inturn" :disabled="saving" @click="finish(true)">Skip for now</button>
+          <button v-if="!isEditing" type="button" class="btn-link-inturn" :disabled="saving" @click="finish()">Skip for now</button>
           <button type="button" class="btn-primary-inturn" :disabled="saving" @click="finish()">
             {{ saving ? 'Saving...' : 'Finish' }}
           </button>
