@@ -63,7 +63,7 @@
       </form>
 
       <p v-if="matchingResumeName" class="matching-source">
-        Matching against: {{ matchingResumeName }}
+        Matching against (latest viewed resume): {{ matchingResumeName }}
       </p>
 
       <div v-if="activeFilters.length > 0" class="active-filter-tags">
@@ -203,7 +203,7 @@
                 class="resume-match"
               >
                 {{ getSelectedSkillMatchCount(job) }} of
-                {{ filters.skills.length }} selected skills matched
+                {{ filters.skills.length }} filtered skills matched
               </p>
 
               <!-- resume skill match -->
@@ -213,7 +213,7 @@
               >
                 <template v-if="getMatchPercentage(job) !== null">
                   <strong>
-                    {{ getMatchPercentage(job) }}% skills matched
+                    {{ getMatchPercentage(job) }}% skills matched with resume
                   </strong>
 
                   <span>

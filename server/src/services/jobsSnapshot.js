@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { randomUUID } from "node:crypto";
+import { prepareJobGeneration } from "./jobsSearch.js";
 
 const API = "https://api.mycareersfuture.gov.sg/v2/jobs";
 const LIMIT = 100;
@@ -209,18 +210,20 @@ export async function syncJobs() {
     );
   }
 
-  // Publish this generation only after collection has finished.
-  // Until then, searches continue using the previous generation.
+  // Prepare searchable fields before making this generation available.
+  await prepareJobGeneration(generation);
+
   await state.updateOne(
-    { _id: "active" },
-    {
+  { _id: "active" },
+  {
       $set: {
-        generation,
-        updatedAt: new Date().toISOString(),
-        count,
+      generation,
+      updatedAt: new Date().toISOString(),
+      count,
+      searchVersion: 1,
       },
-    },
-    { upsert: true }
+  },
+  { upsert: true }
   );
 
   console.log(`[Jobs sync] Published ${count} jobs.`);
@@ -245,66 +248,3 @@ export async function syncJobs() {
   }
 }
 
-// Shared by requests handled by this server process.
-let cachedSnapshot = null;
-let checking = null;
-let nextCheckAt = 0;
-
-export async function loadPublishedSnapshot() {
-  if (checking) return checking;
-
-  if (cachedSnapshot && Date.now() < nextCheckAt) {
-    return cachedSnapshot;
-  }
-
-  checking = (async () => {
-    const { jobs, state } = collections();
-    const active = await state.findOne({ _id: "active" });
-
-    if (!active) {
-      if (cachedSnapshot) return cachedSnapshot;
-
-      throw new Error(
-        "No completed jobs collection is available."
-      );
-    }
-
-    if (cachedSnapshot?.generation !== active.generation) {
-      const documents = await jobs
-        .find(
-          { generation: active.generation },
-          { projection: { _id: 0, job: 1 } }
-        )
-        .toArray();
-
-      if (documents.length !== active.count) {
-        throw new Error(
-          "Published jobs collection is incomplete."
-        );
-      }
-
-      cachedSnapshot = {
-        generation: active.generation,
-        updatedAt: active.updatedAt,
-        jobs: documents.map((document) => document.job),
-      };
-    }
-
-    nextCheckAt = Date.now() + 60000;
-
-    return cachedSnapshot;
-  })();
-
-  try {
-    return await checking;
-  } catch (error) {
-    if (cachedSnapshot) {
-      nextCheckAt = Date.now() + 10000;
-      return cachedSnapshot;
-    }
-
-    throw error;
-  } finally {
-    checking = null;
-  }
-}

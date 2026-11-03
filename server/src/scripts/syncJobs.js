@@ -1,9 +1,9 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import {connectDB, applyWindowsDnsWorkaroundIfNeeded} from "../config/db.js";
-
+import {connectDB, applyWindowsDnsWorkaroundIfNeeded,} from "../config/db.js";
 import { syncJobs } from "../services/jobsSnapshot.js";
+import {preparePublishedJobSearch} from "../services/jobsSearch.js";
 
 dotenv.config({ quiet: true });
 
@@ -22,9 +22,20 @@ try {
     throw new Error("Could not connect to MongoDB.");
   }
 
-  await syncJobs();
+  if (process.argv.includes("--prepare-search-only")) {
+    // Uses the jobs already stored in MongoDB.
+    await preparePublishedJobSearch();
+  } else {
+    await syncJobs();
+  }
 } catch (error) {
-  console.error("[Jobs sync] Failed:", error.message.replace( /mongodb(?:\+srv)?:\/\/[^\s]+/gi, "[database URL hidden]"));
+  console.error(
+    "[Jobs task] Failed:",
+    error.message.replace(
+      /mongodb(?:\+srv)?:\/\/[^\s]+/gi,
+      "[database URL hidden]"
+    )
+  );
 
   process.exitCode = 1;
 } finally {
