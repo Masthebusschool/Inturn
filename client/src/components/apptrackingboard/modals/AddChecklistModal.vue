@@ -29,7 +29,7 @@ function addTask () {
         <div class="modal-header">
           <div>
             <h2 class="modal-title h5 mb-0">{{ card.title }}</h2>
-            <p class="small text-secondary mb-0">{{ card.company }} · {{ card.prep }} done</p>
+            <p class="small text-secondary mb-0">{{ card.company }} - {{ card.prep }} done</p>
           </div>
           <button type="button" class="btn-close" v-on:click="emit('close')"></button>
         </div>

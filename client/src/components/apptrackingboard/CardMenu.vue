@@ -28,7 +28,7 @@ function pick (option) {
     <!-- dropdown-menu has a min width so it never squashes, end-0 opens it to the left of the button so it stays on screen -->
     <div v-if="isOpen" class="dropdown-menu d-block end-0 mt-1 shadow-sm p-1">
       <button type="button" class="dropdown-item rounded-2 px-2 py-2" v-on:click="pick('edit')">
-        <i class="bi bi-pencil text-primary me-2"></i>Edit
+        <i class="bi bi-pencil text-primary me-2"></i>Edit Card
       </button>
       <button type="button" class="dropdown-item rounded-2 px-2 py-2" v-on:click="pick('checklist')">
         <svg class="text-primary me-2" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="12" height="12" rx="3"/><path d="M5 8.2l2 2 4-4.4"/></svg>Checklist
