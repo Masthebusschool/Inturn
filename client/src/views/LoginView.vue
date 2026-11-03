@@ -1,11 +1,12 @@
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { isValidEmail } from '../utils/validators.js'
 import { restoreMatchingResume, clearMatchingResume } from "../stores/jobMatch.js";
 
 const router = useRouter()
+const route = useRoute()
 
 // Coming from sign up: the new account's email is passed in history state
 const form = reactive({ email: history.state?.email ?? '', password: '', rememberMe: false })
@@ -22,19 +23,31 @@ function validate() {
   return list
 }
 
+// The router guard sends logged-out users here with ?redirect=<page they wanted>.
+// Only follow in-app paths ("/resumes"), never "//other-site.com" or a full URL.
+function redirectTarget() {
+  const target = route.query.redirect
+  if (typeof target !== 'string' || !target.startsWith('/') || target.startsWith('//')) return '/jobs'
+  return target
+}
+
 async function handleLogin() {
   info.value = ''
   errors.value = validate()
+  if (errors.value.length) return
+  submitting.value = true
   try {
     const user = await authStore.login({ ...form, email: form.email.trim() })
     form.password = ''
     clearMatchingResume()
     await restoreMatchingResume()
     // Education level is required in onboarding, so no education level means onboarding is not done yet
-    router.push(user.educationLevel ? '/jobs' : '/onboarding')
+    router.push(user.educationLevel ? redirectTarget() : '/onboarding')
   } catch (err) {
     errors.value = err.errors ?? [err.message]
-  } 
+  } finally {
+    submitting.value = false
+  }
 }
 
 
@@ -87,7 +100,7 @@ async function handleLogin() {
 
       <div class="text-center">
         <button type="submit" class="btn-primary-inturn" :disabled="submitting">
-          Log in
+          {{ submitting ? 'Logging in…' : 'Log in' }}
         </button>
         <p class="mt-3 mb-0 small text-body-secondary">
           Don't have an account? <RouterLink to="/signup">Sign up</RouterLink>
