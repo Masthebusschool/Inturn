@@ -9,13 +9,27 @@ import {
     updateApplicationTaskById,
     deleteApplicationTaskById,
     deleteApplicationById,
-    getApplicationByIdAndUser
+    getApplicationByIdAndUser,
+    updateApplicationDetailsById,
+    toCard
 } from "../models/Application.js";
-import { toCard } from "../models/Application.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
 import { fetchJobDetail } from "../routes/jobs.js";
 import * as User from "../models/User.js";
 import Application from "../models/Application.js";
+import IntelPost from "../models/IntelPost.js";
+
+// ignore capitals and spaces when comparing
+function cleanText(text) {
+    return (text || '').trim().toLowerCase();
+}
+
+// true if the date is already over (1 minute grace so picking the current minute still works)
+function isPastDate(value) {
+    return new Date(value).getTime() < Date.now() - 60 * 1000;
+}
+
+const PAST_INTERVIEW_ERROR = { error: 'The interview date can\'t be in the past.' };
 
 // Get All Apps By Uid
 export async function getApplications (req, res, next) {
@@ -32,10 +46,23 @@ export async function getApplications (req, res, next) {
             });
         }
 
+        // intel posts to match against
+        const intelPosts = await IntelPost.find().select('company role');
+
         // format each application card's attributes to return into json format
         let cards = [];
         applications.forEach(app => {
-            cards.push(toCard(app, skills));
+            const card = toCard(app, skills);
+
+            // count intel posts with the same company and role
+            card.intelCount = 0;
+            intelPosts.forEach(post => {
+                if (cleanText(post.company) === cleanText(app.companyName) && cleanText(post.role) === cleanText(app.title)) {
+                    card.intelCount++;
+                }
+            });
+
+            cards.push(card);
         });
 
         return res.json(cards);
@@ -73,6 +100,10 @@ export async function addApplication(req, res, next) {
             details = jobFromMcf(job);
         } else { // if manually entered
             details = jobFromForm(req.body);
+        }
+
+        if (details.interviewAt && isPastDate(details.interviewAt)) {
+            return res.status(400).json(PAST_INTERVIEW_ERROR);
         }
 
         // stop duplicates, same title and company already on this user's board
@@ -115,12 +146,60 @@ export async function updateInterviewDate(req, res, next) {
         const uid = req.session.user.id;
         let interviewAt = req.body.interviewAt;
         if(!interviewAt) interviewAt = null;
+        if (interviewAt && isPastDate(interviewAt)) {
+            return res.status(400).json(PAST_INTERVIEW_ERROR);
+        }
 
         const application = await updateApplicationInterviewDateById(req.params.id, uid, interviewAt);
         return res.json(application);
 
     } catch (err) {
         console.log("Err at update interview date app controller: " + err);
+        next(err);
+    }
+}
+
+// Edit the details of an application card (status is changed by moving the card instead)
+export async function editApplication(req, res, next) {
+    try {
+        const uid = req.session.user.id;
+
+        if (typeof req.body.title !== 'string' || req.body.title.trim() === '' ||
+            typeof req.body.companyName !== 'string' || req.body.companyName.trim() === '') {
+            return res.status(400).json({ error: 'Job title and company are required.' });
+        }
+
+        // jobFromForm cleans the skills, then only the editable fields are kept
+        const form = jobFromForm(req.body);
+        const details = {
+            title: form.title.trim(),
+            companyName: form.companyName.trim(),
+            expiryDate: form.expiryDate || null,
+            jobDetailsUrl: form.jobDetailsUrl || '',
+            skills: form.skills,
+        };
+
+        // only change the interview date if the form sent one
+        if (req.body.interviewAt !== undefined) {
+            if (req.body.interviewAt && isPastDate(req.body.interviewAt)) {
+                return res.status(400).json(PAST_INTERVIEW_ERROR);
+            }
+            details.interviewAt = req.body.interviewAt || null;
+        }
+
+        // stop duplicates, but the card can keep its own title and company
+        const existing = await findDuplicateApplication(uid, details.title, details.companyName);
+        if (existing && String(existing._id) !== req.params.id) {
+            return res.status(409).json({ error: 'You already have this application on your board.' });
+        }
+
+        const application = await updateApplicationDetailsById(req.params.id, uid, details);
+
+        if (!application) return res.status(404).json({ error: 'Application not found' });
+        return res.json(application);
+
+    } catch (err) {
+        console.log("Err at edit app controller: " + err);
         next(err);
     }
 }

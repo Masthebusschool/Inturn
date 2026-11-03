@@ -35,6 +35,12 @@ export async function updateInterviewDate(id, interviewAt) {
     return res.data;
 }
 
+// Edit Application, save the details from the edit form
+export async function updateApplicationDetails(id, details) {
+    const res = await api.patch(`/${id}/details`, details);
+    return res.data;
+}
+
 // Update Favourite, star or unstar a card
 export async function updateFavourite(id, isFavourite) {
     const res = await api.patch(`/${id}/favourite`, { isFavourite: isFavourite });

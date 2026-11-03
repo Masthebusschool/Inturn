@@ -82,3 +82,67 @@ test('GET / surfaces skillGapScore/skillGapBand once a SkillGapResult is linked'
   assert.equal(afterCard.skillGapScore, 81);
   assert.equal(afterCard.skillGapBand, 'strong');
 });
+
+test('PATCH /:id/details edits the card, keeps its status and blocks duplicates', async () => {
+  const created = await Application.create({
+    user: userId,
+    title: `${TITLE_PREFIX} edit`,
+    companyName: 'Acme',
+    status: 'Applied',
+  });
+  await Application.create({ user: userId, title: `${TITLE_PREFIX} other`, companyName: 'Acme' });
+
+  const patch = (body) => fetch(`${base}/${created._id}/details`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const ok = await patch({
+    title: `${TITLE_PREFIX} edited`,
+    companyName: 'Acme Corp',
+    expiryDate: '2030-01-31',
+    jobDetailsUrl: 'https://example.com/job',
+    skills: [' Python ', 'SQL', 'Python'],
+    status: 'Offered', // ignored, status only changes by moving the card
+  });
+  assert.equal(ok.status, 200);
+  const saved = await Application.findById(created._id);
+  assert.equal(saved.title, `${TITLE_PREFIX} edited`);
+  assert.equal(saved.companyName, 'Acme Corp');
+  assert.deepEqual([...saved.skills], ['Python', 'SQL']);
+  assert.equal(saved.status, 'Applied');
+
+  const missingTitle = await patch({ title: ' ', companyName: 'Acme' });
+  assert.equal(missingTitle.status, 400);
+
+  const duplicate = await patch({ title: `${TITLE_PREFIX} other`, companyName: 'acme' });
+  assert.equal(duplicate.status, 409);
+});
+
+test('interview dates in the past are rejected', async () => {
+  const created = await Application.create({
+    user: userId,
+    title: `${TITLE_PREFIX} interview`,
+    companyName: 'Acme',
+    status: 'Interview',
+  });
+  const past = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const send = (path, body) => fetch(`${base}/${created._id}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  assert.equal((await send('/interview', { interviewAt: past })).status, 400);
+  assert.equal((await send('/interview', { interviewAt: future })).status, 200);
+  assert.equal((await send('/details', { title: `${TITLE_PREFIX} interview`, companyName: 'Acme', interviewAt: past })).status, 400);
+
+  const add = await fetch(`${base}/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: `${TITLE_PREFIX} add past`, companyName: 'Acme', status: 'Interview', interviewAt: past }),
+  });
+  assert.equal(add.status, 400);
+});
