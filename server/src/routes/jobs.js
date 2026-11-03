@@ -138,6 +138,25 @@ function searchSnapshot(input, snapshot) {
   }
 
   const keywordJobs = snapshot.jobs.filter((job) => {
+
+    const closingTime = getClosingTime(job);
+
+    const todayInSingapore = new Date().toLocaleDateString(
+      "en-CA",
+      { timeZone: "Asia/Singapore" }
+    );
+
+    if (closingTime !== null) {
+      const closingDateInSingapore = new Date(
+        closingTime
+      ).toLocaleDateString("en-CA", {
+        timeZone: "Asia/Singapore",
+      });
+
+      if (closingDateInSingapore < todayInSingapore) {
+        return false;
+      }
+    }
     const street = job.metadata?.isHideCompanyAddress
       ? ""
       : job.address?.street;
