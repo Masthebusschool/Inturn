@@ -29,6 +29,15 @@
         </div>
       </header>
 
+      <div
+        v-if="!matchingResumeLoading && resumeSkills.length === 0" class="resume-notice" role="status"
+      >
+        Resume skills are not available yet. Results will not be tailored to your skills.
+        <RouterLink to="/resumes">
+          Upload or edit your resume here
+        </RouterLink>.
+      </div>
+
       <form class="card-inturn search-bar" @submit.prevent="searchJobs">
         <label for="job-search">Search jobs</label>
 
@@ -106,9 +115,6 @@
               Sort and filters apply to the results.
             </p>
 
-            <p v-else-if="!loading && !error && resumeSkills.length === 0">
-              Upload your resume to rank jobs by match.
-            </p>
           </div>
 
           <div class="sort-control">
@@ -336,6 +342,7 @@
 import JobsFilter from "../components/jobs/JobsFilter.vue";
 import JobsSelect from "../components/jobs/JobsSelect.vue";
 
+import { matchingResumeLoading } from "../stores/jobMatch.js";
 import { useJobsView } from "../helpers/useJobsView.js";
 
 const {
@@ -640,5 +647,27 @@ const {
   margin-top: 14px;
   color: var(--bs-success-text-emphasis);
   font-size: 13px;
+}
+
+.resume-notice {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.resume-notice a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.resume-notice a:hover {
+  color: #7f1d1d;
 }
 </style>
