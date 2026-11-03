@@ -59,7 +59,7 @@ function openNotification(notification) {
         <button
           v-if="notificationStore.unreadCount"
           type="button"
-          class="btn btn-link btn-sm p-0"
+          class="btn-link-inturn"
           @click="notificationStore.markAllRead()"
         >
           Mark all as read
@@ -109,19 +109,19 @@ function openNotification(notification) {
   justify-content: center;
   width: 40px;
   height: 40px;
-  color: #212529;
+  color: var(--inturn-text);
   background: none;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .bell-button:hover,
 .bell-button[aria-expanded='true'] {
-  background: #f1f5fd;
+  background: var(--inturn-surface-muted);
 }
 
 .bell-button:focus-visible {
-  outline: 2px solid #4e8be6;
+  outline: 2px solid var(--inturn-primary);
 }
 
 .bell-button svg {
@@ -141,8 +141,8 @@ function openNotification(notification) {
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
-  border-radius: 999px;
-  background: #dc3545;
+  border-radius: var(--r-pill);
+  background: var(--inturn-danger);
   color: #fff;
   font-size: 0.7rem;
   font-weight: 700;
@@ -161,9 +161,9 @@ function openNotification(notification) {
   width: 320px;
   max-height: 420px;
   overflow-y: auto;
-  background: #fff;
-  color: #212529;
-  border-radius: 12px;
+  background: var(--inturn-surface);
+  color: var(--inturn-text);
+  border-radius: var(--r-md);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
 }
 
@@ -172,7 +172,7 @@ function openNotification(notification) {
   justify-content: space-between;
   align-items: center;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--inturn-border);
 }
 
 .panel-title {
@@ -193,11 +193,11 @@ function openNotification(notification) {
   padding: 0.75rem 1rem;
   color: inherit;
   text-decoration: none;
-  border-bottom: 1px solid #f1f3f5;
+  border-bottom: 1px solid var(--inturn-border);
 }
 
 a.notification:hover {
-  background: #f5f8fe;
+  background: var(--inturn-surface-muted);
 }
 
 .unread-dot {
@@ -210,11 +210,11 @@ a.notification:hover {
 }
 
 .notification.unread .unread-dot {
-  background: #4e8be6;
+  background: var(--inturn-primary);
 }
 
 .notification.unread {
-  background: #f5f8fe;
+  background: var(--inturn-surface-muted);
 }
 
 .notification-body {
@@ -231,13 +231,13 @@ a.notification:hover {
 
 .notification-message {
   font-size: 0.85rem;
-  color: #495057;
+  color: var(--inturn-text-soft);
 }
 
 .notification-time,
 .muted {
   font-size: 0.75rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .empty {
@@ -254,7 +254,7 @@ a.notification:hover {
   height: 32px;
   margin-bottom: 0.25rem;
   fill: none;
-  stroke: #4e8be6;
+  stroke: var(--inturn-primary);
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -272,7 +272,7 @@ a.notification:hover {
     right: 0;
     width: auto;
     max-height: 70vh;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 var(--r-md) var(--r-md);
   }
 }
 </style>

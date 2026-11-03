@@ -44,7 +44,7 @@ const contactLine = (c) => [c?.phone, c?.email, c?.linkedin, c?.github, c?.portf
 </template>
 
 <style scoped>
-.sg-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--bs-border-color); border-radius: var(--bs-border-radius); box-shadow: var(--bs-box-shadow-sm); }
+.sg-paper { background: #fff; color: #212529; padding: 1.75rem; font-size: 0.9rem; line-height: 1.5; border: 1px solid var(--bs-border-color); border-radius: var(--r-sm); box-shadow: var(--bs-box-shadow-sm); }
 .sg-print-area { display: none; }
 .sg-screen-paper { max-width: 650px; margin: 0 auto; line-height: 1.6; }
 .sg-paper-head { border-bottom: 2px solid #212529; padding-bottom: 0.5rem; margin-bottom: 1rem; }

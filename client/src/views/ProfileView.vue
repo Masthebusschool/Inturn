@@ -162,7 +162,7 @@ async function confirmDelete() {
         <h1 class="header-title">My Profile</h1>
         <p class="header-subtitle">Manage your personal information and career preferences.</p>
       </div>
-      <button type="button" class="btn-primary-inturn" @click="editProfile">
+      <button type="button" class="btn-secondary-inturn" @click="editProfile">
         <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M11.5 1.5a1.4 1.4 0 0 1 2 2L5 12l-3 1 1-3z" fill="currentColor" />
         </svg>
@@ -170,7 +170,7 @@ async function confirmDelete() {
       </button>
     </header>
 
-    <article class="profile-card identity">
+    <article class="card-inturn profile-card identity">
       <div class="avatar" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.5" />
@@ -190,7 +190,7 @@ async function confirmDelete() {
     </article>
 
     <div class="card-grid">
-      <article class="profile-card">
+      <article class="card-inturn profile-card">
         <h2 class="section-title">Education</h2>
         <dl class="details">
           <div>
@@ -211,30 +211,30 @@ async function confirmDelete() {
         </dl>
       </article>
 
-      <article class="profile-card">
+      <article class="card-inturn profile-card">
         <h2 class="section-title">Target industries</h2>
         <ul v-if="user.targetIndustries?.length" class="skill-list">
-          <li v-for="industry in user.targetIndustries" :key="industry" class="skill">{{ industry }}</li>
+          <li v-for="industry in user.targetIndustries" :key="industry" class="tag-inturn">{{ industry }}</li>
         </ul>
         <p v-else class="muted mb-0">No target industries added yet.</p>
       </article>
     </div>
 
-    <article class="profile-card">
+    <article class="card-inturn profile-card">
       <h2 class="section-title">Skills</h2>
       <ul v-if="user.skills?.length" class="skill-list">
-        <li v-for="skill in user.skills" :key="skill" class="skill">{{ skill }}</li>
+        <li v-for="skill in user.skills" :key="skill" class="tag-inturn">{{ skill }}</li>
       </ul>
       <p v-else class="muted mb-0">No skills added yet.</p>
     </article>
 
-    <article class="profile-card">
+    <article class="card-inturn profile-card">
       <h2 class="section-title">Activity</h2>
       <p v-if="activityLoading" class="muted mb-0">Loading activity...</p>
       <p v-else-if="activityError" class="muted mb-0">Could not load activity: {{ activityError }}</p>
       <template v-else>
         <div class="stat-grid">
-          <div v-for="stat in stats" :key="stat.label" class="stat-tile">
+          <div v-for="stat in stats" :key="stat.label" class="card-muted-inturn">
             <div class="stat-value">{{ stat.value }}</div>
             <div class="stat-label">{{ stat.label }}</div>
           </div>
@@ -275,13 +275,13 @@ async function confirmDelete() {
       </template>
     </article>
 
-    <article class="danger-card">
+    <article class="card-inturn profile-card danger-card">
       <h2 class="section-title">Delete profile</h2>
       <p class="danger-text">
         Permanently deletes your account, profile, resumes, skill-gap results, learning tasks and tracked
         applications. Your Interview Intel posts stay but become anonymous. This cannot be undone.
       </p>
-      <button type="button" class="btn btn-outline-danger" @click="openDeleteDialog">Delete profile…</button>
+      <button type="button" class="btn-danger-inturn" @click="openDeleteDialog">Delete profile…</button>
     </article>
 
     <!-- @cancel: Escape must not close the dialog while the delete request is in flight -->
@@ -303,16 +303,16 @@ async function confirmDelete() {
           id="confirm-email"
           v-model="typedEmail"
           type="text"
-          class="form-control"
+          class="input-inturn"
           autocomplete="off"
           :disabled="deleting"
         />
         <div v-if="deleteError" class="alert alert-danger py-2 mt-3 mb-0" role="alert">{{ deleteError }}</div>
         <div class="dialog-actions">
-          <button type="button" class="btn btn-outline-secondary" :disabled="deleting" @click="closeDeleteDialog">
+          <button type="button" class="btn-neutral-inturn" :disabled="deleting" @click="closeDeleteDialog">
             Cancel
           </button>
-          <button type="submit" class="btn btn-danger" :disabled="!emailMatches || deleting">
+          <button type="submit" class="btn-danger-inturn" :disabled="!emailMatches || deleting">
             {{ deleting ? 'Deleting…' : 'Permanently delete' }}
           </button>
         </div>
@@ -322,38 +322,8 @@ async function confirmDelete() {
 </template>
 
 <style scoped>
-.profile-page {
-  max-width: 760px;
-}
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-}
-
-.header-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.15rem;
-}
-
-.header-subtitle {
-  font-size: 0.8rem;
-  margin-bottom: 0;
-}
-
 .profile-card {
-  padding: 1.5rem;
   margin-bottom: 1.25rem;
-  background: #f3f3f3;
-  border-radius: 20px;
 }
 
 .card-grid {
@@ -368,13 +338,19 @@ async function confirmDelete() {
   gap: 1.5rem;
 }
 
+/* Long emails wrap instead of overflowing the card on phones */
+.identity-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .avatar {
   flex-shrink: 0;
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #dde7f8;
-  color: #212529;
+  background: var(--inturn-primary-soft);
+  color: var(--inturn-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,19 +368,13 @@ async function confirmDelete() {
 }
 
 .muted {
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   font-size: 0.9rem;
 }
 
 .small-note {
   font-size: 0.8rem;
   margin-top: 0.25rem;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
 }
 
 .details {
@@ -418,7 +388,7 @@ async function confirmDelete() {
 .details dt {
   font-size: 0.8rem;
   font-weight: 400;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .details dd {
@@ -435,30 +405,6 @@ async function confirmDelete() {
   margin: 0;
 }
 
-.skill {
-  padding: 0.3rem 0.85rem;
-  background: #e3ecfb;
-  color: #3c70b3;
-  border-radius: 999px;
-  font-size: 0.85rem;
-}
-
-.btn-primary-inturn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #4e8be6;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.5rem 1.25rem;
-  white-space: nowrap;
-}
-
-.btn-primary-inturn:hover {
-  background: #3c70b3;
-}
-
 .icon {
   width: 16px;
   height: 16px;
@@ -471,13 +417,6 @@ async function confirmDelete() {
   gap: 0.75rem;
 }
 
-.stat-tile {
-  padding: 0.75rem 0.9rem;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-}
-
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
@@ -486,7 +425,7 @@ async function confirmDelete() {
 
 .stat-label {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .heatmap {
@@ -503,7 +442,7 @@ async function confirmDelete() {
 .heatmap-months {
   margin-bottom: 4px;
   font-size: 0.7rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .heatmap-month {
@@ -524,7 +463,7 @@ async function confirmDelete() {
 .heatmap-cell.level-0 { background: #ebedf0; }
 .heatmap-cell.level-1 { background: #c6dbf7; }
 .heatmap-cell.level-2 { background: #8fb6ee; }
-.heatmap-cell.level-3 { background: #4e8be6; }
+.heatmap-cell.level-3 { background: var(--inturn-primary); }
 .heatmap-cell.level-4 { background: #2f5f9e; }
 .heatmap-cell.is-future { visibility: hidden; }
 
@@ -535,7 +474,7 @@ async function confirmDelete() {
   gap: 3px;
   margin-top: 0.5rem;
   font-size: 0.7rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .heatmap-legend .heatmap-cell {
@@ -552,16 +491,12 @@ async function confirmDelete() {
 
 /* Danger zone */
 .danger-card {
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
-  background: #fffafa;
-  border: 1px solid #f1aeb5;
-  border-radius: 20px;
+  border-color: #f1aeb5;
 }
 
 .danger-text {
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--inturn-text-soft);
 }
 
 .delete-dialog {
@@ -569,7 +504,7 @@ async function confirmDelete() {
   max-width: 440px;
   padding: 1.5rem;
   border: none;
-  border-radius: 16px;
+  border-radius: var(--r-md);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 }
 
@@ -591,16 +526,6 @@ async function confirmDelete() {
 }
 
 @media (max-width: 576px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .profile-card,
-  .danger-card {
-    padding: 1.25rem;
-  }
-
   .card-grid {
     grid-template-columns: 1fr;
   }

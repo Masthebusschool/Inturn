@@ -13,7 +13,7 @@ onMounted(async() => {await authStore.fetchMe(); await restoreMatchingResume()})
 
 <template>
   <!-- Login, sign up and onboarding are full pages without the sidebar (route meta.fullPage) -->
-  <main v-if="route.meta.fullPage" class="container py-4"><RouterView /></main>
+  <main v-if="route.meta.fullPage" class="full-page"><div class="container py-4"><RouterView /></div></main>
 
   <div v-else class="app-layout">
     <AppSidebar />
@@ -27,10 +27,17 @@ onMounted(async() => {await authStore.fetchMe(); await restoreMatchingResume()})
   min-height: 100vh;
 }
 
+/* The only place that sets page background and page padding; views add none of their own */
+.full-page {
+  min-height: 100vh;
+  background: var(--inturn-page-bg);
+}
+
 .app-main {
   flex: 1;
   min-width: 0;
-  padding: 1rem 1.5rem 2rem;
+  padding: 1.5rem;
+  background: var(--inturn-page-bg);
 }
 
 @media (max-width: 767.98px) {

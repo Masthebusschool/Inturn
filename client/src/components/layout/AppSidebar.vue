@@ -119,7 +119,7 @@ async function handleLogout() {
   min-height: 100vh;
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--inturn-surface);
   color:black;
   border-right: 1px solid rgb(221, 219, 219);
   padding:12px;
@@ -178,22 +178,22 @@ async function handleLogout() {
   font-weight: 500;
   background: none;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   text-align: left;
 }
 
 .nav-item:hover {
-  background: #f1f5fd;
+  background: var(--inturn-surface-muted);
 }
 
 .nav-item.active {
-  background: #e3ecfb;
+  background: var(--inturn-primary-soft);
   color: #2f5f9e; 
   font-weight: 600;
 }
 
 .nav-item:focus-visible {
-  outline: 2px solid #4e8be6;
+  outline: 2px solid var(--inturn-primary);
   outline-offset: -2px;
 }
 
@@ -242,15 +242,15 @@ async function handleLogout() {
     color: black;
     background: none;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
   }
 
   .menu-toggle:hover {
-    background: #f1f5fd;
+    background: var(--inturn-surface-muted);
   }
 
   .menu-toggle:focus-visible {
-    outline: 2px solid #4e8be6;
+    outline: 2px solid var(--inturn-primary);
   }
 
   .menu-toggle svg {
@@ -269,9 +269,9 @@ async function handleLogout() {
     left: 16px;
     right: 16px;
     padding: 0.5rem;
-    background: #fff;
-    border: 1px solid #eef0f3;
-    border-radius: 16px;
+    background: var(--inturn-surface);
+    border: 1px solid var(--inturn-border);
+    border-radius: var(--r-md);
     box-shadow: 0 30px 40px rgba(15, 23, 42, 0.08);
   }
 

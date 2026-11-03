@@ -29,19 +29,20 @@
         </div>
       </header>
 
-      <form class="search-bar" @submit.prevent="searchJobs">
+      <form class="card-inturn search-bar" @submit.prevent="searchJobs">
         <label for="job-search">Search jobs</label>
 
         <input
           id="job-search"
           v-model.trim="searchInput"
           type="search"
+          class="input-inturn"
           placeholder="Search jobs or internships..."
           :disabled="loading"
         />
 
         <button
-          class="search-button"
+          class="btn-primary-inturn"
           type="submit"
           :disabled="loading"
         >
@@ -49,7 +50,7 @@
         </button>
 
         <button
-          class="filter-button"
+          class="btn-secondary-inturn"
           type="button"
           :disabled="loading"
           @click="showFilters = true"
@@ -69,7 +70,7 @@
         <button
           v-for="filter in activeFilters"
           :key="filter.key"
-          class="active-filter-tag"
+          class="chip-inturn is-active"
           type="button"
           :aria-label="'Remove filter: ' + filter.label"
           @click="removeSearchFilter(filter)"
@@ -79,7 +80,7 @@
         </button>
 
         <button
-          class="clear-filters"
+          class="btn-link-inturn"
           type="button"
           @click="clearSearchFilters"
         >
@@ -87,10 +88,10 @@
         </button>
       </div>
 
-      <section class="results-panel">
+      <section class="card-inturn results-panel">
         <header class="results-header">
           <div>
-            <h2>Search Results</h2>
+            <h2 class="section-title mb-0">Search Results</h2>
 
             <p v-if="loading">{{ loadingMessage }}</p>
 
@@ -113,7 +114,7 @@
           <div class="sort-control">
           <label for="job-sort">Sort by</label>
 
-          <select id="job-sort" v-model="sortBy">
+          <select id="job-sort" v-model="sortBy" class="input-inturn">
             <option value="skills">Best Skill Match</option>
             <option value="closing-earliest">Closing Date: Earliest first</option>
             <option value="closing-latest">Closing Date: Latest first</option>
@@ -124,7 +125,7 @@
           </select>
         </div>
 
-          <span class="source-label">MyCareersFuture</span>
+          <span class="badge rounded-pill bg-success-subtle text-success-emphasis">MyCareersFuture</span>
         </header>
 
         <div class="results-body">
@@ -137,7 +138,7 @@
             <p>{{ error }}</p>
 
             <button
-              class="search-button"
+              class="btn-neutral-inturn"
               type="button"
               @click="loadJobs"
             >
@@ -153,7 +154,7 @@
 
             <button
               v-if="activeFilterCount > 0"
-              class="filter-button"
+              class="btn-secondary-inturn"
               type="button"
               @click="showFilters = true"
             >
@@ -165,7 +166,7 @@
             <article
               v-for="job in filteredJobs"
               :key="job.uuid"
-              class="job-card"
+              class="card-inturn job-card"
             >
               <div class="job-header">
                 <div class="job-heading">
@@ -185,8 +186,8 @@
                 </div>
 
                 <button
-                  class="save-button"
-                  :class="{ saved: isSaved(job.uuid) }"
+                  class="btn-sm-inturn"
+                  :class="isSaved(job.uuid) ? 'btn-primary-inturn' : 'btn-secondary-inturn'"
                   :aria-pressed="isSaved(job.uuid)"
                   :disabled="!savedStateReady || isSaving(job.uuid)"
                   type="button"
@@ -227,14 +228,14 @@
               </div>
 
               <div class="job-info">
-                <span>{{ getEmployment(job) }}</span>
-                <span>{{ getSalary(job) }}</span>
-                <span>{{ getExperience(job) }}</span>
+                <span class="tag-inturn">{{ getEmployment(job) }}</span>
+                <span class="tag-inturn">{{ getSalary(job) }}</span>
+                <span class="tag-inturn">{{ getExperience(job) }}</span>
               </div>
 
               <div
                 v-if="job.skills && job.skills.length > 0"
-                class="skills-box"
+                class="card-muted-inturn skills-box"
               >
                 <p class="skills-heading">Required skills</p>
 
@@ -242,7 +243,7 @@
                   <span
                     v-for="skill in job.skills.slice(0, 6)"
                     :key="skill.uuid || skill.skill"
-                    class="skill"
+                    class="tag-inturn"
                   >
                     {{ skill.skill }}
                   </span>
@@ -282,7 +283,7 @@
           aria-label="Job result pages"
         >
           <button
-            class="page-button"
+            class="btn-neutral-inturn btn-sm-inturn"
             type="button"
             :disabled="page === 0"
             @click="changePage(page - 1)"
@@ -302,17 +303,18 @@
               min="1"
               :max="totalPages"
               step="1"
+              class="input-inturn"
               placeholder="Page"
               required
             />
 
-            <button class="page-button" type="submit">
+            <button class="btn-neutral-inturn btn-sm-inturn" type="submit">
               Go
             </button>
           </form>
 
           <button
-            class="page-button"
+            class="btn-neutral-inturn btn-sm-inturn"
             type="button"
             :disabled="loading || !hasNextPage"
             @click="changePage(page + 1)"
@@ -387,7 +389,6 @@ const {
 .jobs-view {
   width: 100%;
   min-width: 0;
-  max-width: 1100px;
 }
 
 .jobs-view,
@@ -395,115 +396,29 @@ const {
   box-sizing: border-box;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-}
-
-.header-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 0.15rem;
-}
-
-.header-subtitle {
-  font-size: 0.8rem;
-  margin-bottom: 0;
-}
-
-@media (max-width: 576px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-button,
-input {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .search-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  width: 100%;
-  margin-bottom: 24px;
-  padding: 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 12px;
-  background: white;
+  margin-bottom: 1.5rem;
 }
 
 .search-bar label {
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   font-weight: 600;
 }
 
 .search-bar input {
   flex: 1;
+  width: auto;
   min-width: 150px;
-  padding: 12px 14px;
-  border: 1px solid #dce3f0;
-  border-radius: 10px;
-  background: #f5f8ff;
-  color: #17234b;
-  font-size: 14px;
 }
 
-.search-button,
-.filter-button,
-.page-button {
-  padding: 11px 18px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.search-button {
-  background: #2563eb;
-  color: white;
-}
-
-.search-button:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.filter-button,
-.page-button {
-  border-color: #dfe7fa;
-  background: #edf3ff;
-  color: #234b94;
-}
-
-.filter-button:hover:not(:disabled),
-.page-button:hover:not(:disabled) {
-  background: #dfeaff;
-}
-
+/* Header and body have their own padding */
 .results-panel {
-  width: 100%;
-  border-radius: 16px;
-  background: #f3f3f3;
+  padding: 0;
 }
 
 .results-header {
@@ -512,33 +427,19 @@ button:disabled {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 14px;
-  padding: 22px;
-  border-bottom: 1px solid #e9edf5;
-}
-
-.results-header h2 {
-  margin: 0;
-  font-size: 20px;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--inturn-border);
 }
 
 .results-header p {
   margin: 7px 0 0;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
   line-height: 1.6;
 }
 
-.source-label {
-  padding: 7px 11px;
-  border-radius: 20px;
-  background: #ccf7e7;
-  color: #075b46;
-  font-size: 12px;
-  font-weight: 600;
-}
-
 .results-body {
-  padding: 18px;
+  padding: 1.25rem;
 }
 
 .job-list {
@@ -549,10 +450,6 @@ button:disabled {
 
 .job-card {
   min-width: 0;
-  padding: 22px;
-  border: 1px solid #e9edf5;
-  border-radius: 16px;
-  background: white;
 }
 
 .job-header {
@@ -569,15 +466,29 @@ button:disabled {
 
 .job-heading h3 {
   margin: 0;
-  color: #2459ce;
   font-size: 18px;
   line-height: 1.5;
   word-wrap: break-word;
 }
 
+.job-title-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--inturn-primary-hover);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.job-title-button:hover {
+  text-decoration: underline;
+}
+
 .company-name {
   margin: 5px 0;
-  color: #526079;
+  color: var(--inturn-text-soft);
   font-size: 13px;
   line-height: 1.5;
   word-wrap: break-word;
@@ -585,30 +496,10 @@ button:disabled {
 
 .job-location {
   margin: 0;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
   line-height: 1.5;
   word-wrap: break-word;
-}
-
-.save-button {
-  padding: 8px 12px;
-  border: 1px solid #dfe7fa;
-  border-radius: 8px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.save-button:hover {
-  background: #dfeaff;
-}
-
-.save-button.saved {
-  border-color: #81dfbd;
-  background: #ccf7e7;
-  color: #075b46;
 }
 
 .job-info {
@@ -618,25 +509,13 @@ button:disabled {
   margin-top: 16px;
 }
 
-.job-info span {
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: #edf3ff;
-  color: #234b94;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
 .skills-box {
   margin-top: 16px;
-  padding: 14px;
-  border-radius: 10px;
-  background: #edf3ff;
 }
 
 .skills-heading {
   margin: 0 0 10px;
-  color: #234b94;
+  color: var(--inturn-text-soft);
   font-size: 12px;
   font-weight: 600;
 }
@@ -648,20 +527,8 @@ button:disabled {
   gap: 8px;
 }
 
-.skill {
-  max-width: 100%;
-  padding: 6px 10px;
-  border: 1px solid #d6f1e6;
-  border-radius: 8px;
-  background: #effcf6;
-  color: #075b46;
-  font-size: 12px;
-  line-height: 1.5;
-  word-wrap: break-word;
-}
-
 .more-skills {
-  color: #526079;
+  color: var(--inturn-text-muted);
   font-size: 12px;
 }
 
@@ -671,8 +538,53 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 12px;
+}
+
+/* Skill match result (green = good news) */
+.resume-match {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--r-sm);
+  background: var(--bs-success-bg-subtle);
+  color: var(--bs-success-text-emphasis);
+  font-size: 12px;
+}
+
+.matching-source {
+  margin: 0 0 14px;
+  color: var(--inturn-text-soft);
+  font-size: 13px;
+}
+
+.active-filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sort-control label {
+  color: var(--inturn-text-soft);
+  font-size: 13px;
+}
+
+.sort-control select {
+  width: auto;
+  max-width: 100%;
 }
 
 .page-controls {
@@ -681,24 +593,40 @@ button:disabled {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 18px 22px;
-  border-top: 1px solid #e9edf5;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--inturn-border);
 }
 
 .page-controls span {
-  color: #64748b;
+  color: var(--inturn-text-muted);
   font-size: 13px;
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-jump label {
+  color: var(--inturn-text-soft);
+  font-size: 13px;
+}
+
+.page-jump input {
+  width: 85px;
 }
 
 .message {
   padding: 36px 16px;
-  color: #64748b;
+  color: var(--inturn-text-muted);
   text-align: center;
 }
 
 .message h3 {
   margin: 0 0 12px;
-  color: #17234b;
+  color: var(--inturn-text);
   font-size: 18px;
 }
 
@@ -710,134 +638,7 @@ button:disabled {
 
 .save-message {
   margin-top: 14px;
-  color: #075b46;
-  font-size: 13px;
-}
-
-.job-title-button {
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: #2459ce;
-  font: inherit;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-
-.job-title-button:hover {
-  text-decoration: underline;
-}
-
-.resume-match {
-  display: inline-block;
-  margin: 12px 0 0;
-  padding: 7px 10px;
-  border-radius: 8px;
-  background: #ccf7e7;
-  color: #075b46;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.matching-source {
-  margin: 0 0 14px;
-  color: #526079;
-  font-size: 13px;
-}
-
-.active-filter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.active-filter-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 20px;
-  background: #ccf7e7;
-  color: #075b46;
-  font-size: 13px;
-}
-
-.active-filter-tag:hover {
-  background: #a7efd6;
-}
-
-.active-filter-tag span {
-  font-size: 18px;
-}
-
-.clear-filters {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #2459ce;
-  font-size: 13px;
-}
-
-.sort-control {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.sort-control label {
-  color: #526079;
-  font-size: 13px;
-}
-
-.sort-control select {
-  max-width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #dce3f0;
-  border-radius: 10px;
-  background: #f5f8ff;
-  color: #17234b;
-  font: inherit;
-  font-size: 13px;
-}
-
-.resume-match {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  background: #ccf7e7;
-  color: #075b46;
-  font-size: 12px;
-}
-
-.page-jump {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.page-jump label {
-  color: #526079;
-  font-size: 13px;
-}
-
-.page-jump input {
-  width: 85px;
-  padding: 9px 10px;
-  border: 1px solid #dce3f0;
-  border-radius: 8px;
-  background: #f5f8ff;
-  color: #17234b;
-  font: inherit;
+  color: var(--bs-success-text-emphasis);
   font-size: 13px;
 }
 </style>

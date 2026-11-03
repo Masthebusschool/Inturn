@@ -49,7 +49,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
     @click.self="emit('close')"
   >
     <div
-      class="card border-0 rounded-4 shadow-lg w-100 modal-card overflow-hidden"
+      class="card-inturn p-0 shadow-lg w-100 modal-card overflow-hidden"
     >
       <!-- Modal Header -->
       <div
@@ -57,16 +57,13 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
       >
         <div class="d-flex align-items-center gap-3">
           <div
-            class="rounded-4 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+            class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"
             style="width: 52px; height: 52px"
           >
             <i class="bi bi-people fs-4"></i>
           </div>
           <div>
-            <div class="text-primary text-uppercase fw-bold small">
-              Powered by Interview Intel
-            </div>
-            <h2 id="modal-title" class="h4 fw-bold mb-1">
+            <h2 id="modal-title" class="h5 fw-bold mb-1">
               Community interview questions
             </h2>
             <p class="text-secondary small mb-0">
@@ -77,12 +74,10 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 
         <button
           type="button"
-          class="btn btn-light border rounded-3"
+          class="btn-close"
           aria-label="Close modal"
           @click="emit('close')"
-        >
-          <i class="bi bi-x-lg text-secondary"></i>
-        </button>
+        ></button>
       </div>
 
       <!-- Modal Body -->
@@ -104,7 +99,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
             class="col-12 col-md-6"
           >
             <div
-              class="card border rounded-4 p-3 p-sm-4 h-100 d-flex flex-column justify-content-between bg-white"
+              class="card-inturn h-100 d-flex flex-column justify-content-between"
             >
               <div class="min-w-0 text-break">
                 <!-- Company Info & Category Badge -->
@@ -128,7 +123,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
                     </div>
                   </div>
                   <span
-                    class="badge rounded-pill bg-primary-subtle text-primary px-3 py-2"
+                    class="tag-inturn"
                   >
                     {{ cq.category || "General" }}
                   </span>
@@ -147,11 +142,11 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
               <!-- Add to Journal Button -->
               <button
                 type="button"
-                class="btn w-100 rounded-3 py-2 small fw-semibold"
+                class="btn-sm-inturn w-100"
                 :class="
                   isAlreadyAdded(cq)
-                    ? 'btn-success-subtle text-success'
-                    : 'btn-add-journal'
+                    ? 'btn-neutral-inturn text-success'
+                    : 'btn-secondary-inturn'
                 "
                 :disabled="isAlreadyAdded(cq)"
                 @click="emit('add-question', cq)"
@@ -183,14 +178,5 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 }
 .modal-card {
   max-width: 900px;
-}
-.btn-add-journal {
-  background-color: #eef4ff;
-  border: 1px solid #cfe0fc;
-  color: #2b6cb0;
-}
-.btn-add-journal:hover {
-  background-color: #e1edfd;
-  border-color: #4a86e8;
 }
 </style>

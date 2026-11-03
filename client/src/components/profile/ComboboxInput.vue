@@ -59,7 +59,7 @@ function onEnter(event) {
       :id="inputId"
       :value="modelValue"
       type="text"
-      class="form-control combobox-input"
+      class="input-inturn"
       role="combobox"
       autocomplete="off"
       aria-autocomplete="list"
@@ -99,12 +99,6 @@ function onEnter(event) {
   position: relative;
 }
 
-.combobox-input {
-  border: 1px solid #222;
-  border-radius: 12px;
-  padding: 0.65rem 0.9rem;
-}
-
 .combobox-list {
   position: absolute;
   top: calc(100% + 4px);
@@ -116,20 +110,20 @@ function onEnter(event) {
   margin: 0;
   padding: 0.25rem;
   list-style: none;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border);
+  border-radius: var(--r-md);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
 .combobox-list li {
   padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
 }
 
 .combobox-list li.active {
-  background: #e3ecfb;
-  color: #3c70b3;
+  background: var(--inturn-primary-soft);
+  color: var(--inturn-primary-hover);
 }
 </style>

@@ -63,7 +63,7 @@ function handleKeydown(event) {
 <template>
   <div>
     <div class="tag-box">
-      <span v-for="(tag, index) in modelValue" :key="tag" class="tag">
+      <span v-for="(tag, index) in modelValue" :key="tag" class="tag-inturn tag">
         {{ tag }}
         <button type="button" class="tag-remove" :aria-label="`Remove ${tag}`" @click="removeTag(index)">×</button>
       </span>
@@ -86,7 +86,7 @@ function handleKeydown(event) {
         v-for="item in remainingSuggestions"
         :key="item"
         type="button"
-        class="suggestion"
+        class="chip-inturn"
         @click="addTag(item)"
       >
         + {{ item }}
@@ -96,38 +96,34 @@ function handleKeydown(event) {
 </template>
 
 <style scoped>
+/* Looks like .input-inturn, but holds the tags and the real input */
 .tag-box {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
-  min-height: 48px;
-  padding: 0.4rem 0.6rem;
-  background: #fff;
-  border: 1px solid #222;
-  border-radius: 12px;
+  min-height: 42px;
+  padding: 0.3rem 0.5rem;
+  background: var(--inturn-surface);
+  border: 1px solid var(--inturn-border-strong);
+  border-radius: var(--r-sm);
 }
 
 .tag-box:focus-within {
-  border-color: #4e8be6;
+  border-color: var(--inturn-primary);
   box-shadow: 0 0 0 0.2rem rgba(78, 139, 230, 0.25);
 }
 
+/* Room for the × button */
 .tag {
-  display: inline-flex;
-  align-items: center;
   gap: 0.25rem;
-  padding: 0.2rem 0.4rem 0.2rem 0.75rem;
-  background: #e3ecfb;
-  color: #3c70b3;
-  border-radius: 999px;
-  font-size: 0.9rem;
+  padding-right: 0.4rem;
 }
 
 .tag-remove {
   border: none;
   background: none;
-  color: #3c70b3;
+  color: inherit;
   font-size: 1.1rem;
   line-height: 1;
   padding: 0 0.25rem;
@@ -147,18 +143,5 @@ function handleKeydown(event) {
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.75rem;
-}
-
-.suggestion {
-  border: 1px dashed #4e8be6;
-  background: transparent;
-  color: #3c70b3;
-  border-radius: 999px;
-  padding: 0.2rem 0.7rem;
-  font-size: 0.85rem;
-}
-
-.suggestion:hover {
-  background: #e3ecfb;
 }
 </style>

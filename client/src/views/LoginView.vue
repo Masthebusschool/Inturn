@@ -43,9 +43,9 @@ async function handleLogin() {
 
 <template>
   <section class="login-page">
-    <h1 class="brand">Inturn</h1>
+    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
 
-    <form class="login-card" novalidate @submit.prevent="handleLogin">
+    <form class="card-inturn auth-card" novalidate @submit.prevent="handleLogin">
       <h2 class="welcome text-center">Welcome to Inturn</h2>
       <p class="subtitle">Sign in to continue your career prep.</p>
 
@@ -60,7 +60,7 @@ async function handleLogin() {
           id="login-email"
           v-model="form.email"
           type="email"
-          class="form-control input-inturn"
+          class="input-inturn"
           autocomplete="email"
           required
         />
@@ -72,7 +72,7 @@ async function handleLogin() {
           id="login-password"
           v-model="form.password"
           type="password"
-          class="form-control input-inturn"
+          class="input-inturn"
           autocomplete="current-password"
           required
         />
@@ -105,19 +105,16 @@ async function handleLogin() {
   padding: 2rem 0;
 }
 
-.brand {
-  font-size: 3rem;
-  font-weight: 400;
-  margin-bottom: 2rem;
+.brand-logo {
+  height: 120px;
+  width: auto;
+  padding: 1rem 0;
 }
 
-.login-card {
+.auth-card {
   width: 100%;
   max-width: 520px;
   padding: 2rem 2.75rem;
-  background: #f3f3f3;
-  border: 1px solid #4e8be6;
-  border-radius: 16px;
 }
 
 .welcome {
@@ -128,35 +125,12 @@ async function handleLogin() {
 
 .subtitle {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   margin-bottom: 1.5rem;
 }
 
-.input-inturn {
-  border: 1px solid #222;
-  border-radius: 12px;
-  padding: 0.65rem 0.9rem;
-}
-
-.btn-primary-inturn {
-  background: #4e8be6;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.5rem 2.5rem;
-  font-size: 1.1rem;
-}
-
-.btn-primary-inturn:hover:not(:disabled) {
-  background: #3c70b3;
-}
-
-.btn-primary-inturn:disabled {
-  opacity: 0.7;
-}
-
 @media (max-width: 576px) {
-  .login-card {
+  .auth-card {
     padding: 1.5rem 1.25rem;
   }
 }

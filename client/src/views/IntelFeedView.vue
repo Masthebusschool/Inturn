@@ -248,18 +248,15 @@ async function publishPost() {
 </script>
 
 <template>
-  <div class="bg-body-tertiary min-vh-100 p-3 p-lg-4 text-start">
-    <div class="container-xl px-0">
+  <div class="text-start">
+    <div>
       <!-- Header -->
-      <header class="card rounded-4 p-3 p-sm-4 mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+      <header class="page-header">
         <div>
-          <div class="text-primary text-uppercase fw-bold small">
-            Community knowledge
-          </div>
-          <h1 class="h3 fw-semibold mb-1">Interview Intel</h1>
-          <p class="text-secondary small mb-0">Learn from real interview experiences shared by students.</p>
+          <h1 class="header-title">Interview Intel</h1>
+          <p class="header-subtitle">Learn from real interview experiences shared by students.</p>
         </div>
-        <button class="btn btn-inturn rounded-3 fw-semibold px-3 py-2" @click="openShareForm">
+        <button class="btn-primary-inturn" @click="openShareForm">
           <i class="bi bi-plus-lg me-2"></i>Share your experience
         </button>
       </header>
@@ -267,7 +264,7 @@ async function publishPost() {
       <!-- Login Notice Banner (shown when logged-out user clicks Share or Upvote) -->
       <div
         v-if="loginNotice"
-        class="alert alert-warning rounded-4 d-flex justify-content-between align-items-center py-2 px-3 mb-3 small"
+        class="alert alert-warning d-flex justify-content-between align-items-center py-2 px-3 mb-3 small"
       >
         <span>
           <i class="bi bi-info-circle me-2"></i>{{ loginNotice }}
@@ -277,13 +274,10 @@ async function publishPost() {
       </div>
 
       <!-- Share Form -->
-      <section v-if="showForm" class="card rounded-4 p-3 p-sm-4 mb-3">
+      <section v-if="showForm" class="card-inturn mb-3">
         <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <div class="text-primary text-uppercase fw-bold small">Help the next candidate</div>
-            <h2 class="h4 fw-semibold mt-1 mb-3">Share interview intel</h2>
-          </div>
-          <button class="btn btn-link btn-sm text-secondary text-decoration-none p-0" @click="resetForm">
+          <h2 class="section-title">Share interview intel</h2>
+          <button class="btn-link-inturn" @click="resetForm">
             Cancel
           </button>
         </div>
@@ -295,7 +289,7 @@ async function publishPost() {
         <div class="row g-3">
           <div class="col-12 col-md-4">
             <label for="post-type" class="form-label small fw-semibold mb-1">Post type</label>
-            <select id="post-type" v-model="formType" class="form-select bg-body-tertiary rounded-3">
+            <select id="post-type" v-model="formType" class="input-inturn">
               <option>Experience</option>
               <option>Interview questions</option>
             </select>
@@ -306,7 +300,7 @@ async function publishPost() {
               id="post-company"
               v-model="formCompany"
               maxlength="80"
-              class="form-control bg-body-tertiary rounded-3"
+              class="input-inturn"
               placeholder="e.g. GovTech"
             />
           </div>
@@ -316,7 +310,7 @@ async function publishPost() {
               id="post-role"
               v-model="formRole"
               maxlength="80"
-              class="form-control bg-body-tertiary rounded-3"
+              class="input-inturn"
               placeholder="e.g. Engineering Intern"
             />
           </div>
@@ -326,7 +320,7 @@ async function publishPost() {
               id="post-title"
               v-model="formTitle"
               maxlength="120"
-              class="form-control bg-body-tertiary rounded-3"
+              class="input-inturn"
               placeholder="Give your post a clear title"
             />
           </div>
@@ -338,7 +332,7 @@ async function publishPost() {
               id="post-body"
               v-model="formBody"
               maxlength="2000"
-              class="form-control bg-body-tertiary rounded-3"
+              class="input-inturn"
               rows="5"
               placeholder="Write your post details here..."
             ></textarea>
@@ -348,7 +342,7 @@ async function publishPost() {
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
           <span class="small text-secondary">Keep personal or confidential information out of your post.</span>
           <button
-            class="btn btn-inturn rounded-3 fw-semibold px-4 py-2"
+            class="btn-primary-inturn"
             :disabled="!canPublish || isSubmitting"
             @click="publishPost"
           >
@@ -358,10 +352,10 @@ async function publishPost() {
       </section>
 
       <!-- Filters -->
-      <section class="card rounded-4 p-3 p-sm-4 mb-3">
+      <section class="card-inturn mb-3">
         <div class="row g-3 align-items-center">
           <div class="col-12 col-md-4">
-            <div class="fw-semibold">Explore the community</div>
+            <h2 class="section-title mb-0">Explore the community</h2>
             <div class="text-secondary small">
               {{ filteredPosts.length }} {{ filteredPosts.length === 1 ? 'post' : 'posts' }}
             </div>
@@ -370,7 +364,7 @@ async function publishPost() {
             <div class="row g-3">
               <div class="col-12 col-sm-4">
                 <label for="filter-type" class="form-label small fw-semibold mb-1">Post type</label>
-                <select id="filter-type" v-model="selectedType" class="form-select bg-body-tertiary rounded-3">
+                <select id="filter-type" v-model="selectedType" class="input-inturn">
                   <option>All</option>
                   <option>Experience</option>
                   <option>Interview questions</option>
@@ -378,14 +372,14 @@ async function publishPost() {
               </div>
               <div class="col-12 col-sm-4">
                 <label for="filter-company" class="form-label small fw-semibold mb-1">Company</label>
-                <select id="filter-company" v-model="selectedCompany" class="form-select bg-body-tertiary rounded-3">
+                <select id="filter-company" v-model="selectedCompany" class="input-inturn">
                   <option>All</option>
                   <option v-for="c in companyOptions" :key="c">{{ c }}</option>
                 </select>
               </div>
               <div class="col-12 col-sm-4">
                 <label for="filter-role" class="form-label small fw-semibold mb-1">Role</label>
-                <select id="filter-role" v-model="selectedRole" class="form-select bg-body-tertiary rounded-3">
+                <select id="filter-role" v-model="selectedRole" class="input-inturn">
                   <option>All</option>
                   <option v-for="r in roleOptions" :key="r">{{ r }}</option>
                 </select>
@@ -396,29 +390,29 @@ async function publishPost() {
       </section>
 
       <!-- Empty State 1: No posts exist at all -->
-      <div v-if="posts.length === 0" class="card rounded-4 p-5 text-center mb-3">
+      <div v-if="posts.length === 0" class="card-inturn p-5 text-center mb-3">
         <i class="bi bi-chat-left-dots fs-1 text-secondary mb-2"></i>
-        <h3 class="h5 fw-semibold mb-1">No community intel shared yet</h3>
+        <h3 class="section-title mb-1">No community intel shared yet</h3>
         <p class="text-secondary small mb-3">
           Be the first to share your interview experience or questions to help other students!
         </p>
         <div>
-          <button class="btn btn-inturn rounded-3 fw-semibold px-4 py-2" @click="openShareForm">
+          <button class="btn-primary-inturn" @click="openShareForm">
             <i class="bi bi-plus-lg me-2"></i>Share your experience
           </button>
         </div>
       </div>
 
       <!-- Empty State 2: Posts exist, but none match the selected filters -->
-      <div v-else-if="filteredPosts.length === 0" class="card rounded-4 p-5 text-center mb-3">
+      <div v-else-if="filteredPosts.length === 0" class="card-inturn p-5 text-center mb-3">
         <i class="bi bi-funnel fs-1 text-secondary mb-2"></i>
-        <h3 class="h6 fw-semibold mb-1">No posts match these filters</h3>
+        <h3 class="section-title mb-1">No posts match these filters</h3>
         <p class="text-secondary small mb-3">
           Try changing your filter selection or reset to view all community posts.
         </p>
         <div>
           <button
-            class="btn btn-outline-secondary btn-sm rounded-3 px-3"
+            class="btn-neutral-inturn btn-sm-inturn"
             @click="selectedType = 'All'; selectedCompany = 'All'; selectedRole = 'All'"
           >
             Reset filters
@@ -431,12 +425,12 @@ async function publishPost() {
         <article
           v-for="p in filteredPosts"
           :key="p.id"
-          class="card rounded-4 p-3 p-sm-4 mb-3 d-flex flex-column flex-sm-row gap-3"
+          class="card-inturn mb-3 d-flex flex-column flex-sm-row gap-3"
         >
           <button
             type="button"
-            class="btn upvote-btn rounded-3 d-flex flex-row flex-sm-column align-items-center justify-content-center gap-2 gap-sm-0 align-self-start px-3 py-2 flex-shrink-0"
-            :class="p.upvoted ? 'upvote-active' : 'btn-outline-secondary text-dark'"
+            class="upvote-btn d-flex flex-row flex-sm-column align-items-center justify-content-center gap-2 gap-sm-0 align-self-start flex-shrink-0"
+            :class="p.upvoted ? 'btn-secondary-inturn' : 'btn-neutral-inturn'"
             :aria-pressed="p.upvoted"
             @click="toggleUpvote(p)"
           >
@@ -446,7 +440,7 @@ async function publishPost() {
           </button>
 
           <div class="flex-grow-1 min-w-0 text-break">
-            <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
               <div class="d-flex align-items-center gap-2">
                 <span
                   class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center flex-shrink-0"
@@ -473,7 +467,7 @@ async function publishPost() {
                 <button
                   v-if="p.isOwner"
                   type="button"
-                  class="btn btn-link btn-sm text-danger text-decoration-none p-0 ms-1"
+                  class="btn-link-inturn text-danger ms-1"
                   title="Delete your post"
                   @click="deletePost(p)"
                 >
@@ -483,8 +477,8 @@ async function publishPost() {
             </div>
 
             <div class="d-flex flex-wrap gap-2 my-2">
-              <span class="badge bg-body-secondary text-dark fw-normal px-2 py-1">{{ p.company }}</span>
-              <span class="badge bg-body-secondary text-dark fw-normal px-2 py-1">{{ p.role }}</span>
+              <span class="tag-inturn">{{ p.company }}</span>
+              <span class="tag-inturn">{{ p.role }}</span>
             </div>
 
             <h3 class="h5 fw-semibold mb-2">{{ p.title }}</h3>
@@ -500,25 +494,7 @@ async function publishPost() {
 </template>
 
 <style scoped>
-.btn-inturn {
-  background-color: #4a86e8;
-  color: #fff;
-  border: 0;
-}
-.btn-inturn:hover {
-  background-color: #3a74d4;
-  color: #fff;
-}
-.btn-inturn:disabled {
-  background-color: #9db9ea;
-  color: #fff;
-}
 .upvote-btn {
   min-width: 72px;
-}
-.upvote-active {
-  background-color: #e1edfd;
-  border: 1px solid #4a86e8;
-  color: #4a86e8;
 }
 </style>

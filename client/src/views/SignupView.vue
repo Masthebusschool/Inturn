@@ -44,9 +44,9 @@ async function handleSignup() {
 
 <template>
   <section class="signup-page">
-    <img src="../assets/logogogo.jpg" class="brand-logo">
+    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
 
-    <div v-if="createdUser" class="signup-card text-center">
+    <div v-if="createdUser" class="card-inturn auth-card text-center">
       <h2 class="welcome">Account created</h2>
       <p class="subtitle mb-1">{{ createdUser.name }}</p>
       <p class="subtitle">{{ createdUser.email }}</p>
@@ -55,7 +55,7 @@ async function handleSignup() {
       <RouterLink :to="{ path: '/login', state: { email: createdUser.email } }" class="btn-primary-inturn">Log in</RouterLink>
     </div>
 
-    <form v-else class="signup-card" novalidate @submit.prevent="handleSignup">
+    <form v-else class="card-inturn auth-card" novalidate @submit.prevent="handleSignup">
       <h2 class="welcome text-center">Create your account</h2>
       <p class="subtitle">Start preparing for your next internship.</p>
 
@@ -69,7 +69,7 @@ async function handleSignup() {
           id="signup-name"
           v-model="form.name"
           type="text"
-          class="form-control input-inturn"
+          class="input-inturn"
           autocomplete="name"
           maxlength="50"
           required
@@ -82,7 +82,7 @@ async function handleSignup() {
           id="signup-email"
           v-model="form.email"
           type="email"
-          class="form-control input-inturn"
+          class="input-inturn"
           autocomplete="email"
           required
         />
@@ -94,7 +94,7 @@ async function handleSignup() {
           id="signup-password"
           v-model="form.password"
           type="password"
-          class="form-control input-inturn"
+          class="input-inturn"
           autocomplete="new-password"
           aria-describedby="password-rules"
           required
@@ -112,7 +112,7 @@ async function handleSignup() {
           id="signup-confirm"
           v-model="form.confirmPassword"
           type="password"
-          class="form-control input-inturn"
+          class="input-inturn"
           autocomplete="new-password"
           required
         />
@@ -131,12 +131,6 @@ async function handleSignup() {
 </template>
 
 <style scoped>
-.brand-logo{
-  height:120px;
-  width: auto;
-  padding:1rem 0;
-}
-
 .signup-page {
   display: flex;
   flex-direction: column;
@@ -144,19 +138,16 @@ async function handleSignup() {
   padding: 2rem 0;
 }
 
-.brand {
-  font-size: 3rem;
-  font-weight: 400;
-  margin-bottom: 2rem;
+.brand-logo {
+  height: 120px;
+  width: auto;
+  padding: 1rem 0;
 }
 
-.signup-card {
+.auth-card {
   width: 100%;
   max-width: 520px;
   padding: 2rem 2.75rem;
-  background: #f3f3f3;
-  border: 1px solid #4e8be6;
-  border-radius: 16px;
 }
 
 .welcome {
@@ -167,14 +158,8 @@ async function handleSignup() {
 
 .subtitle {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
   margin-bottom: 1.5rem;
-}
-
-.input-inturn {
-  border: 1px solid #222;
-  border-radius: 12px;
-  padding: 0.65rem 0.9rem;
 }
 
 .password-rules {
@@ -182,42 +167,15 @@ async function handleSignup() {
   padding: 0;
   margin: 0.5rem 0 0;
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--inturn-text-muted);
 }
 
 .password-rules li.met {
   color: #198754;
 }
 
-.btn-primary-inturn {
-  background: #4e8be6;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.5rem 2.5rem;
-  font-size: 1.1rem;
-}
-
-.btn-primary-inturn:hover:not(:disabled) {
-  background: #3c70b3;
-}
-
-.btn-primary-inturn:disabled {
-  opacity: 0.7;
-}
-
-/* The "Log in" RouterLink on the Account created card, styled as the button */
-a.btn-primary-inturn {
-  display: inline-block;
-  text-decoration: none;
-}
-
-a.btn-primary-inturn:hover {
-  color: #fff;
-}
-
 @media (max-width: 576px) {
-  .signup-card {
+  .auth-card {
     padding: 1.5rem 1.25rem;
   }
 }
