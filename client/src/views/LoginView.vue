@@ -43,9 +43,9 @@ async function handleLogin() {
 
 <template>
   <section class="login-page">
-    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
-
+  
     <form class="card-inturn auth-card" novalidate @submit.prevent="handleLogin">
+      <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
       <h2 class="welcome text-center">Welcome to Inturn</h2>
       <p class="subtitle">Sign in to continue your career prep.</p>
 
@@ -106,9 +106,8 @@ async function handleLogin() {
 }
 
 .brand-logo {
-  height: 120px;
+  height: 60px;
   width: auto;
-  padding: 1rem 0;
 }
 
 .auth-card {

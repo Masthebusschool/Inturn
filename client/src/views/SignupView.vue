@@ -44,9 +44,10 @@ async function handleSignup() {
 
 <template>
   <section class="signup-page">
-    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
+    
 
     <div v-if="createdUser" class="card-inturn auth-card text-center">
+      <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
       <h2 class="welcome">Account created</h2>
       <p class="subtitle mb-1">{{ createdUser.name }}</p>
       <p class="subtitle">{{ createdUser.email }}</p>
@@ -139,9 +140,8 @@ async function handleSignup() {
 }
 
 .brand-logo {
-  height: 120px;
+  height: 60px;
   width: auto;
-  padding: 1rem 0;
 }
 
 .auth-card {
