@@ -270,7 +270,8 @@ onUnmounted(() => {
     <header class="page-header">
       <div>
         <h1 class="header-title">Tracker Board</h1>
-        <p class="header-subtitle">{{ applications.length }} internships tracked</p>
+        <p v-if="applications.length==1">1 internship tracked</p>
+        <p v-else>class="header-subtitle">{{ applications.length }} internships tracked</p>
       </div>
 
       <!-- top button always starts in Saved, flex-shrink-0 stops it squashing on small screens -->
