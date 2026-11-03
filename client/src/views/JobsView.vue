@@ -30,11 +30,12 @@
       </header>
 
       <div
-        v-if="!matchingResumeLoading && resumeSkills.length === 0" class="resume-notice" role="status"
+        v-if="!matchingResumeLoading && !matchingResumeName" class="resume-notice" role="status"
       >
-        Resume skills are not available yet. Results will not be tailored to your skills.
+        You have no resume available for job matching.
+        Results will not be tailored to your skills.
         <RouterLink to="/resumes">
-          Upload or edit your resume here
+          Upload your resume here
         </RouterLink>.
       </div>
 
@@ -72,7 +73,7 @@
       </form>
 
       <p v-if="matchingResumeName" class="matching-source">
-        Matching against (latest viewed resume): {{ matchingResumeName }}
+        Matching against (latest viewed resume available): {{ matchingResumeName }}
       </p>
 
       <div v-if="activeFilters.length > 0" class="active-filter-tags">
