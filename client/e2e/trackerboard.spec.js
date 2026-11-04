@@ -317,8 +317,8 @@ test.describe('Tracker Board', () => {
     });
 
     // 9. Test Case Scenario: User logs in and tries to add a lot of checklist tasks, including duplicates repeatedly
-    test('user logs in and the checklist blocks duplicates and stops at 20 tasks', async ({ page }) => {
-        // adding 20 tasks takes a while, so give this test 3x the usual time
+    test('user logs in and the checklist blocks duplicates and stops at 15 tasks', async ({ page }) => {
+        // adding 15 tasks takes a while, so give this test 3x the usual time
         test.slow();
 
         await addCard(page, 'Grab', 'Software Intern', 'Saved');
@@ -329,7 +329,7 @@ test.describe('Tracker Board', () => {
         await card.getByRole('button', { name: 'Checklist' }).click();
 
         // the limit disclaimer shows from the start
-        await expect(page.getByText('0 / 20 tasks, up to 200 characters each.')).toBeVisible();
+        await expect(page.getByText('0 / 15 tasks, up to 100 characters each.')).toBeVisible();
         await addTask(page, 'Research the company');
 
         // adding the same task again (in any capitals) is blocked each time
@@ -342,31 +342,37 @@ test.describe('Tracker Board', () => {
         await taskBox.fill('RESEARCH THE COMPANY');
         await addButton.click();
         await expect(page.getByText('This task is already on the checklist.')).toBeVisible();
-        await expect(page.getByText('1 / 20 tasks, up to 200 characters each.')).toBeVisible();
+        await expect(page.getByText('1 / 15 tasks, up to 100 characters each.')).toBeVisible();
 
-        // keep adding until the card has 20 tasks (Task 02 to Task 20)
-        for (let i = 2; i <= 20; i++) {
+        // typing more than 100 characters stops at 100
+        await taskBox.fill('');
+        await taskBox.pressSequentially('x'.repeat(120));
+        await expect(taskBox).toHaveValue('x'.repeat(100));
+        await taskBox.fill('');
+
+        // keep adding until the card has 15 tasks (Task 02 to Task 15)
+        for (let i = 2; i <= 15; i++) {
             await addTask(page, 'Task ' + String(i).padStart(2, '0'));
         }
 
         // at the limit the add box locks and the warning shows
-        await expect(page.getByText("You've reached the limit of 20 tasks. Delete a task to add another.")).toBeVisible();
+        await expect(page.getByText("You've reached the limit of 15 tasks. Delete a task to add another.")).toBeVisible();
         await expect(taskBox).toBeDisabled();
         await expect(addButton).toBeDisabled();
 
         await page.getByRole('button', { name: 'Done' }).click();
-        await expect(card).toContainText('0 / 20 Prep');
+        await expect(card).toContainText('0 / 15 Prep');
 
-        // reload to check all 20 were saved and it's still locked
+        // reload to check all 15 were saved and it's still locked
         await page.reload();
-        await expect(card).toContainText('0 / 20 Prep');
+        await expect(card).toContainText('0 / 15 Prep');
         await card.getByRole('button', { name: 'Card options' }).click();
         await card.getByRole('button', { name: 'Checklist' }).click();
         await expect(taskBox).toBeDisabled();
 
         // deleting a task unlocks the add box again
-        await page.getByRole('listitem').filter({ hasText: 'Task 20' }).getByRole('button').click();
-        await expect(page.getByText('19 / 20 tasks, up to 200 characters each.')).toBeVisible();
+        await page.getByRole('listitem').filter({ hasText: 'Task 15' }).getByRole('button').click();
+        await expect(page.getByText('14 / 15 tasks, up to 100 characters each.')).toBeVisible();
         await expect(taskBox).toBeEnabled();
     });
 });
