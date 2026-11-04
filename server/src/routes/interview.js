@@ -5,7 +5,7 @@ import { isLoggedIn } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// 1. GET /api/interview - Get the logged-in user's journal questions
+// GET /api/interview - Get the logged-in user's journal questions
 router.get('/', isLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.session.user.id);
@@ -37,19 +37,19 @@ router.get('/', isLoggedIn, async (req, res) => {
   }
 });
 
-// 2. POST /api/interview/questions - Add a community question to the user's journal
+// POST /api/interview/questions - Add a community question to the user's journal
 router.post('/questions', isLoggedIn, async (req, res) => {
   try {
     const { sourceId, category, company, text, tip } = req.body;
 
-    // 1. Validate question text
+    // Validate question text
     if (typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({ error: 'Question text is required.' });
     }
 
     const cleanText = text.trim();
 
-    // 2. Safely check optional string fields so non-strings don't cause errors
+    // Safely check optional string fields so non-strings don't cause errors
     const cleanSourceId = typeof sourceId === 'string' ? sourceId.trim() : '';
     const cleanCategory = typeof category === 'string' && category.trim() ? category.trim() : 'General';
     const cleanCompany = typeof company === 'string' ? company.trim() : '';
@@ -63,12 +63,12 @@ router.post('/questions', isLoggedIn, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // 3. Cap maximum questions per user at 100
+    // Cap maximum questions per user at 100
     if (user.journalQuestions.length >= 100) {
       return res.status(400).json({ error: 'You have reached the maximum of 100 journal questions.' });
     }
 
-    // 4. Case-insensitive duplicate check (checks both sourceId and lowercase text)
+    // Case-insensitive duplicate check (checks both sourceId and lowercase text)
     const alreadyAdded = user.journalQuestions.some(
       (q) =>
         (cleanSourceId !== '' && q.sourceId === cleanSourceId) ||
@@ -110,19 +110,23 @@ router.post('/questions', isLoggedIn, async (req, res) => {
   }
 });
 
-// 3. POST /api/interview/feedback - Save or clear a reflection response
+// POST /api/interview/feedback - Save or clear a reflection response
 router.post('/feedback', isLoggedIn, async (req, res) => {
   try {
     const { questionId, response } = req.body;
 
-    // 1. Validate questionId is a real MongoDB ObjectId
+    // Validate questionId is a real MongoDB ObjectId
     if (!mongoose.isValidObjectId(questionId)) {
       return res.status(400).json({ error: 'Invalid question ID.' });
     }
 
-    // 2. Validate response is a string
+    // Validate response is a string
     if (typeof response !== 'string') {
       return res.status(400).json({ error: 'Response must be text.' });
+    }
+
+    if (response.length > 4000) {
+     return res.status(400).json({ error: 'Response must be 4000 characters or less.' });
     }
 
     const user = await User.findById(req.session.user.id);
@@ -162,7 +166,7 @@ router.post('/feedback', isLoggedIn, async (req, res) => {
   }
 });
 
-// 4. DELETE /api/interview/questions/:questionId - Remove a question from journal
+// DELETE /api/interview/questions/:questionId - Remove a question from journal
 router.delete('/questions/:questionId', isLoggedIn, async (req, res) => {
   try {
     const { questionId } = req.params;

@@ -6,7 +6,7 @@
         type="button"
         @click="emit('close')"
       >
-        ← Back to Jobs
+        ← Back to Internships
       </button>
 
       <button

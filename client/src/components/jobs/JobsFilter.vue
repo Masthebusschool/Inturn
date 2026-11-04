@@ -10,7 +10,7 @@
       </button>
 
       <div class="heading">
-        <h2 class="header-title">Filter Jobs</h2>
+        <h2 class="header-title">Filter Internships</h2>
         <p class="header-subtitle">Find opportunities that suit your needs.</p>
       </div>
 
@@ -42,7 +42,7 @@
       </div>
 
       <p v-else class="empty-summary">
-        All jobs on this page are included.
+        All internships on this page are included.
       </p>
     </div>
 
@@ -82,7 +82,7 @@
       <h3 class="section-title mb-0">Skills</h3>
 
       <p class="section-description">
-        Jobs will include at least one selected skill. Ranked from most to least number of skills selected
+        Internships will include at least one selected skill. Ranked from most to least number of skills selected
       </p>
 
       <label for="skill-search" class="input-label">
@@ -169,7 +169,7 @@
 
       <p class="section-description">
         Enter amounts in SGD. Leave either field blank for no limit.
-        Jobs whose advertised monthly pay overlaps your range are included.
+        Internships whose advertised monthly pay overlaps your range are included.
       </p>
 
       <label for="minimum-pay" class="input-label">

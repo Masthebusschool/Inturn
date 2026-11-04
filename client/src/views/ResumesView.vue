@@ -3,6 +3,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../lib/api.js'
 import ConfirmButton from '../components/common/ConfirmButton.vue'
+import {clearMatchingResume, restoreMatchingResume} from "../stores/jobMatch.js";
 
 const router = useRouter()
 const resumes = ref([])
@@ -88,6 +89,9 @@ async function remove(r) {
   try {
     await api(`/api/resumes/${r._id}`, { method: 'DELETE' })
     resumes.value = resumes.value.filter((x) => x._id !== r._id)
+    
+    clearMatchingResume();
+    await restoreMatchingResume();
   } catch (e) {
     loadError.value = e.message
   } finally {

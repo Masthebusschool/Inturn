@@ -29,15 +29,25 @@
         </div>
       </header>
 
+      <div
+        v-if="!matchingResumeLoading && !matchingResumeName" class="resume-notice" role="status"
+      >
+        You have no resume available for job matching.
+        Results will not be tailored to your skills.
+        <RouterLink to="/resumes">
+          Upload your resume here
+        </RouterLink>.
+      </div>
+
       <form class="card-inturn search-bar" @submit.prevent="searchJobs">
-        <label for="job-search">Search jobs</label>
+        <label for="job-search">Search Internships</label>
 
         <input
           id="job-search"
           v-model.trim="searchInput"
           type="search"
           class="input-inturn"
-          placeholder="Search jobs or internships..."
+          placeholder="Search internships..."
           :disabled="loading"
         />
 
@@ -63,7 +73,7 @@
       </form>
 
       <p v-if="matchingResumeName" class="matching-source">
-        Matching against (latest viewed resume): {{ matchingResumeName }}
+        Matching against (latest viewed resume available): {{ matchingResumeName }}
       </p>
 
       <div v-if="activeFilters.length > 0" class="active-filter-tags">
@@ -99,16 +109,13 @@
 
             <p v-else>
               {{ filteredJobs.length }} matches on this page ·
-              {{ total }} jobs found by keyword
+              {{ total }} internships found by keyword
             </p>
 
             <p v-if="!loading && !error">
               Sort and filters apply to the results.
             </p>
 
-            <p v-else-if="!loading && !error && resumeSkills.length === 0">
-              Upload your resume to rank jobs by match.
-            </p>
           </div>
 
           <div class="sort-control">
@@ -134,7 +141,7 @@
           </div>
 
           <div v-else-if="error" class="message" role="alert">
-            <h3>Unable to load jobs</h3>
+            <h3>Unable to load internships</h3>
             <p>{{ error }}</p>
 
             <button
@@ -147,7 +154,7 @@
           </div>
 
           <div v-else-if="filteredJobs.length === 0" class="message">
-            <h3>No matching jobs</h3>
+            <h3>No matching internships</h3>
             <p>
               Try another keyword, change your filters, or check the next page.
             </p>
@@ -336,6 +343,7 @@
 import JobsFilter from "../components/jobs/JobsFilter.vue";
 import JobsSelect from "../components/jobs/JobsSelect.vue";
 
+import { matchingResumeLoading } from "../stores/jobMatch.js";
 import { useJobsView } from "../helpers/useJobsView.js";
 
 const {
@@ -640,5 +648,27 @@ const {
   margin-top: 14px;
   color: var(--bs-success-text-emphasis);
   font-size: 13px;
+}
+
+.resume-notice {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.resume-notice a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.resume-notice a:hover {
+  color: #7f1d1d;
 }
 </style>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import VueMultiselect from "vue-multiselect";
+import ConfirmModal from "../components/ConfirmModal.vue";
 
 const route = useRoute();
 
@@ -129,9 +130,19 @@ async function toggleUpvote(post) {
   }
 }
 
-// Delete a post created by the current user
-async function deletePost(post) {
-  if (!confirm("Delete your post? This cannot be undone.")) return;
+// The post the user clicked delete on. While this is set, the popup is shown.
+const postToDelete = ref(null);
+
+// Clicking the trash icon opens the popup
+function deletePost(post) {
+  postToDelete.value = post;
+}
+
+// Runs when the user confirms in the popup
+async function confirmDeletePost() {
+  const post = postToDelete.value;
+  postToDelete.value = null; // closes the popup
+  if (!post) return;
 
   try {
     const res = await fetch(`/api/intel/${post.id}`, {
@@ -390,7 +401,7 @@ async function publishPost() {
             <input
               id="post-role"
               v-model="formRole"
-              maxlength="80"
+              maxlength="100"
               class="form-control bg-body-tertiary rounded-3"
               placeholder="e.g. Engineering Intern"
             />
@@ -402,7 +413,7 @@ async function publishPost() {
             <input
               id="post-title"
               v-model="formTitle"
-              maxlength="120"
+              maxlength="150"
               class="form-control bg-body-tertiary rounded-3"
               placeholder="Give your post a clear title"
             />
@@ -675,6 +686,16 @@ async function publishPost() {
         </article>
       </template>
     </div>
+
+    <!-- Popup to confirm deleting a post -->
+    <ConfirmModal
+      :show="postToDelete !== null"
+      title="Delete your post?"
+      message="This will permanently remove your post. This cannot be undone."
+      confirm-label="Delete post"
+      @confirm="confirmDeletePost"
+      @cancel="postToDelete = null"
+    />
   </div>
 </template>
 

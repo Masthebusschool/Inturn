@@ -445,6 +445,11 @@ export async function searchPublishedJobs(input = {}) {
     generation: active.generation,
     "search.v": SEARCH_VERSION,
 
+    "job.title": {
+      $regex: "\\bintern(?:s|ship|ships)?\\b",
+      $options: "i",
+    },
+
     $or: [
       { "search.closingDay": null },
       { "search.closingDay": { $gte: today } },

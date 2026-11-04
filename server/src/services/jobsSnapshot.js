@@ -97,154 +97,232 @@ export async function fetchMcfJson(url) {
   throw new Error("MCF request failed.");
 }
 
+function getSingaporeDate(date = new Date()) {
+  return new Date(
+    date.getTime() + 8 * 60 * 60 * 1000
+  ).toISOString().slice(0, 10);
+}
+
+function isUnexpired(job) {
+  const value = job.metadata?.expiryDate;
+
+  // Require a readable closing date to confirm it is unexpired.
+  if (typeof value !== "string" || !value.trim()) {
+    return false;
+  }
+
+  const closingDate = new Date(value);
+
+  if (!Number.isFinite(closingDate.getTime())) {
+    return false;
+  }
+
+  // Include jobs closing today in Singapore.
+  return getSingaporeDate(closingDate) >= getSingaporeDate();
+}
+
 export async function syncJobs() {
   const { jobs, state } = collections();
+
+  const MAX_JOBS = 30000;
+  const titlePattern = /\bintern(?:s|ship|ships)?\b/i;
 
   await jobs.createIndex(
     { generation: 1, uuid: 1 },
     { unique: true }
   );
 
-  await jobs.createIndex({ createdAt: 1 });
-
   const generation = randomUUID();
   const startedAt = new Date();
 
+  const savedIds = new Set();
+
   let page = 0;
-  let largestReportedTotal = 0;
   let previousSignature = "";
 
-  console.log("[Jobs sync] Starting collection.");
+  console.log(
+    `[Jobs sync] Collecting up to ${MAX_JOBS} internship jobs.`
+  );
 
-  while (true) {
-    const data = await fetchMcfJson(
-      `${API}?limit=${LIMIT}&page=${page}&sortBy=new_posting_date`
-    );
+  try {
+    while (savedIds.size < MAX_JOBS) {
+      const data = await fetchMcfJson(
+        `${API}?limit=${LIMIT}&page=${page}&sortBy=new_posting_date`
+      );
 
-    if (
-      !Array.isArray(data.results) ||
-      !Number.isInteger(data.total) ||
-      data.total < 0
-    ) {
-      throw new Error("Unexpected MCF response.");
-    }
+      if (
+        !Array.isArray(data.results) ||
+        !Number.isInteger(data.total) ||
+        data.total < 0
+      ) {
+        throw new Error("Unexpected MCF response.");
+      }
 
-    largestReportedTotal = Math.max(largestReportedTotal, data.total);
+      if (data.results.length === 0) {
+        if (page * LIMIT < data.total) {
+          throw new Error(
+            "Collection stopped at an unexpected empty page."
+          );
+        }
 
-    if (data.results.length === 0) {
-      if (page * LIMIT < data.total) {
-        throw new Error(
-          "Collection stopped at an unexpected empty page."
+        break;
+      }
+
+      if (
+        data.results.some(
+          (job) =>
+            !job ||
+            typeof job.uuid !== "string" ||
+            !job.uuid.trim()
+        )
+      ) {
+        throw new Error("A job is missing its UUID.");
+      }
+
+      const signature = data.results
+        .map((job) => job.uuid)
+        .join(",");
+
+      if (signature === previousSignature) {
+        throw new Error("The API repeated the previous page.");
+      }
+
+      previousSignature = signature;
+
+      const selectedJobs = [];
+
+      for (const job of data.results) {
+        if (
+          typeof job.title !== "string" ||
+          !titlePattern.test(job.title) ||
+          !isUnexpired(job) ||
+          savedIds.has(job.uuid)
+        ) {
+          continue;
+        }
+
+        savedIds.add(job.uuid);
+        selectedJobs.push(job);
+
+        if (savedIds.size >= MAX_JOBS) {
+          break;
+        }
+      }
+
+      // A source page may contain no internship jobs.
+      if (selectedJobs.length > 0) {
+        await jobs.bulkWrite(
+          selectedJobs.map((job) => ({
+            updateOne: {
+              filter: {
+                generation,
+                uuid: job.uuid,
+              },
+
+              update: {
+                $set: {
+                  generation,
+                  uuid: job.uuid,
+                  createdAt: startedAt,
+                  job: compactJob(job),
+                },
+              },
+
+              upsert: true,
+            },
+          })),
+          { ordered: false }
         );
       }
 
-      break;
+      console.log(
+        `[Jobs sync] Source page ${page + 1}: ` +
+        `${savedIds.size} internship jobs stored.`
+      );
+
+      if (
+        savedIds.size >= MAX_JOBS ||
+        (page + 1) * LIMIT >= data.total
+      ) {
+        break;
+      }
+
+      page += 1;
+
+      await wait(5000);
     }
 
-    if (
-      data.results.some(
-        (job) =>
-          !job ||
-          typeof job.uuid !== "string" ||
-          !job.uuid.trim()
-      )
-    ) {
-      throw new Error("A job is missing its UUID.");
+    const count = await jobs.countDocuments({ generation });
+
+    if (count === 0) {
+      throw new Error(
+        "No internship jobs were collected. " +
+        "The previous dataset has been kept."
+      );
     }
 
-    const signature = data.results
-      .map((job) => job.uuid)
-      .join(",");
-
-    if (signature === previousSignature) {
-      throw new Error("The API repeated the previous page.");
+    if (count !== savedIds.size || count > MAX_JOBS) {
+      throw new Error("Stored internship count is inconsistent.");
     }
 
-    previousSignature = signature;
+    await prepareJobGeneration(generation);
 
-    await jobs.bulkWrite(
-      data.results.map((job) => ({
-        updateOne: {
-          filter: {
-            generation,
-            uuid: job.uuid,
-          },
-          update: {
-            $set: {
-              generation,
-              uuid: job.uuid,
-              createdAt: startedAt,
-              job: compactJob(job),
-            },
-          },
-          upsert: true,
+    await state.updateOne(
+      { _id: "active" },
+      {
+        $set: {
+          generation,
+          updatedAt: new Date().toISOString(),
+          count,
+          searchVersion: 2,
         },
-      })),
-      { ordered: false }
+      },
+      { upsert: true }
     );
 
     console.log(
-      `[Jobs sync] Page ${page + 1} stored; ` +
-      `API reports ${data.total} jobs.`
+      `[Jobs sync] Published ${count} internship jobs.`
     );
+  } catch (error) {
+    // Clean up this failed run only if it was not published.
+    // If publication status cannot be checked, leave it untouched.
+    try {
+      const active = await state.findOne({ _id: "active" });
 
-    if ((page + 1) * LIMIT >= data.total) {
-      break;
+      if (active?.generation !== generation) {
+        await jobs.deleteMany({ generation });
+      }
+    } catch {
+      console.warn(
+        "[Jobs sync] Could not clean up the unfinished dataset."
+      );
     }
 
-    page += 1;
-
-    // Starting delay; the API may still rate-limit requests.
-    await wait(5000);
+    throw error;
   }
 
-  const count = await jobs.countDocuments({ generation });
-
-  if (
-    count === 0 ||
-    count < Math.ceil(largestReportedTotal * 0.98)
-  ) {
-    throw new Error(
-      `Collection appears incomplete: ${count} unique jobs; ` +
-      `largest reported total was ${largestReportedTotal}.`
-    );
-  }
-
-  // Prepare searchable fields before making this generation available.
-  await prepareJobGeneration(generation);
-
-  await state.updateOne(
-  { _id: "active" },
-  {
-      $set: {
-      generation,
-      updatedAt: new Date().toISOString(),
-      count,
-      searchVersion: 1,
-      },
-  },
-  { upsert: true }
-  );
-
-  console.log(`[Jobs sync] Published ${count} jobs.`);
+  // Allow requests using the previous generation time to finish.
+  await wait(60000);
 
   try {
     const active = await state.findOne({ _id: "active" });
 
-    if (active) {
-      await jobs.deleteMany({
-        generation: { $ne: active.generation },
-        createdAt: {
-          $lt: new Date(
-            Date.now() - 7 * 24 * 60 * 60 * 1000
-          ),
+    if (active?.generation === generation) {
+      const result = await jobs.deleteMany({
+        generation: {
+          $exists: true,
+          $ne: generation,
         },
       });
+
+      console.log(
+        `[Jobs sync] Removed ${result.deletedCount} old job records.`
+      );
     }
   } catch {
     console.warn(
-      "[Jobs sync] Cleanup failed; published jobs remain available."
+      "[Jobs sync] Old dataset cleanup failed. " +
+      "The published internships remain available."
     );
   }
 }
-
