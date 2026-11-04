@@ -7,6 +7,10 @@ import {preparePublishedJobSearch} from "../services/jobsSearch.js";
 
 dotenv.config({ quiet: true });
 
+
+// connects to mongoDB
+
+
 try {
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI is missing.");
