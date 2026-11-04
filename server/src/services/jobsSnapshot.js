@@ -5,6 +5,8 @@ import { prepareJobGeneration } from "./jobsSearch.js";
 const API = "https://api.mycareersfuture.gov.sg/v2/jobs";
 const LIMIT = 100;
 
+
+// fetches jobs from mcf
 const wait = (ms) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -296,7 +298,7 @@ export async function syncJobs() {
     throw error;
   }
 
-  // Allow requests using the previous generation time to finish.
+  // Wait before deleting the old dataset.
   await wait(60000);
 
   try {

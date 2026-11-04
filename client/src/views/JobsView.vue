@@ -415,7 +415,7 @@ watch(
   }
 );
 
-// Browser Back removes the panel query and shows the job results.
+// Browser's back button closes the job details and filter page and shows the job results.
 watch(
   () => route.query.jobPanel,
   (panel) => {
