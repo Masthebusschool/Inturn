@@ -296,7 +296,7 @@ export async function syncJobs() {
     throw error;
   }
 
-  // Allow requests using the previous generation time to finish.
+  // Wait before deleting the old dataset.
   await wait(60000);
 
   try {

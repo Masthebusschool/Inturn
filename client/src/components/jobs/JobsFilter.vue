@@ -254,7 +254,7 @@ const locations = [
   "Islandwide",
 ];
 
-// Category options from API page.
+// Job category options.
 const categories = computed(() => {
   const values = [];
 
@@ -397,7 +397,7 @@ const activeFilters = computed(() => {
   return tags;
 });
 
-// Preserve all filter fields whenever one field changes.
+// Keep all filter fields whenever one field changes.
 function updateFilter(field, value) {
   const updatedFilters = {
     location: props.modelValue.location ?? "",
@@ -428,7 +428,7 @@ function changeCategory(category) {
   }
 }
 
-// Select or deselects skill when clicked
+// Select or deselects skill when clicked.
 function toggleSkill(skill) {
   const selectedSkills = [];
 

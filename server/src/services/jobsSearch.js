@@ -310,7 +310,7 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Small cache for filter suggestions, not the full jobs dataset.
+// Temp storage for filter suggestions, not the full jobs dataset.
 const optionCache = new Map();
 
 async function getFilterOptions(jobs, query, cacheKey) {
