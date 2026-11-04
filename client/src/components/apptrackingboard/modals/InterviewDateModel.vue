@@ -10,7 +10,8 @@ defineProps({
 
 const emit = defineEmits(['save', 'skip']);
 const interviewDate = ref('');
-const now = toDateTimeInput(new Date()); // earliest date the picker allows
+// earliest date the picker allows (prevent user from setting a past date for interview)
+const now = toDateTimeInput(new Date()); 
 
 // typing can still get past min, so check it too (same format, so the strings compare in date order)
 const isPast = computed(() => interviewDate.value !== '' && interviewDate.value < now);
@@ -19,11 +20,8 @@ function saveInterviewDate() {
     if (isPast.value) return;
     emit('save', new Date(interviewDate.value).toISOString());
 }
-
-function skipInterviewDate() {
-    emit('skip'); // do nothing
-}
-
+// do nothing
+function skipInterviewDate() { emit('skip'); }
 </script>
 
 <template>

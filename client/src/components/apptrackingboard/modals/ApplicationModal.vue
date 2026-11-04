@@ -13,11 +13,13 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'cancel']);
 
 const isEdit = props.card !== null;
-const card = props.card || {}; // so the prefills below work when adding too
+// so the prefills below work when adding too
+const card = props.card || {}; 
 
 const statuses = ['Saved', 'Applied', 'Interview', 'Offered'];
 const today = new Date().toISOString().split('T')[0];
-const now = toDateTimeInput(new Date()); // earliest interview date allowed
+// earliest interview date allowed
+const now = toDateTimeInput(new Date()); 
 
 // job application fields, prefilled from the card when editing
 const title = ref(card.title || '');
@@ -132,7 +134,7 @@ function cancel() { emit('cancel'); }
             </select>
           </div>
 
-          <!-- only shown when the card is in Interview -->
+          <!-- only shown when the card is in Interview column -->
           <div v-if="status === 'Interview'" class="mb-3">
             <label class="form-label">Interview date</label>
             <input v-model="interviewAt" type="datetime-local" class="input-inturn" :class="{ 'is-invalid': errors.interviewAt }" :min="now" />
@@ -155,7 +157,6 @@ function cancel() { emit('cancel'); }
 
         <div class="modal-footer">
           <button type="button" class="btn-neutral-inturn" v-on:click="cancel">Cancel</button>
-          <!-- type="submit" already runs submitApplication through the form, no v-on:click needed -->
           <button type="submit" class="btn-primary-inturn">{{ isEdit ? 'Save' : 'Add' }}</button>
         </div>
       </form>

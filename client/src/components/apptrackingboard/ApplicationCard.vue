@@ -2,11 +2,10 @@
 import { computed, ref, onMounted } from 'vue';
 import { formatDate } from '../../helpers/apptrackingboard/KanbanViewHelper';
 
-// collapsed shows only the title, company, date and checklist, the page keeps track of it
 const props = defineProps({ app: Object, collapsed: Boolean });
 const emit = defineEmits(['tailor-resume', 'view-intel', 'toggle']);
 
-// which date to show depends on the column
+// which date to show depends on the column e.g. interviewAt, AppliedAt 
 const dateLabel = computed(() => {
   const app = props.app;
   if (app.status === 'Interview') {
@@ -16,7 +15,7 @@ const dateLabel = computed(() => {
   return 'Due ' + formatDate(app.expiryDate);
 });
 
-// skills matched as a percentage (0 if the job lists no skills)
+// skills matched as a percentage (will be 0 if the job lists no skills)
 const matchPercent = computed(() => {
   if (!props.app.total) return 0;
   return (props.app.matched / props.app.total) * 100;
@@ -35,11 +34,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- background colour from the status, e.g. 'Interview' -> status-interview in main.css -->
   <div class="card-muted-inturn" :class="'status-' + app.status.toLowerCase()">
-    <!-- title + favourite star (clearfix stops a short title's row ending above the float) -->
     <div class="clearfix mb-2">
-      <!-- invisible block where the 3 dot menu sits, the title wraps around it instead of under it -->
       <span class="menu-space float-end"></span>
       <p class="card-title fw-semibold mb-0">
         {{ app.title }}
@@ -47,20 +43,16 @@ onMounted(() => {
       </p>
     </div>
 
-    <!-- flex-wrap drops the date onto its own line when the card is too narrow -->
     <div class="d-flex flex-wrap justify-content-between column-gap-2 small text-secondary mt-2">
       <span>{{ app.company }}</span>
       <span class="text-nowrap">{{ dateLabel }}</span>
     </div>
 
-    <!-- same wrap as the row above -->
     <div class="d-flex flex-wrap justify-content-between column-gap-2 small text-secondary mt-2">
       <span>Checklist:</span>
       <span class="text-nowrap">{{ app.prep }} Prep</span>
     </div>
-
     <hr class="my-2" />
-
     <!-- opens or closes the rest of the card -->
     <button
       type="button"
@@ -73,7 +65,6 @@ onMounted(() => {
     </button>
 
     <!-- the details, v-show (not v-if) so missingList still exists for onMounted -->
-    <!-- mt-2 so the progress bar isn't touching the toggle -->
     <div v-show="!collapsed" class="mt-2">
 
     <div class="progress">
@@ -81,8 +72,6 @@ onMounted(() => {
       <div class="progress-bar" :style="{ width: matchPercent + '%' }"></div>
     </div>
     <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
-
-    <!-- full width row under the count that opens the missing skills, hidden when nothing is missing -->
     <button
       v-if="app.missing?.length"
       type="button"
@@ -104,7 +93,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- only while the card is still in Saved: this is a pre-decision tool, not an ongoing one -->
+    <!-- only while the card is still in Saved, then allow user to tailor their resume -->
     <button
       v-if="app.status === 'Saved'"
       type="button"
@@ -116,7 +105,7 @@ onMounted(() => {
       Tailor Resume
     </button>
 
-    <!-- only in Interview, when there is intel for this job (text-wrap so it fits narrow cards) -->
+    <!-- only in Interview, when there is intel for this job -->
     <button
       v-if="app.status === 'Interview' && app.intelCount > 0"
       type="button"
@@ -131,13 +120,12 @@ onMounted(() => {
     </div>
 
     <slot>
-      <!-- Insert Dropdown Button to shift to other columns -->
+      <!-- Insert Dropdown Button to shift to other columns (For Mobile ONLY) -->
     </slot>
   </div>
 </template>
 
 <style scoped>
-  /* about the size of the 3 dot button plus a gap, so the title never touches it */
   .menu-space {
       width: 3.5rem;
       height: 2.25rem;
@@ -148,7 +136,7 @@ onMounted(() => {
       line-height: 1.35;
   }
 
-  .star {
+  .star { /* for the favourite colour */
      color: #f5b301; 
   }
 
@@ -164,7 +152,6 @@ onMounted(() => {
       background: var(--inturn-primary);
   }
 
-  /* own colour instead of text-secondary, which is !important and would block the hover */
   .skills-toggle {
       color: var(--inturn-text-muted);
   }

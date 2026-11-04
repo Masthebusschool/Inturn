@@ -8,10 +8,9 @@ defineProps({
   errorMessage: { type: String, default: '' }
 });
 
-// tells the page what the user did
 const emit = defineEmits(['add', 'toggle', 'delete', 'close']);
-
-const newTask = ref(''); // text in the add a task box
+// text in the add a task box
+const newTask = ref(''); 
 
 function addTask () {
   const text = newTask.value.trim();
@@ -36,12 +35,14 @@ function addTask () {
 
         <div class="modal-body">
           <!-- backend error, only shows if saving failed -->
-          <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+          <div v-if="errorMessage" class="alert alert-danger py-2">
+            {{ errorMessage }}
+          </div>
 
-          <p v-if="card.tasks.length === 0" class="small text-secondary">No tasks yet. Add one below.</p>
+          <p v-if="card.tasks.length === 0" class="small text-secondary">
+            No tasks yet. Add one below.
+          </p>
 
-          <!-- one row per task with a checkbox, the text and a delete button -->
-          <!-- a task has no _id until the backend saves it, so it can't be ticked or deleted yet -->
           <ul class="list-group mb-3">
             <li v-for="(task, index) in card.tasks" :key="index" class="list-group-item d-flex align-items-center gap-2">
               <input type="checkbox" class="form-check-input mt-0" :checked="task.done" :disabled="!task._id" v-on:change="emit('toggle', task)" />
@@ -50,7 +51,7 @@ function addTask () {
             </li>
           </ul>
 
-          <!-- add a new task -->
+          <!-- add a new task for the checklist -->
           <form class="d-flex gap-2" v-on:submit.prevent="addTask">
             <input v-model="newTask" class="input-inturn" placeholder="e.g. Research the company" maxlength="200" />
             <button type="submit" class="btn-primary-inturn">Add</button>

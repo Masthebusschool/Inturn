@@ -36,21 +36,21 @@ function goToSkillGap (card) {
   router.push({ path: '/skill-gap', query: { applicationId: card._id } });
 }
 
-// open interview intel filtered to this job
+// opens interview intel filtered to this job (SPECIFICALLY by the company and title of the application)
 function goToIntel (card) {
   router.push({ path: '/intel', query: { company: card.company, role: card.title } });
 }
 
-// loaded from the backend in onMounted
 const applications = ref([]);
-const isLoading = ref(true); // true while the apps are being fetched, shows the spinner instead of the page
-const loadFailed = ref(false); // true if fetching the apps failed, shows the try again button
+// true while the apps are being fetched, shows the spinner instead of the page
+const isLoading = ref(true); 
+// true if fetching the apps failed, shows the try again button
+const loadFailed = ref(false); 
 
-const searchText = ref(''); // text in the search box
-const sortBy = ref('default'); // default, deadline or latest
-const favouritesOnly = ref(false); // true shows only favourite cards
+const searchText = ref(''); 
+const sortBy = ref('default'); 
+const favouritesOnly = ref(false);
 
-// the cards to show, search first, then the favourites filter, then the sort
 const visibleApplications = computed(() => {
   let list = searchApplications(applications.value, searchText.value);
   list = filterFavourites(list, favouritesOnly.value);
@@ -74,17 +74,19 @@ function resetFilters () {
 const draggedCard = ref(null);
 const selectedColumn = ref(null);
 const mousePosition = ref({ xPos: 0, yPos: 0 });
-const isMobileOrTablet = ref(false); // true below lg, cards move with the dropdown instead of dragging
-const collapsedCards = ref([]); // _ids of the cards showing only their title, company and date
+// true below lg, cards move with the dropdown instead of dragging
+const isMobileOrTablet = ref(false); 
+const collapsedCards = ref([]); 
 
-const interviewCard = ref(null); // the card waiting for a date, null means the prompt is closed
-const checklistCard = ref(null); // the card whose checklist is open, null means closed
-const deletedCard = ref(null); // the card which is being deleted, null means modal closed
-const editCard = ref(null); // the card being edited, null means the edit form is closed
+// the respective card states of each modal, null means the prompt is closed
+const interviewCard = ref(null); 
+const checklistCard = ref(null); 
+const deletedCard = ref(null); 
+const editCard = ref(null); 
 
 const showAddModal = ref(false); 
-const addStatus = ref('Saved'); // which column the add form starts in, Saved from the top button or the column from its + button
-const errorMessage = ref(''); // shown in the open modal, or at the top of the page if no modal is open
+const addStatus = ref('Saved'); 
+const errorMessage = ref(''); 
 
 function checkScreen () { isMobileOrTablet.value = isMobileOrTabletScreen(); }
 
@@ -98,7 +100,6 @@ function toggleCard (card) {
   }
 }
 
-// fetch the apps, the spinner shows while waiting and the try again button shows if it fails
 async function loadApplications () {
   isLoading.value = true;
   loadFailed.value = false;
@@ -167,7 +168,7 @@ function closeAddModal () {
 
 // add application form, save it then show the updated board
 async function onAddApplication (details) {
-  // stop duplicates before calling the backend
+  // prevents duplicates before calling the backend
   if (isDuplicateApplication(applications.value, details)) {
     errorMessage.value = 'You already have this application on your board. Please enter a different one.';
     return;
@@ -177,11 +178,11 @@ async function onAddApplication (details) {
     applications.value = await addNewApplication(details);
     closeAddModal();
   } catch (err) {
-    errorMessage.value = 'Could not add the application. Please try again.'; // form stays open so nothing is lost
+    errorMessage.value = 'Could not add the application. Please try again.';
   }
 }
 
-// 3 dot menu edit, opens the add form filled in with the card
+// 3 dot menu edit card
 function openEditModal (card) {
   errorMessage.value = '';
   editCard.value = card;
@@ -204,11 +205,11 @@ async function onEditApplication (details) {
     applications.value = await editApplication(editCard.value, details);
     closeEditModal();
   } catch (err) {
-    errorMessage.value = 'Could not save the changes. Please try again.'; // form stays open so nothing is lost
+    errorMessage.value = 'Could not save the changes. Please try again.'; 
   }
 }
 
-// 3 dot menu delete card, opens the delete modal first
+// 3 dot menu delete card
 function openDeleteCardModal (card) {
   errorMessage.value = '';
   deletedCard.value = card;
@@ -219,16 +220,16 @@ function closeDeleteCardModal () {
   errorMessage.value = '';
 }
 
-// delete modal confirm, the card comes from deletedCard since the modal doesn't send it
+// delete modal confirm
 async function onDeleteCard () {
   const card = deletedCard.value;
 
   try {
     await deleteApplicationCard(card);
-    applications.value = applications.value.filter(app => app._id !== card._id); // update the apps on the page
+    applications.value = applications.value.filter(app => app._id !== card._id);
     closeDeleteCardModal();
   } catch (err) {
-    errorMessage.value = 'Could not delete the card. Please try again.'; // modal stays open with the error
+    errorMessage.value = 'Could not delete the card. Please try again.';
   }
 }
 
@@ -291,25 +292,23 @@ onUnmounted(() => {
 
 <template>
 <div>
-  <!-- spinner in the page area while the apps are being fetched, the nav stays visible -->
+  <!-- spinner in the page area -->
   <div v-if="isLoading" class="d-flex flex-column justify-content-center align-items-center text-secondary" style="min-height: 70vh">
     <div class="spinner-border text-primary mb-3" role="status"></div>
     <p class="mb-0">Loading your applications...</p>
   </div>
 
-  <!-- the apps cannot be fetched -->
+  <!-- when the apps cannot be fetched -->
   <div v-else-if="loadFailed" class="d-flex flex-column justify-content-center align-items-center text-center" style="min-height: 70vh">
     <p class="mb-3">Could not load your applications. Please check your connection.</p>
     <button class="btn-neutral-inturn" v-on:click="loadApplications">Try again</button>
   </div>
-  <!-- no user in auth store -->
+  <!-- when no user in auth store -->
   <div v-else-if="!user">
       <p class="mb-3 text-danger">User not found. Please login!</p>
   </div>
 
-  <!-- the whole page, only shows once the apps are loaded -->
   <template v-else>
-    <!-- Top Area: page title on the left and add application on the right -->
     <header class="page-header">
       <div>
         <h1 class="header-title">Tracker Board</h1>
@@ -318,7 +317,6 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <!-- top button always starts in Saved, flex-shrink-0 stops it squashing on small screens -->
       <button class="btn-primary-inturn flex-shrink-0" v-on:click="openAddModal('Saved')">
         Add Application +
       </button>
@@ -359,7 +357,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Error message, only shows if something failed and no modal is open -->
+    <!-- error message only shows if something failed and no modal is open -->
     <div v-if="errorMessage && !isModalOpen()" class="alert alert-danger">{{ errorMessage }}</div>
 
     <!-- nothing matches the search or the favourites filter -->
@@ -370,9 +368,6 @@ onUnmounted(() => {
       {{ visibleApplications.length }} results found.
     </p>
 
-    <!-- Application Tracking Boards -->
-    <!-- mobile: one row you swipe sideways, tablet (md): full width columns stacked, desktop (lg): 4 columns side by side -->
-    <!-- g-2 keeps the gaps between columns small so the cards get more width -->
     <div
       class="board-row row g-2 align-items-start flex-nowrap flex-md-wrap pb-2"
       v-on:pointermove="updateMousePosition(mousePosition, $event)"
@@ -386,9 +381,7 @@ onUnmounted(() => {
       v-on:pointerenter="setSelectedColumn(col)"
       v-on:pointerleave="setSelectedColumn(null)"
       >
-        <!-- border-primary highlights the column the dragged card is over, px-2 gives the cards more width -->
         <div class="card-inturn px-2" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
-          <!-- column header, the count only includes cards that match the search and filter -->
           <div class="d-flex justify-content-between align-items-center mb-3 pb-3 px-2 border-bottom">
             <h2 class="h6 fw-semibold mb-0">
               {{ col }}
@@ -398,10 +391,7 @@ onUnmounted(() => {
             <button class="btn-secondary-inturn btn-sm-inturn" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
           </div>
 
-          <!-- handle card dragging -->
-          <!-- (inner loop) only shows applications which match the status of the current looped column, the search and the filter, in the sorted order -->
-          <!-- no scroll area, so the 3 dot menu is never cut off, the column just grows with its cards -->
-          <!-- mb-3 spaces the list from the drop box, only when there are cards -->
+          <!-- inner loop only shows applications matching the status of the current looped column -->
           <div
             class="d-flex flex-column gap-3"
             :class="{ 'mb-3': applicationsInColumn(visibleApplications, col).length > 0 }"
@@ -466,7 +456,7 @@ onUnmounted(() => {
     v-on:skip="closeInterviewModal"
    />
 
-  <!-- Checklist Modal, v-on:delete matches the delete emit in AddChecklistModal -->
+  <!-- Checklist Modal for tasks -->
   <AddChecklistModal
     v-if="checklistCard"
     :card="checklistCard"
@@ -486,7 +476,7 @@ onUnmounted(() => {
     v-on:cancel="closeAddModal"
   />
 
-  <!-- Edit Application Modal, the same form filled in with the card -->
+  <!-- Edit Application Modal, using the same form and card details -->
   <ApplicationModal
     v-if="editCard"
     :card="editCard"
@@ -507,6 +497,10 @@ onUnmounted(() => {
 
 <style scoped>
   /* bootstrap has no dashed border or grab cursor */
+  .cursor-grab {
+      cursor: grab; 
+  }
+
   .border-dashed {
       border: 2px dashed var(--inturn-border-strong);
       border-radius: var(--r-md);
@@ -517,16 +511,11 @@ onUnmounted(() => {
       overflow-x: auto;
   }
 
-  /* from tablet up the columns wrap, so no scroll is needed
-     (a scroll area would also cut off the 3 dot menu of the bottom card) */
+  /* from tablet up the columns wrap, so no scroll is needed */
   @media (min-width: 768px) {
     .board-row {
         overflow: visible;
     }
-  }
-
-  .cursor-grab {
-      cursor: grab; 
   }
 
   /* the card following the mouse while dragging */
