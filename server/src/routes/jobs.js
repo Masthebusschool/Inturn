@@ -34,19 +34,15 @@ router.post("/search", async (req, res) => {
     return res.json(result);
   } catch (error) {
     console.error(
-      "[Jobs search]",
-      error.code || "",
-      error.message
+      "[Jobs search]", error.code || "", error.message
     );
 
     const status =
-      error.status ||
-      (error.code === 50 ? 504 : 500);
+      error.status || (error.code === 50 ? 504 : 500);
 
     return res.status(status).json({
       error:
-        error.status === 400 ||
-        error.status === 503
+        error.status === 400 || error.status === 503
           ? error.message
           : error.code === 50
             ? "The database search took too long. Try a narrower search."

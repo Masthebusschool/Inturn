@@ -359,7 +359,6 @@ const experience = computed(() => {
 });
 
 // Basic text conversion for common HTML formatting.
-// Vue displays the result as text using {{ description }}.
 const description = computed(() => {
   let text = props.job.description || "";
 
@@ -443,6 +442,7 @@ const applicationUrl = computed(() => {
   return "";
 });
 
+// Questions if have from application
 async function loadQuestions() {
   if (loadingQuestions.value) {
     return;
