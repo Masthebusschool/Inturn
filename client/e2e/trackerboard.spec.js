@@ -318,6 +318,9 @@ test.describe('Tracker Board', () => {
 
     // 9. Test Case Scenario: User logs in and tries to add a lot of checklist tasks, including duplicates repeatedly
     test('user logs in and the checklist blocks duplicates and stops at 20 tasks', async ({ page }) => {
+        // adding 20 tasks takes a while, so give this test 3x the usual time
+        test.slow();
+
         await addCard(page, 'Grab', 'Software Intern', 'Saved');
         const card = getCard(page, 'Grab', 'Software Intern');
 
