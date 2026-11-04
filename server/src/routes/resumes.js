@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { isLoggedIn, loadUser } from '../middleware/authMiddleware.js';
-import { receiveResumePdf } from '../middleware/uploadMiddleware.js';
+import { receiveResumeFile } from '../middleware/uploadMiddleware.js';
 import { apiErrors } from '../middleware/apiErrors.js';
 import { toProfile } from '../utils/profile.js';
 import { canonical } from '../utils/skillNormalize.js';
 import { s, strList, objList } from '../utils/sanitize.js';
-import { readResumePdf, MAX_TEXT_LENGTH } from '../services/resumeText.js';
+import { readResumeFile, MAX_TEXT_LENGTH } from '../services/resumeText.js';
 import { parseResume, AIServiceError } from '../services/aiService.js';
 import Resume from '../models/Resume.js';
 
@@ -121,13 +121,13 @@ router.post('/:id/duplicate', async (req, res) => {
   res.status(201).json({ resume: copy });
 });
 
-// PDF upload and text extraction are shared with the resume analysis feature (resumeText.js).
-router.post('/:id/parse', receiveResumePdf, async (req, res) => {
+// Upload and text extraction are shared with the resume analysis feature (resumeText.js).
+router.post('/:id/parse', receiveResumeFile, async (req, res) => {
   const resume = await loadOwned(req, res, '_id user'); // loadOwned's ownership check needs `user` even when the route doesn't
   if (!resume) return;
-  const { resume: pdf, errors } = await readResumePdf(req.file);
+  const { resume: parsed, errors } = await readResumeFile(req.file);
   if (errors) return res.status(400).json({ errors });
-  res.json({ draft: await parseResume(pdf.text) });
+  res.json({ draft: await parseResume(parsed.text) });
 });
 
 // Hand-over from Resume Analysis ("AI deep analysis"): the text was already extracted from the

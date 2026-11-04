@@ -250,8 +250,8 @@ function updateJobMatchingSkills() {
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0 mw-100">
           <label class="btn-neutral-inturn btn-sm-inturn mb-0">
-            <span v-if="parsing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ parsing ? 'Parsing…' : 'Upload PDF' }}
-            <input type="file" accept="application/pdf" class="d-none" :disabled="parsing" @change="onFile" />
+            <span v-if="parsing" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ parsing ? 'Parsing…' : 'Upload resume' }}
+            <input type="file" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx" class="d-none" :disabled="parsing" @change="onFile" />
           </label>
           <ConfirmButton label="Cancel" trigger-class="btn-neutral-inturn btn-sm-inturn" prompt="Discard unsaved changes?" confirm-label="Discard" cancel-label="Keep editing" :skip="!dirty" @confirm="leave" />
           <button type="button" class="btn-primary-inturn btn-sm-inturn" :disabled="saving" @click="save">

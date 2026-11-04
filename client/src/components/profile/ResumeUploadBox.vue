@@ -31,11 +31,15 @@ function handleDrop(event) {
   if (file) upload(file)
 }
 
+const DOCX_MIMETYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
 async function upload(file) {
   // Same checks as the server, so the user finds out without waiting for the upload
-  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-  if (!isPdf) {
-    errors.value = ['Resume must be a PDF file']
+  const name = file.name.toLowerCase()
+  const isSupported = file.type === 'application/pdf' || name.endsWith('.pdf')
+    || file.type === DOCX_MIMETYPE || name.endsWith('.docx')
+  if (!isSupported) {
+    errors.value = ['Resume must be a PDF or Word (.docx) file']
     return
   }
   if (file.size > PROFILE_LIMITS.resumeMB * 1024 * 1024) {
@@ -62,9 +66,9 @@ async function upload(file) {
     <input
       ref="fileInput"
       type="file"
-      accept="application/pdf,.pdf"
+      accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx"
       class="d-none"
-      aria-label="Resume PDF file"
+      aria-label="Resume file"
       @change="handleChosen"
     />
 
@@ -80,7 +84,7 @@ async function upload(file) {
       <div class="file-meta">
         <p class="file-name mb-0">{{ resume.fileName }}</p>
         <p class="muted mb-0">
-          {{ resume.pageCount }} {{ resume.pageCount === 1 ? 'page' : 'pages' }} · {{ resume.wordCount }} words
+          <template v-if="resume.pageCount != null">{{ resume.pageCount }} {{ resume.pageCount === 1 ? 'page' : 'pages' }} · </template>{{ resume.wordCount }} words
         </p>
       </div>
       <button type="button" class="btn-link-inturn" @click="chooseFile">Replace</button>
@@ -103,7 +107,7 @@ async function upload(file) {
         <path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
       <span class="drop-title">{{ uploading ? 'Reading your resume...' : 'Click to upload or drag your resume here' }}</span>
-      <span class="muted">PDF only, up to {{ PROFILE_LIMITS.resumeMB }} MB</span>
+      <span class="muted">PDF or Word (.docx), up to {{ PROFILE_LIMITS.resumeMB }} MB</span>
     </button>
   </div>
 </template>

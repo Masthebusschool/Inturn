@@ -65,7 +65,7 @@ async function handleResumeUploaded(resume) {
   resumeNote.value = "";
   resumeError.value = "";
   try {
-    const name = resume.fileName.replace(/\.pdf$/i, "");
+    const name = resume.fileName.replace(/\.(pdf|docx)$/i, "");
     const { resume: saved } = await createResumeFromText({
       name,
       text: resume.text,
