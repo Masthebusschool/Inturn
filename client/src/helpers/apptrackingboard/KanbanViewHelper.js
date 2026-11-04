@@ -11,17 +11,23 @@ import {
     deleteApplication
 } from '../../services/applicationsApi.js'
 
-// below bootstrap lg = phones and tablets
-const mobileAndTabletWidth = 992; 
+// bootstrap breakpts
+// mobile is below md, tablet is md up to lg
+const tabletMinWidth = 768;
+const desktopMinWidth = 992;
 
-export function isMobileOrTabletScreen () { return window.innerWidth < mobileAndTabletWidth; }
+export function isMobileScreen () { return window.innerWidth < tabletMinWidth; }
+
+export function isTabletScreen () {
+  return window.innerWidth >= tabletMinWidth && window.innerWidth < desktopMinWidth;
+}
 
 // only the applications that belong in this column
 export function applicationsInColumn (applications, col) {
   return applications.filter(app => app.status == col);
 }
 
-// only the applications whose title or company has the search text in it, ignores capitals
+// only the applications whose title or company has the search text in it, ignores uppercase
 export function searchApplications (applications, searchText) {
   const text = searchText.trim().toLowerCase();
   if (text === '') return applications; // empty search shows every card

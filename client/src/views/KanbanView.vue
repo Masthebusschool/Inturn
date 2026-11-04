@@ -10,7 +10,8 @@ import AddChecklistModal from '../components/apptrackingboard/modals/AddChecklis
 import DeleteCardModal from '../components/apptrackingboard/modals/DeleteCardModal.vue';
 import { authStore } from '../stores/auth.js';
 import {
-  isMobileOrTabletScreen,
+  isMobileScreen,
+  isTabletScreen,
   applicationsInColumn,
   searchApplications,
   filterFavourites,
@@ -74,9 +75,12 @@ function resetFilters () {
 const draggedCard = ref(null);
 const selectedColumn = ref(null);
 const mousePosition = ref({ xPos: 0, yPos: 0 });
-// true below lg, cards move with the dropdown instead of dragging
-const isMobileOrTablet = ref(false); 
-const collapsedCards = ref([]); 
+// on mobile and tablet, cards move with the dropdown instead of dragging
+// on tablet only, the stacked columns can be collapsed
+const isMobile = ref(false);
+const isTablet = ref(false);
+const collapsedCards = ref([]);
+const collapsedColumns = ref([]);
 
 // the respective card states of each modal, null means the prompt is closed
 const interviewCard = ref(null); 
@@ -88,7 +92,31 @@ const showAddModal = ref(false);
 const addStatus = ref('Saved'); 
 const errorMessage = ref(''); 
 
-function checkScreen () { isMobileOrTablet.value = isMobileOrTabletScreen(); }
+function checkScreen () {
+  isMobile.value = isMobileScreen();
+  isTablet.value = isTabletScreen();
+
+  // columns can only be collapsed on tablet, so reopen them when leaving it
+  if (!isTablet.value) {
+    collapsedColumns.value.forEach(col => document.getElementById('column-' + col)?.classList.add('show'));
+    collapsedColumns.value = [];
+  }
+}
+
+// bootstrap fires these when a column starts opening/closing
+// (target check because the cards' collapse events bubble up through the column)
+function onColumnToggle (event, col) {
+  if (event.target !== event.currentTarget) return;
+  if (collapsedColumns.value.includes(col)) {
+    collapsedColumns.value = collapsedColumns.value.filter(c => c !== col);
+  } else {
+    collapsedColumns.value.push(col);
+  }
+}
+
+function isColumnCollapsed (col) {
+  return collapsedColumns.value.includes(col);
+}
 
 // open or close a card, removes it from the list if it's there, adds it if not
 // kept here (not in the card) so a card stays closed after moving to another column
@@ -149,7 +177,7 @@ async function onSaveInterviewDate (date) {
 function setSelectedColumn (val) { selectedColumn.value = val; }
 
 function startDrag(event, app) {
-  if (isMobileOrTablet.value) return;
+  if (isMobile.value || isTablet.value) return;
   draggedCard.value = app;
   updateMousePosition(mousePosition.value, event);
 }
@@ -382,15 +410,44 @@ onUnmounted(() => {
       v-on:pointerleave="setSelectedColumn(null)"
       >
         <div class="card-inturn px-2" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
-          <div class="d-flex justify-content-between align-items-center mb-3 pb-3 px-2 border-bottom">
+          <div
+            class="d-flex justify-content-between align-items-center px-2"
+            :class="{ 'mb-3 pb-3 border-bottom': !isColumnCollapsed(col) }"
+          >
+            <!-- on tablet the title is a button that opens/closes the column -->
             <h2 class="h6 fw-semibold mb-0">
-              {{ col }}
-              <span class="text-secondary fw-normal">({{ applicationsInColumn(visibleApplications, col).length }})</span>
+              <button
+                v-if="isTablet"
+                type="button"
+                class="btn btn-link p-0 d-flex align-items-center gap-2 text-reset text-decoration-none fw-semibold"
+                data-bs-toggle="collapse"
+                :data-bs-target="'#column-' + col"
+                :aria-expanded="!isColumnCollapsed(col)"
+                :aria-controls="'column-' + col"
+              >
+                <i class="bi small" :class="isColumnCollapsed(col) ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
+                {{ col }}
+                <span class="text-secondary fw-normal">({{ applicationsInColumn(visibleApplications, col).length }})</span>
+              </button>
+              <template v-else>
+                {{ col }}
+                <span class="text-secondary fw-normal">({{ applicationsInColumn(visibleApplications, col).length }})</span>
+              </template>
             </h2>
             <!-- column + button starts the form in this column -->
             <button class="btn-secondary-inturn btn-sm-inturn" v-on:click="openAddModal(col)" :aria-label="'Add to ' + col">+</button>
           </div>
 
+          <!-- column contents, a bootstrap collapse (only toggled on tablet) -->
+          <!-- object form of v-on so the dots in 'show.bs.collapse' aren't read as modifiers -->
+          <div
+            :id="'column-' + col"
+            class="collapse show"
+            v-on="{
+              'show.bs.collapse': event => onColumnToggle(event, col),
+              'hide.bs.collapse': event => onColumnToggle(event, col)
+            }"
+          >
           <!-- inner loop only shows applications matching the status of the current looped column -->
           <div
             class="d-flex flex-column gap-3"
@@ -410,7 +467,7 @@ onUnmounted(() => {
                   v-on:tailor-resume="goToSkillGap"
                   v-on:view-intel="goToIntel"
                 >
-                  <select v-if="isMobileOrTablet" 
+                  <select v-if="isMobile || isTablet" 
                     :value="app.status" 
                     v-on:change="onMoveCard(app, $event.target.value)" 
                     v-on:pointerdown.stop
@@ -430,8 +487,9 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div v-if="!isMobileOrTablet" class="border-dashed p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
+          <div v-if="!isMobile && !isTablet" class="border-dashed p-4 text-center" :class="{ 'border-primary': draggedCard && selectedColumn == col }">
               <p class="small text-secondary mb-0">Drag card here</p>
+          </div>
           </div>
         </div>
       </div>
@@ -440,7 +498,7 @@ onUnmounted(() => {
 </div>
   <!-- draggedCard -->
   <div
-    v-if="draggedCard && !isMobileOrTablet"
+    v-if="draggedCard && !isMobile && !isTablet"
     class="lifted"
     :style="{ left: mousePosition.xPos + 'px', top: mousePosition.yPos + 'px' }"
   >

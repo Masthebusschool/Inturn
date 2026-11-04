@@ -24,12 +24,20 @@ const matchPercent = computed(() => {
 // whether the missing skills list is open (picks the arrow icon)
 const missingOpen = ref(false);
 const missingList = ref(null);
+const details = ref(null);
+
+// tell the board when the details open/close, so it remembers the state after a column move
+// (target check because the missing skills list's events bubble up through the details)
+function onDetailsToggle (event) { if (event.target === details.value) emit('toggle'); }
 
 // bootstrap fires these when the list starts opening/closing
-// (added here because v-on would read the dots in 'show.bs.collapse' as modifiers)
+// mount the event so v-on would not read the dots in 'show.bs.collapse' as modifiers
 onMounted(() => {
   missingList.value.addEventListener('show.bs.collapse', () => { missingOpen.value = true; });
   missingList.value.addEventListener('hide.bs.collapse', () => { missingOpen.value = false; });
+  details.value.addEventListener('show.bs.collapse', onDetailsToggle);
+  details.value.addEventListener('hide.bs.collapse', onDetailsToggle);
+  if (!props.collapsed) details.value.classList.add('show');
 });
 </script>
 
@@ -52,20 +60,37 @@ onMounted(() => {
       <span>Checklist:</span>
       <span class="text-nowrap">{{ app.prep }} Prep</span>
     </div>
+    <!-- pointerdown.stop so clicking the link doesn't start a card drag -->
+    <a
+      v-if="app.jobDetailsUrl"
+      :href="app.jobDetailsUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="job-link d-flex justify-content-between align-items-center column-gap-2 small mt-2 text-decoration-none"
+      title="Open the job posting in a new tab"
+      v-on:pointerdown.stop
+    >
+      <span class="text-secondary">Job Posting:</span>
+      <span class="job-link-action text-nowrap">
+        View <i class="bi bi-box-arrow-up-right ms-1"></i>
+      </span>
+    </a>
     <hr class="my-2" />
     <!-- opens or closes the rest of the card -->
     <button
       type="button"
       class="skills-toggle btn btn-link btn-sm p-0 w-100 d-flex justify-content-between align-items-center text-decoration-none"
+      data-bs-toggle="collapse"
+      :data-bs-target="'#details-'+app._id"
       v-on:pointerdown.stop
-      v-on:click="emit('toggle')"
     >
       <small class="text-decoration-underline">{{ collapsed ? 'Show details' : 'Hide details' }}</small>
       <i class="bi small" :class="collapsed ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
     </button>
 
-    <!-- the details, v-show (not v-if) so missingList still exists for onMounted -->
-    <div v-show="!collapsed" class="mt-2">
+    <!-- the details, starts open unless the board says it's collapsed (set in onMounted) -->
+    <div ref="details" class="collapse" :id="'details-' + app._id">
+    <div class="pt-2">
 
     <div class="progress">
       <!-- if the job lists no skills, the bar stays empty (avoids dividing by 0) -->
@@ -118,6 +143,7 @@ onMounted(() => {
     <!-- Interview with no matching intel -->
     <small v-else-if="app.status === 'Interview'" class="d-block text-center text-secondary mt-2">No Intel Found</small>
     </div>
+    </div>
 
     <slot>
       <!-- Insert Dropdown Button to shift to other columns (For Mobile ONLY) -->
@@ -150,6 +176,15 @@ onMounted(() => {
   .progress-bar {
       border-radius: var(--r-pill);
       background: var(--inturn-primary);
+  }
+
+  .job-link-action {
+      color: var(--inturn-primary);
+      font-weight: 500;
+  }
+
+  .job-link:hover .job-link-action {
+      text-decoration: underline;
   }
 
   .skills-toggle {
