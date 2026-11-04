@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { formatDate } from '../../helpers/apptrackingboard/KanbanViewHelper';
+import { BAND_META, rawBand } from '../../lib/skillgap.js';
 
 // collapsed shows only the title, company, date and checklist, the page keeps track of it
 const props = defineProps({ app: Object, collapsed: Boolean });
@@ -16,8 +17,17 @@ const dateLabel = computed(() => {
   return 'Due ' + formatDate(app.expiryDate);
 });
 
+// a linked Skill Gap analysis score beats the matched/total heuristic
+const hasScore = computed(() => props.app.skillGapScore != null);
+const scoreCaption = computed(() => {
+  const score = props.app.skillGapScore;
+  const band = BAND_META[props.app.skillGapBand] ?? BAND_META[rawBand(score)];
+  return `${score}% · ${band.label} (Skill Gap analysis)`;
+});
+
 // skills matched as a percentage (0 if the job lists no skills)
 const matchPercent = computed(() => {
+  if (hasScore.value) return props.app.skillGapScore;
   if (!props.app.total) return 0;
   return (props.app.matched / props.app.total) * 100;
 });
@@ -80,7 +90,8 @@ onMounted(() => {
       <!-- if the job lists no skills, the bar stays empty (avoids dividing by 0) -->
       <div class="progress-bar" :style="{ width: matchPercent + '%' }"></div>
     </div>
-    <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
+    <small v-if="hasScore" class="d-block mt-1 text-secondary">{{ scoreCaption }}</small>
+    <small v-else class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
 
     <!-- full width row under the count that opens the missing skills, hidden when nothing is missing -->
     <button

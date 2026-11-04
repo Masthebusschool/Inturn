@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { canonical } from '../utils/skillNormalize.js'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -15,7 +16,7 @@ function add() {
   if (!parts.length) { draft.value = ''; return }
   const next = [...props.modelValue]
   for (const p of parts) {
-    if (!next.some((x) => x.toLowerCase() === p.toLowerCase())) next.push(p)
+    if (!next.some((x) => canonical(x) === canonical(p))) next.push(p)
   }
   emit('update:modelValue', next)
   draft.value = ''

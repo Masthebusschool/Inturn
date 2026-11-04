@@ -2,7 +2,7 @@
 // Plain functions with no database or HTTP, so they are easy to unit test.
 //
 // The resume object looks like:
-//   contact:    { fullName, phone, email, linkedin, github, portfolio }
+//   contact:    { fullName, phone, email, links: [{ label, value }] }  (old resumes: linkedin/github/portfolio)
 //   summary:    string
 //   skills:     [string]
 //   experience: [{ title, company, startDate, endDate, current, bullets: [string], skills: [string] }]
@@ -14,6 +14,8 @@
 //   category is 'Contact', 'Structure' or 'Content' (the report groups checks by it)
 //   suggestion is shown when passed is false
 // Simple rule-based checks, no AI.
+
+import { contactLinks } from '../utils/contact.js';
 
 /** Builds a check result: full points when passed, none otherwise. */
 function result(category, label, passed, maxPoints, suggestion) {
@@ -48,8 +50,7 @@ function checkEmail(resume) {
 
 // A LinkedIn profile link, e.g. linkedin.com/in/your-name
 function checkLinkedin(resume) {
-  const linkedin = String(resume.contact?.linkedin ?? '').toLowerCase();
-  const passed = linkedin.includes('linkedin.com/in/');
+  const passed = contactLinks(resume.contact).some((l) => l.value.toLowerCase().includes('linkedin.com/in/'));
   return result('Contact', 'LinkedIn profile', passed, 10,
     'Add your LinkedIn URL (linkedin.com/in/...), so recruiters can get to know you better');
 }

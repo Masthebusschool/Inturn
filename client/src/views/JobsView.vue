@@ -22,9 +22,9 @@
     <div v-else>
       <header class="page-header">
         <div>
-          <h1 class="header-title">Job Discovery</h1>
+          <h1 class="header-title">Internship Discovery</h1>
           <p class="header-subtitle">
-            Live internship and job listings from public job boards, sort and filter to your needs.
+            Live internship listings from public career portals, sort and filter to your needs.
           </p>
         </div>
       </header>
@@ -32,10 +32,10 @@
       <div
         v-if="!matchingResumeLoading && !matchingResumeName" class="resume-notice" role="status"
       >
-        You have no resume available for job matching.
+        You have no skills in your profile yet.
         Results will not be tailored to your skills.
-        <RouterLink to="/resumes">
-          Upload your resume here
+        <RouterLink to="/profile">
+          Add skills to your profile
         </RouterLink>.
       </div>
 
@@ -73,7 +73,7 @@
       </form>
 
       <p v-if="matchingResumeName" class="matching-source">
-        Matching against (latest viewed resume available): {{ matchingResumeName }}
+        Matching against your profile skills
       </p>
 
       <div v-if="activeFilters.length > 0" class="active-filter-tags">
@@ -220,7 +220,7 @@
               >
                 <template v-if="getMatchPercentage(job) !== null">
                   <strong>
-                    {{ getMatchPercentage(job) }}% skills matched with resume
+                    {{ getMatchPercentage(job) }}% skills matched with your profile
                   </strong>
 
                   <span>
@@ -287,7 +287,7 @@
         <nav
           v-if="!loading && !error && totalPages > 1"
           class="page-controls"
-          aria-label="Job result pages"
+          aria-label="Internship result pages"
         >
           <button
             class="btn-neutral-inturn btn-sm-inturn"

@@ -4,11 +4,11 @@ export function getProfile() {
   return request('/profile')
 }
 
-// Used by onboarding and edit profile.
-export function updateProfile({ educationLevel, institution, fieldOfStudy, skills, targetIndustries }) {
+// Used by onboarding and the edit profile page. name is optional (only updated when sent).
+export function updateProfile({ name, educationLevel, institution, fieldOfStudy, targetIndustries }) {
   return request('/profile', {
     method: 'PUT',
-    body: { educationLevel, institution, fieldOfStudy, skills, targetIndustries },
+    body: { name, educationLevel, institution, fieldOfStudy, targetIndustries },
   })
 }
 

@@ -3,17 +3,55 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { getActivity } from '../api/profile.js'
+import { getPrimaryResume, updatePrimaryResume } from '../api/resume.js'
+import { setMatchingFromResume } from '../stores/jobMatch.js'
+import { PROFILE_LIMITS } from '../utils/profileOptions.js'
+import { skillSuggestionsFor } from '../utils/fieldsOfStudy.js'
+import { canonical } from '../utils/skillNormalize.js'
+import TagInput from '../components/profile/TagInput.vue'
+import ResumeEntriesCard from '../components/profile/ResumeEntriesCard.vue'
 
 const router = useRouter()
 const ready = ref(false)
 
 const user = computed(() => authStore.user)
-// e.g. "Undergraduate student | Software Engineering"
-const studyLine = computed(() =>
-  [user.value?.educationLevel && `${user.value.educationLevel} student`, user.value?.fieldOfStudy]
-    .filter(Boolean)
-    .join(' | ')
-)
+
+// ---- Primary (profile) resume: skills, projects and experience live here ----
+const primary = ref(null)
+const primaryLoading = ref(true)
+const primaryError = ref('')
+const skills = ref([])
+const skillsStatus = ref('') // 'saving' | 'saved' | error text
+const skillsFailed = ref(false)
+
+// One queue so saves never overlap: keeps them in order and avoids creating "My Profile" twice
+let queue = Promise.resolve()
+function savePrimary(fields) {
+  const run = queue.then(() => updatePrimaryResume(fields))
+  queue = run.catch(() => {})
+  return run.then(({ resume }) => {
+    primary.value = resume
+    setMatchingFromResume(resume)
+    return resume
+  })
+}
+
+let skillsEdit = 0
+async function saveSkills(list) {
+  const edit = ++skillsEdit
+  skills.value = list
+  skillsStatus.value = 'saving'
+  skillsFailed.value = false
+  try {
+    await savePrimary({ skills: list })
+    // A newer edit may have been queued meanwhile; only the latest one reports "Saved"
+    if (edit === skillsEdit) skillsStatus.value = 'saved'
+  } catch (e) {
+    skillsFailed.value = true
+    skillsStatus.value = e.errors?.[0] ?? e.message ?? 'Could not save skills.'
+    skills.value = [...(primary.value?.skills ?? [])]
+  }
+}
 
 // ---- Activity (loaded after the page is shown) ----
 const activity = ref(null)
@@ -101,19 +139,20 @@ onMounted(async () => {
   if (!authStore.user.educationLevel) return router.replace('/onboarding')
   ready.value = true
 
-  try {
-    activity.value = await getActivity()
-  } catch (e) {
-    activityError.value = e.errors?.[0] ?? e.message ?? 'Could not load activity.'
-  } finally {
-    activityLoading.value = false
-  }
+  await Promise.all([
+    getActivity()
+      .then((data) => { activity.value = data })
+      .catch((e) => { activityError.value = e.errors?.[0] ?? e.message ?? 'Could not load activity.' })
+      .finally(() => { activityLoading.value = false }),
+    getPrimaryResume()
+      .then(({ resume }) => {
+        primary.value = resume
+        skills.value = [...(resume?.skills ?? [])]
+      })
+      .catch((e) => { primaryError.value = e.errors?.[0] ?? e.message ?? 'Could not load your profile resume.' })
+      .finally(() => { primaryLoading.value = false }),
+  ])
 })
-
-
-function editProfile() {
-  router.push('/onboarding')
-}
 
 // ---- Delete profile ----
 const dialog = ref(null)
@@ -160,7 +199,7 @@ async function confirmDelete() {
         <h1 class="header-title">My Profile</h1>
         <p class="header-subtitle">Manage your personal information and career preferences.</p>
       </div>
-      <button type="button" class="btn-secondary-inturn" @click="editProfile">
+      <button type="button" class="btn-secondary-inturn" @click="router.push('/profile/edit')">
         <svg class="icon" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M11.5 1.5a1.4 1.4 0 0 1 2 2L5 12l-3 1 1-3z" fill="currentColor" />
         </svg>
@@ -178,18 +217,6 @@ async function confirmDelete() {
       <div class="identity-text">
         <h2 class="name">{{ user.name }}</h2>
         <p class="muted mb-0">{{ user.email }}</p>
-        <p v-if="studyLine" class="muted mb-0">{{ studyLine }}</p>
-        <p v-if="memberSince || lastLogin" class="muted small-note mb-0">
-          <span v-if="memberSince">Member since {{ memberSince }}</span>
-          <span v-if="memberSince && lastLogin"> · </span>
-          <span v-if="lastLogin">Last login {{ lastLogin }}</span>
-        </p>
-      </div>
-    </article>
-
-    <div class="card-grid">
-      <article class="card-inturn profile-card">
-        <h2 class="section-title">Education</h2>
         <dl class="details">
           <div>
             <dt>Level</dt>
@@ -207,71 +234,113 @@ async function confirmDelete() {
             <dd v-else class="muted">Not added yet</dd>
           </div>
         </dl>
+        <dl class="details details-industries">
+          <div>
+            <dt>Target industries</dt>
+            <dd v-if="user.targetIndustries?.length" class="industry-tags">
+              <span v-for="industry in user.targetIndustries" :key="industry" class="tag-inturn">{{ industry }}</span>
+            </dd>
+            <dd v-else class="muted">Not added yet</dd>
+          </div>
+        </dl>
+        <p v-if="memberSince || lastLogin" class="muted small-note mb-0">
+          <span v-if="memberSince">Member since {{ memberSince }}</span>
+          <span v-if="memberSince && lastLogin"> · </span>
+          <span v-if="lastLogin">Last login {{ lastLogin }}</span>
+        </p>
+      </div>
+    </article>
+
+    <p v-if="primaryError" class="muted">Could not load your profile resume: {{ primaryError }}</p>
+    <p v-else-if="!primaryLoading" class="muted">
+      <template v-if="primary">
+        Skills, projects and experience are saved to your profile resume
+        <RouterLink :to="`/resumes/${primary._id}`">{{ primary.name }}</RouterLink>
+        and used for job matching and Skill Gap.
+      </template>
+      <template v-else>Anything you add here creates your profile resume in My Resumes.</template>
+    </p>
+
+    <div class="profile-grid">
+      <article class="card-inturn">
+        <h2 class="section-title">Skills</h2>
+        <p v-if="primaryLoading" class="muted mb-0">Loading…</p>
+        <p v-else-if="primaryError" class="muted mb-0">Unavailable right now.</p>
+        <template v-else>
+          <TagInput
+            :model-value="skills"
+            input-id="profile-skills"
+            :suggestions="skillSuggestionsFor(user.fieldOfStudy)"
+            :max="PROFILE_LIMITS.skills"
+            :max-length="PROFILE_LIMITS.tagLength"
+            :normalize="canonical"
+            placeholder="e.g. Python"
+            @update:model-value="saveSkills"
+          />
+          <p v-if="skillsStatus" class="small mt-2 mb-0" :class="skillsFailed ? 'text-danger' : 'text-body-secondary'" role="status">
+            {{ skillsStatus === 'saving' ? 'Saving…' : skillsStatus === 'saved' ? 'Saved' : skillsStatus }}
+          </p>
+        </template>
       </article>
 
-      <article class="card-inturn profile-card">
-        <h2 class="section-title">Target industries</h2>
-        <ul v-if="user.targetIndustries?.length" class="skill-list">
-          <li v-for="industry in user.targetIndustries" :key="industry" class="tag-inturn">{{ industry }}</li>
-        </ul>
-        <p v-else class="muted mb-0">No target industries added yet.</p>
+      <template v-if="primaryLoading || primaryError">
+        <article v-for="title in ['Personal projects', 'Experience']" :key="title" class="card-inturn">
+          <h2 class="section-title">{{ title }}</h2>
+          <p class="muted mb-0">{{ primaryLoading ? 'Loading…' : 'Unavailable right now.' }}</p>
+        </article>
+      </template>
+      <template v-else>
+        <ResumeEntriesCard kind="projects" title="Personal projects" :entries="primary?.projects ?? []" :save="(list) => savePrimary({ projects: list })" />
+        <ResumeEntriesCard kind="experience" title="Experience" :entries="primary?.experience ?? []" :save="(list) => savePrimary({ experience: list })" />
+      </template>
+
+      <article class="card-inturn">
+        <h2 class="section-title">Activity</h2>
+        <p v-if="activityLoading" class="muted mb-0">Loading activity...</p>
+        <p v-else-if="activityError" class="muted mb-0">Could not load activity: {{ activityError }}</p>
+        <template v-else>
+          <div class="stat-grid">
+            <div v-for="stat in stats" :key="stat.label" class="card-muted-inturn">
+              <div class="stat-value">{{ stat.value }}</div>
+              <div class="stat-label">{{ stat.label }}</div>
+            </div>
+          </div>
+
+          <p v-if="activity.stats.total === 0" class="muted mb-0 mt-3">
+            No tracked applications yet — jobs you add to the Tracker Board show up here.
+          </p>
+
+          <div class="heatmap">
+            <div class="heatmap-months" aria-hidden="true">
+              <span
+                v-for="m in heatmap.months"
+                :key="m.column"
+                class="heatmap-month"
+                :style="{ gridColumn: m.column }"
+              >{{ m.label }}</span>
+            </div>
+            <div
+              class="heatmap-grid"
+              role="img"
+              :aria-label="`${heatmap.total} applications in the last 26 weeks`"
+            >
+              <span
+                v-for="cell in heatmap.cells"
+                :key="cell.key"
+                class="heatmap-cell"
+                :class="cell.future ? 'is-future' : `level-${cell.level}`"
+                :title="cell.future ? undefined : cell.title"
+              ></span>
+            </div>
+            <div class="heatmap-legend" aria-hidden="true">
+              <span>Less</span>
+              <span v-for="n in 5" :key="n" class="heatmap-cell" :class="`level-${n - 1}`"></span>
+              <span>More</span>
+            </div>
+          </div>
+        </template>
       </article>
     </div>
-
-    <article class="card-inturn profile-card">
-      <h2 class="section-title">Skills</h2>
-      <ul v-if="user.skills?.length" class="skill-list">
-        <li v-for="skill in user.skills" :key="skill" class="tag-inturn">{{ skill }}</li>
-      </ul>
-      <p v-else class="muted mb-0">No skills added yet.</p>
-    </article>
-
-    <article class="card-inturn profile-card">
-      <h2 class="section-title">Activity</h2>
-      <p v-if="activityLoading" class="muted mb-0">Loading activity...</p>
-      <p v-else-if="activityError" class="muted mb-0">Could not load activity: {{ activityError }}</p>
-      <template v-else>
-        <div class="stat-grid">
-          <div v-for="stat in stats" :key="stat.label" class="card-muted-inturn">
-            <div class="stat-value">{{ stat.value }}</div>
-            <div class="stat-label">{{ stat.label }}</div>
-          </div>
-        </div>
-
-        <p v-if="activity.stats.total === 0" class="muted mb-0 mt-3">
-          No tracked applications yet — jobs you add to the Tracker Board show up here.
-        </p>
-
-        <div class="heatmap">
-          <div class="heatmap-months" aria-hidden="true">
-            <span
-              v-for="m in heatmap.months"
-              :key="m.column"
-              class="heatmap-month"
-              :style="{ gridColumn: m.column }"
-            >{{ m.label }}</span>
-          </div>
-          <div
-            class="heatmap-grid"
-            role="img"
-            :aria-label="`${heatmap.total} applications in the last 26 weeks`"
-          >
-            <span
-              v-for="cell in heatmap.cells"
-              :key="cell.key"
-              class="heatmap-cell"
-              :class="cell.future ? 'is-future' : `level-${cell.level}`"
-              :title="cell.future ? undefined : cell.title"
-            ></span>
-          </div>
-          <div class="heatmap-legend" aria-hidden="true">
-            <span>Less</span>
-            <span v-for="n in 5" :key="n" class="heatmap-cell" :class="`level-${n - 1}`"></span>
-            <span>More</span>
-          </div>
-        </div>
-      </template>
-    </article>
 
     <article class="card-inturn profile-card danger-card">
       <h2 class="section-title">Delete profile</h2>
@@ -324,10 +393,11 @@ async function confirmDelete() {
   margin-bottom: 1.25rem;
 }
 
-.card-grid {
+.profile-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
 .identity {
@@ -376,11 +446,10 @@ async function confirmDelete() {
 }
 
 .details {
-  margin: 0;
-}
-
-.details > div + div {
-  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin: 0.75rem 0 0.5rem;
 }
 
 .details dt {
@@ -389,18 +458,20 @@ async function confirmDelete() {
   color: var(--inturn-text-muted);
 }
 
+/* Sits right under the first row of details */
+.details-industries {
+  margin-top: 0;
+}
+
+.industry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 .details dd {
   margin: 0;
   overflow-wrap: anywhere;
-}
-
-.skill-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
 
 .icon {
@@ -411,7 +482,7 @@ async function confirmDelete() {
 /* Activity */
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 
@@ -426,8 +497,16 @@ async function confirmDelete() {
   color: var(--inturn-text-muted);
 }
 
+/* Half-width card: scroll sideways on very narrow cells rather than squash the 26 weeks */
 .heatmap {
   margin-top: 1.25rem;
+  overflow-x: auto;
+}
+
+.heatmap-months,
+.heatmap-grid,
+.heatmap-legend {
+  min-width: 300px;
 }
 
 .heatmap-months,
@@ -524,16 +603,12 @@ async function confirmDelete() {
 }
 
 @media (max-width: 576px) {
-  .card-grid {
+  .profile-grid {
     grid-template-columns: 1fr;
   }
 
   .identity {
     gap: 1rem;
-  }
-
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>

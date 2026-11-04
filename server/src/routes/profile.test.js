@@ -26,7 +26,7 @@ before(async () => {
     { user: userId, title: 'T2', companyName: 'C', status: 'Saved' },
     { user: userId, title: 'T3', companyName: 'C', status: 'Applied' },
   ]);
-  await Resume.create({ user: userId, name: '__test_profile__ resume' });
+  await Resume.create({ user: userId, name: '__test_profile__ resume', skills: ['Python'], primary: true });
 });
 
 after(async () => {
@@ -49,6 +49,61 @@ test('GET /activity returns counts matching the seeded applications', async () =
   assert.equal(body.applicationDates.length, 3);
   assert.ok(body.joinedAt);
   assert.equal(body.lastLoginAt, null);
+});
+
+test('GET / returns the user without skills plus a profile built from the primary resume', async () => {
+  const res = await fetch(`${base}/`);
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal('skills' in body.user, false);
+  assert.deepEqual(body.user.targetIndustries, []);
+  assert.deepEqual(body.profile.skills, ['Python']);
+  assert.equal(body.profile.email, EMAIL);
+});
+
+const put = (body) => fetch(`${base}/`, { method: 'PUT', headers: json, body: JSON.stringify(body) });
+
+test('PUT / updates name and education', async () => {
+  const res = await put({ name: '  New Name ', educationLevel: 'Undergraduate', institution: 'SMU', fieldOfStudy: 'IS' });
+  assert.equal(res.status, 200);
+  const { user } = await res.json();
+  assert.equal(user.name, 'New Name');
+  assert.equal(user.educationLevel, 'Undergraduate');
+  assert.equal(user.institution, 'SMU');
+});
+
+test('PUT / without a name leaves the name alone', async () => {
+  const res = await put({ educationLevel: 'Postgraduate', institution: 'NUS', fieldOfStudy: 'CS' });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).user.name, 'New Name');
+});
+
+test('PUT / cleans target industries and leaves them alone when not sent', async () => {
+  const res = await put({ educationLevel: 'Undergraduate', targetIndustries: [' Finance ', 'finance', 'Technology', ''] });
+  assert.equal(res.status, 200);
+  assert.deepEqual((await res.json()).user.targetIndustries, ['Finance', 'Technology']);
+
+  const again = await put({ educationLevel: 'Undergraduate' });
+  assert.deepEqual((await again.json()).user.targetIndustries, ['Finance', 'Technology']);
+});
+
+test('PUT / rejects more than 10 target industries', async () => {
+  const res = await put({ educationLevel: 'Undergraduate', targetIndustries: Array.from({ length: 11 }, (_, i) => `Ind ${i}`) });
+  assert.equal(res.status, 400);
+});
+
+test('PUT / rejects a missing education level, an empty name and a too-long name', async () => {
+  const noLevel = await put({ institution: 'SMU' });
+  assert.equal(noLevel.status, 400);
+  assert.deepEqual((await noLevel.json()).errors, ['Education level is required']);
+
+  const empty = await put({ name: '  ', educationLevel: 'PhD' });
+  assert.equal(empty.status, 400);
+  assert.deepEqual((await empty.json()).errors, ['Name is required']);
+
+  const long = await put({ name: 'x'.repeat(51), educationLevel: 'PhD' });
+  assert.equal(long.status, 400);
+  assert.deepEqual((await long.json()).errors, ['Name must not exceed 50 characters']);
 });
 
 test('DELETE / with the wrong email is rejected and deletes nothing', async () => {

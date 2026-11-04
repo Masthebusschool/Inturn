@@ -50,7 +50,7 @@ router.post("/search", async (req, res) => {
           ? error.message
           : error.code === 50
             ? "The database search took too long. Try a narrower search."
-            : "Could not search job listings.",
+            : "Could not search internship listings.",
     });
   }
 });
@@ -64,7 +64,7 @@ export async function fetchJobDetail(uuid) {
 router.get("/:id", async (req, res) => {
   if (!/^[a-f0-9]{32}$/i.test(req.params.id)) {
     return res.status(400).json({
-      error: "Invalid job ID",
+      error: "Invalid internship ID",
     });
   }
 
@@ -74,7 +74,7 @@ router.get("/:id", async (req, res) => {
     return res.json(job);
   } catch {
     return res.status(502).json({
-      error: "Could not retrieve job details.",
+      error: "Could not retrieve internship details.",
     });
   }
 });

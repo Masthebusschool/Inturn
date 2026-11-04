@@ -1,11 +1,11 @@
 <script setup>
+import { contactLine } from '../../utils/contact.js'
 defineProps({
   draft: { type: Object, required: true },
-  profile: { type: Object, default: null }, // { contact: {fullName,phone,email,linkedin,github,portfolio}, education }
+  profile: { type: Object, default: null }, // { contact: {fullName,phone,email,links:[{label,value}]} (legacy linkedin/github/portfolio still read), education }
   print: { type: Boolean, default: false },
 })
 const dates = (e) => [e.startDate, e.endDate].filter(Boolean).join(' – ')
-const contactLine = (c) => [c?.phone, c?.email, c?.linkedin, c?.github, c?.portfolio].filter(Boolean).join(' · ')
 </script>
 
 <template>

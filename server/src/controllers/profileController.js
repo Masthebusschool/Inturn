@@ -1,40 +1,42 @@
 import * as User from '../models/User.js';
 import Application from '../models/Application.js';
+import { toProfile } from '../utils/profile.js';
 import { STATUS, STATUSES } from '../models/constants/statuses.js';
 
 const HEATMAP_DAYS = 400;
 
-// Trims each item, drops empty ones and removes duplicates (ignoring case).
+// Trim, drop empties, dedupe case-insensitively (first spelling wins).
 function cleanList(value) {
   if (!Array.isArray(value)) return [];
   const seen = new Set();
-  const result = [];
+  const out = [];
   for (const item of value) {
-    const text = String(item ?? '').trim();
-    const key = text.toLowerCase();
-    if (text && !seen.has(key)) {
-      seen.add(key);
-      result.push(text);
-    }
+    const t = String(item ?? '').trim();
+    const key = t.toLowerCase();
+    if (!t || seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
   }
-  return result;
+  return out;
 }
 
 /**
- * Rules: education level is required, at least one skill, target industries optional.
+ * Rules: education level is required. Name is checked only when it was sent.
  * @param {Object} data
  * @param {Array} errors
  */
 function validateProfile(data, errors) {
+  if (data.name !== undefined) {
+    if (!data.name)
+      errors.push('Name is required');
+    else if (data.name.length > 50)
+      errors.push('Name must not exceed 50 characters');
+  }
+
   if (!data.educationLevel)
     errors.push('Education level is required');
   else if (!User.EDUCATION_LEVELS.includes(data.educationLevel))
     errors.push('Invalid education level');
-
-  if (data.skills.length === 0)
-    errors.push('Add at least one skill');
-
-  
 }
 
 export const getProfile = async (req, res) => {
@@ -42,7 +44,7 @@ export const getProfile = async (req, res) => {
     const user = await User.retrieveUserById(req.session.user.id);
     if (!user)
       return res.status(404).json({ error: 'User not found' });
-    return res.json({ user: User.toPublicUser(user) });
+    return res.json({ user: User.toPublicUser(user), profile: await toProfile(user) });
   }
   catch (e) {
     console.error(e);
@@ -53,14 +55,18 @@ export const getProfile = async (req, res) => {
 // Used by both onboarding and edit profile.
 export const updateProfile = async (req, res) => {
   const body = req.body ?? {};
-  // Only these fields can be changed here: never email or password
+  // Only name and education can be changed here. Email and password changes live in
+  // authController and need the current password.
   const data = {
     educationLevel: String(body.educationLevel ?? '').trim(),
     institution: String(body.institution ?? '').trim(),
     fieldOfStudy: String(body.fieldOfStudy ?? '').trim(),
-    skills: cleanList(body.skills),
-    targetIndustries: cleanList(body.targetIndustries),
   };
+  if (body.name !== undefined)
+    data.name = String(body.name ?? '').trim();
+  // Only touched when sent, so callers that don't know about industries never wipe them.
+  if (body.targetIndustries !== undefined)
+    data.targetIndustries = cleanList(body.targetIndustries);
   const errors = [];
 
   try {
@@ -71,6 +77,8 @@ export const updateProfile = async (req, res) => {
     const user = await User.updateUser(req.session.user.id, data);
     if (!user)
       return res.status(404).json({ error: 'User not found' });
+    if (data.name !== undefined)
+      req.session.user.name = user.name;
     return res.json({ user: User.toPublicUser(user) });
   }
   catch (e) {

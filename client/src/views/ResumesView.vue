@@ -146,7 +146,7 @@ async function remove(r) {
                         <template v-if="creatingSeed === 'profile'"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Creating…</template>
                         <template v-else>Start from Profile</template>
                       </span>
-                      <span class="d-block small text-body-secondary mt-1">Copies your skills and education from your profile. Edit anything afterwards.</span>
+                      <span class="d-block small text-body-secondary mt-1">Copies your profile's skills, projects, experience and education. Edit anything afterwards.</span>
                     </span>
                   </span>
                 </button>
@@ -197,7 +197,7 @@ async function remove(r) {
     <div v-else class="list-group list-group-flush card-inturn p-0 overflow-hidden">
       <div v-for="r in resumes" :key="r._id" class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
         <RouterLink :to="`/resumes/${r._id}`" class="text-decoration-none flex-grow-1 min-w-0">
-          <div class="fw-semibold text-truncate">{{ r.name }}</div>
+          <div class="fw-semibold text-truncate">{{ r.name }}<span v-if="r.primary" class="badge text-bg-primary ms-2" title="Your profile resume — edited from the Profile page">Profile</span></div>
           <small class="text-body-secondary">Updated {{ fmtDate(r.updatedAt) }}</small>
         </RouterLink>
         <div class="d-flex flex-wrap align-items-center gap-2">

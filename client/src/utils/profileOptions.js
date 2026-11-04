@@ -1,5 +1,5 @@
 // Choices and limits for the profile form. Keep in sync with the server
-// (EDUCATION_LEVELS in server/src/models/User.js, limits in profileController.js).
+// (EDUCATION_LEVELS in server/src/models/User.js, limits in the server's profile validation).
 
 export const EDUCATION_LEVELS = ['Polytechnic', 'Undergraduate', 'Postgraduate', 'PhD']
 

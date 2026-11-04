@@ -17,3 +17,13 @@ export function reviewResume(resumeId) {
 export function createResumeFromText({ name, text }) {
   return request('/resumes/from-text', { method: 'POST', body: { name, text } })
 }
+
+// The user's primary (profile) resume: { resume } or { resume: null }.
+export function getPrimaryResume() {
+  return request('/resumes/primary')
+}
+
+// Saves any subset of { skills, experience, projects }; creates "My Profile" if there is no primary yet.
+export function updatePrimaryResume(fields) {
+  return request('/resumes/primary', { method: 'PATCH', body: fields })
+}

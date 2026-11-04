@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { reviewResume } from '../api/resume.js'
-import { setMatchingResume } from "../stores/jobMatch.js";
 
 // The resume to analyze comes from My Resumes: /resumes/:id/analysis
 const props = defineProps({ id: { type: String, required: true } })
@@ -56,7 +55,6 @@ async function runAnalysis() {
     const data = await reviewResume(props.id)
     resume.value = data.resume
     review.value = data.review
-    setMatchingResume(resume.value.fileName, data.skills);
   } catch (e) {
     errors.value = e.errors ?? [e.message]
   } finally {
@@ -150,7 +148,7 @@ function startDeepAnalysis() {
       <article class="card-inturn panel deep-panel">
         <div>
           <h2 class="section-title mb-1">AI deep analysis</h2>
-          <p class="muted mb-0">Compare this resume with a job posting to find missing skills and how to tailor it.</p>
+          <p class="muted mb-0">Compare this resume with an internship posting to find missing skills and how to tailor it.</p>
         </div>
         <button type="button" class="btn-primary-inturn" @click="startDeepAnalysis">AI deep analysis</button>
       </article>

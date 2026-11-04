@@ -23,7 +23,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape))
 
 // Site-wide navigation. Each icon is a 16x16 outline path drawn in white.
 const links = [
-  { to: '/jobs', label: 'Job Discovery', icon: 'M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM1.5 8h13M8 1.5c-2 2-2.8 4-2.8 6.5S6 12.5 8 14.5M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5' },
+  { to: '/jobs', label: 'Internship Discovery', icon: 'M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM1.5 8h13M8 1.5c-2 2-2.8 4-2.8 6.5S6 12.5 8 14.5M8 1.5c2 2 2.8 4 2.8 6.5S10 12.5 8 14.5' },
   { to: '/applications', label: 'Tracker Board', icon: 'M5.5 2h5v1.5h-5zM4 3H3v11.5h10V3h-1M5.5 7.5h5M5.5 10h5M5.5 12.5h3' },
   { to: '/intel', label: 'Interview Intel', icon: 'M1.5 2.5h13v8h-13zM8 10.5v3M5 14.5h6M4 5h4M4 7.5h7' },
   { to: '/mock-interview', label: 'Interview Journal', icon: 'M3.5 1.5h9v13h-9zM6 1.5v13M8 5h2.5M8 8h2.5M2 4h1.5M2 8h1.5M2 12h1.5' },
@@ -103,7 +103,12 @@ async function handleLogout() {
   display: flex;
   flex-direction: column;
   width: 220px;
-  min-height: 100vh;
+  /* Exactly one viewport tall and not stretched by the flex row: a sticky box as tall as
+     its container cannot stick, so a stretched sidebar scrolled away with the page. */
+  height: 100vh;
+  height: 100dvh;
+  align-self: flex-start;
+  flex-shrink: 0;
   position: sticky;
   top: 0;
   background: var(--inturn-surface);
@@ -134,7 +139,15 @@ async function handleLogout() {
 .sidebar-menu {
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
+}
+
+/* On very short viewports only the link list scrolls; the footer stays visible */
+.sidebar-menu nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .brand-logo {
@@ -191,6 +204,7 @@ async function handleLogout() {
 }
 
 .sidebar-footer {
+  flex-shrink: 0;
   margin-top: auto;
   padding-bottom: 1rem;
 }
@@ -199,7 +213,8 @@ async function handleLogout() {
 @media (max-width: 767.98px) {
   .sidebar {
     width: 100%;
-    min-height: 0;
+    height: auto;
+    align-self: auto;
     z-index: 1020;
     /* A top bar now, so the divider goes underneath instead of on the right */
     border-right: none;
@@ -264,6 +279,10 @@ async function handleLogout() {
 
   .sidebar-menu.open {
     display: block;
+  }
+
+  .sidebar-menu nav {
+    overflow-y: visible;
   }
 
   .nav-item {

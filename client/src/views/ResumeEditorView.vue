@@ -5,25 +5,13 @@ import { api } from '../lib/api.js'
 import ResumePreview from '../components/resumes/ResumePreview.vue'
 import ConfirmButton from '../components/common/ConfirmButton.vue'
 import { setMatchingResume } from "../stores/jobMatch.js";
+import { contactLinks } from '../utils/contact.js'
+import { canonical } from '../utils/skillNormalize.js'
+import { lines, csv, nextKey, expToForm, projToForm, expFromForm, projFromForm } from '../utils/resumeForm.js'
 
 const props = defineProps({ id: { type: String, required: true } })
 const router = useRouter()
 
-const lines = (t) => (t || '').split('\n').map((x) => x.trim()).filter(Boolean)
-const csv = (t) => (t || '').split(',').map((x) => x.trim()).filter(Boolean)
-
-let keySeq = 0
-const nextKey = () => `k${++keySeq}`
-
-const expToForm = (e = {}) => ({
-  key: e._id || nextKey(), title: e.title || '', company: e.company || '', location: e.location || '',
-  startDate: e.startDate || '', endDate: e.endDate || '', current: !!e.current,
-  bulletsText: (e.bullets || []).join('\n'), skillsText: (e.skills || []).join(', '),
-})
-const projToForm = (p = {}) => ({
-  key: p._id || nextKey(), name: p.name || '', startDate: p.startDate || '', endDate: p.endDate || '',
-  bulletsText: (p.bullets || []).join('\n'), skillsText: (p.skills || []).join(', '),
-})
 const eduToForm = (e = {}) => ({
   key: e._id || nextKey(), school: e.school || '', degree: e.degree || '', field: e.field || '', grade: e.grade || '',
   startDate: e.startDate || '', endDate: e.endDate || '', bulletsText: (e.bullets || []).join('\n'),
@@ -36,7 +24,7 @@ const removeAt = (list, i) => list.splice(i, 1)
 
 const form = reactive({
   name: '',
-  contact: { fullName: '', phone: '', email: '', linkedin: '', github: '', portfolio: '' },
+  contact: { fullName: '', phone: '', email: '', links: [] },
   summary: '',
   skills: [],
   experience: [],
@@ -51,11 +39,40 @@ const saveError = ref('')
 const saved = ref(false)
 const dirty = ref(false)
 let loaded = false
+// Only the profile (primary) resume feeds Internship Discovery matching
+let isPrimary = false
+
+// "+ Add info" mini-form for a new contact link
+const addingLink = ref(false)
+const newLink = reactive({ label: '', value: '' })
+const newLinkError = ref('')
+
+function openAddLink() {
+  newLink.label = ''
+  newLink.value = ''
+  newLinkError.value = ''
+  addingLink.value = true
+}
+
+function confirmAddLink() {
+  const label = newLink.label.trim()
+  const value = newLink.value.trim()
+  if (!label || !value) { newLinkError.value = 'Enter both a section name and a value'; return }
+  form.contact.links.push({ label, value })
+  addingLink.value = false
+}
 
 function applyResume(r = {}) {
   loaded = false
   form.name = r.name || ''
-  form.contact = { fullName: '', phone: '', email: '', linkedin: '', github: '', portfolio: '', ...(r.contact || {}) }
+  isPrimary = !!r.primary
+  // contactLinks also lifts legacy linkedin/github/portfolio values into the list; the server drops those fields on save
+  form.contact = {
+    fullName: r.contact?.fullName || '',
+    phone: r.contact?.phone || '',
+    email: r.contact?.email || '',
+    links: contactLinks(r.contact).map((l) => ({ ...l })),
+  }
   form.summary = r.summary || ''
   form.skills = [...(r.skills || [])]
   form.experience = (r.experience || []).map(expToForm)
@@ -82,16 +99,16 @@ onMounted(async () => {
 function payload() {
   return {
     name: form.name.trim(),
-    contact: { ...form.contact },
+    contact: {
+      fullName: form.contact.fullName,
+      phone: form.contact.phone,
+      email: form.contact.email,
+      links: form.contact.links.map((l) => ({ label: l.label.trim(), value: l.value.trim() })),
+    },
     summary: form.summary.trim(),
     skills: form.skills,
-    experience: form.experience.map(({ title, company, location, startDate, endDate, current, bulletsText, skillsText }) => ({
-      title, company, location, startDate, endDate: current ? '' : endDate, current,
-      bullets: lines(bulletsText), skills: csv(skillsText),
-    })),
-    projects: form.projects.map(({ name, startDate, endDate, bulletsText, skillsText }) => ({
-      name, startDate, endDate, bullets: lines(bulletsText), skills: csv(skillsText),
-    })),
+    experience: form.experience.map(expFromForm),
+    projects: form.projects.map(projFromForm),
     education: form.education.map(({ school, degree, field, grade, startDate, endDate, bulletsText }) => ({
       school, degree, field, grade, startDate, endDate, bullets: lines(bulletsText),
     })),
@@ -137,10 +154,12 @@ function leave() {
 const parsing = ref(false)
 const parseError = ref('')
 
+// Skills only: keys on canonical() (spacing/alias-insensitive) rather than plain lowercase,
+// so "Java Script" from an upload doesn't sit next to an existing "JavaScript" as a duplicate.
 function dedupeCi(arr) {
   const seen = new Set()
   return arr.filter((x) => {
-    const k = x.toLowerCase()
+    const k = canonical(x)
     if (seen.has(k)) return false
     seen.add(k)
     return true
@@ -150,8 +169,13 @@ function dedupeCi(arr) {
 function mergeDraft(d) {
   // Contact fields overwrite (not merge-if-blank): a resume created via "Start from Profile" is
   // pre-filled with your account identity, and an uploaded PDF's real contact info should win over that.
-  for (const k of ['fullName', 'phone', 'email', 'linkedin', 'github', 'portfolio']) {
+  for (const k of ['fullName', 'phone', 'email']) {
     if (d.contact?.[k]) form.contact[k] = d.contact[k]
+  }
+  for (const link of contactLinks(d.contact)) {
+    const existing = form.contact.links.find((l) => l.label.trim().toLowerCase() === link.label.trim().toLowerCase())
+    if (existing) existing.value = link.value
+    else form.contact.links.push({ label: link.label, value: link.value })
   }
   if (d.summary && !form.summary.trim()) form.summary = d.summary
   form.skills = dedupeCi([...form.skills, ...(d.skills || [])])
@@ -189,6 +213,7 @@ async function onFile(e) {
 }
 
 function updateJobMatchingSkills() {
+  if (!isPrimary) return;
   const resume = payload();
   const skills = [];
 
@@ -282,19 +307,45 @@ function updateJobMatchingSkills() {
                   <label for="r-email" class="form-label">Email</label>
                   <input id="r-email" v-model="form.contact.email" type="email" class="input-inturn" />
                 </div>
-                <div class="col-12 col-md-6">
-                  <label for="r-linkedin" class="form-label">LinkedIn</label>
-                  <input id="r-linkedin" v-model="form.contact.linkedin" class="input-inturn" />
+              </div>
+
+              <!-- Modular links: LinkedIn, GitHub, Portfolio, or anything else the user adds -->
+              <div v-for="(link, i) in form.contact.links" :key="i" class="d-flex align-items-end gap-2 mt-3">
+                <div class="flex-grow-1" style="max-width: 35%">
+                  <label :for="`r-link-label-${i}`" class="form-label">Section name</label>
+                  <input :id="`r-link-label-${i}`" v-model="link.label" class="input-inturn" />
                 </div>
-                <div class="col-12 col-md-6">
-                  <label for="r-github" class="form-label">GitHub</label>
-                  <input id="r-github" v-model="form.contact.github" class="input-inturn" />
+                <div class="flex-grow-1">
+                  <label :for="`r-link-value-${i}`" class="form-label">{{ link.label || 'Value' }}</label>
+                  <input :id="`r-link-value-${i}`" v-model="link.value" class="input-inturn" />
                 </div>
-                <div class="col-12 col-md-6">
-                  <label for="r-portfolio" class="form-label">Portfolio</label>
-                  <input id="r-portfolio" v-model="form.contact.portfolio" class="input-inturn" />
+                <button type="button" class="btn-neutral-inturn btn-sm-inturn mb-1" :aria-label="`Remove ${link.label || 'link'}`" @click="removeAt(form.contact.links, i)">✕</button>
+              </div>
+
+              <div v-if="addingLink" class="mt-3 p-3 border rounded">
+                <div class="row g-2">
+                  <div class="col-12 col-md-5">
+                    <label for="r-new-link-label" class="form-label">Section name</label>
+                    <input id="r-new-link-label" v-model="newLink.label" class="input-inturn" list="r-link-suggestions" placeholder="e.g. LinkedIn" />
+                    <datalist id="r-link-suggestions">
+                      <option value="LinkedIn"></option>
+                      <option value="GitHub"></option>
+                      <option value="Portfolio"></option>
+                      <option value="Website"></option>
+                    </datalist>
+                  </div>
+                  <div class="col-12 col-md-7">
+                    <label for="r-new-link-value" class="form-label">Value</label>
+                    <input id="r-new-link-value" v-model="newLink.value" class="input-inturn" placeholder="e.g. linkedin.com/in/yourname" @keydown.enter.prevent="confirmAddLink" />
+                  </div>
+                </div>
+                <p v-if="newLinkError" class="small text-danger mt-2 mb-0" role="alert">{{ newLinkError }}</p>
+                <div class="d-flex gap-2 mt-2">
+                  <button type="button" class="btn-primary-inturn btn-sm-inturn" @click="confirmAddLink">Add</button>
+                  <button type="button" class="btn-neutral-inturn btn-sm-inturn" @click="addingLink = false">Cancel</button>
                 </div>
               </div>
+              <button v-else type="button" class="btn-neutral-inturn btn-sm-inturn mt-3" @click="openAddLink">+ Add info</button>
             </div>
           </div>
 
