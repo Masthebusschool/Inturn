@@ -31,9 +31,7 @@ function compactJob(job) {
     address: job.address,
     metadata: job.metadata,
 
-    postedCompany: job.postedCompany
-      ? { name: job.postedCompany.name }
-      : null,
+    postedCompany: job.postedCompany ? { name: job.postedCompany.name } : null,
   };
 }
 
@@ -106,7 +104,6 @@ function getSingaporeDate(date = new Date()) {
 function isUnexpired(job) {
   const value = job.metadata?.expiryDate;
 
-  // Require a readable closing date to confirm it is unexpired.
   if (typeof value !== "string" || !value.trim()) {
     return false;
   }
@@ -117,7 +114,6 @@ function isUnexpired(job) {
     return false;
   }
 
-  // Include jobs closing today in Singapore.
   return getSingaporeDate(closingDate) >= getSingaporeDate();
 }
 
@@ -209,7 +205,6 @@ export async function syncJobs() {
         }
       }
 
-      // A source page may contain no internship jobs.
       if (selectedJobs.length > 0) {
         await jobs.bulkWrite(
           selectedJobs.map((job) => ({

@@ -348,7 +348,6 @@ import { useJobsView } from "../helpers/useJobsView.js";
 
 const {
   searchInput,
-  jobs,
   filteredJobs,
   filterOptionsJobs,
   total,
@@ -359,7 +358,6 @@ const {
   loading,
   loadingMessage,
   error,
-  updatedAt,
   selectedJob,
   showFilters,
   filters,
@@ -424,7 +422,6 @@ const {
   min-width: 150px;
 }
 
-/* Header and body have their own padding */
 .results-panel {
   padding: 0;
 }

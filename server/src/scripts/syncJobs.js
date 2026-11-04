@@ -23,7 +23,7 @@ try {
   }
 
   if (process.argv.includes("--prepare-search-only")) {
-    // Uses the jobs already stored in MongoDB.
+    // Uses jobs already stored in MongoDB.
     await preparePublishedJobSearch();
   } else {
     await syncJobs();
@@ -31,10 +31,7 @@ try {
 } catch (error) {
   console.error(
     "[Jobs task] Failed:",
-    error.message.replace(
-      /mongodb(?:\+srv)?:\/\/[^\s]+/gi,
-      "[database URL hidden]"
-    )
+    error.message.replace(/mongodb(?:\+srv)?:\/\/[^\s]+/gi, "[database URL hidden]")
   );
 
   process.exitCode = 1;
