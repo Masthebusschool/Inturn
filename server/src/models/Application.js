@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { STATUS, STATUSES } from "./constants/statuses.js";
+import { MAX_TASKS } from "./constants/applications.js";
 
 // One tasklist per app
 const taskSchema = new mongoose.Schema(
@@ -78,6 +79,7 @@ export function toCard(application, skills) {
         total: application.skills.length,
         skills: application.skills, // prefills the edit form
         jobDetailsUrl: application.jobDetailsUrl, // prefills the edit form
+        createdAt: application.createdAt, // for the "Latest saved" sort
         // null until a Skill Gap Analysis is linked (see skillGapResultId); populated by getApplicationsByUser.
         // Prefer the tailored draft's score, same as the Skill Gap page's history badge.
         skillGapScore: application.skillGapResultId?.draftScore?.atsScore ?? application.skillGapResultId?.atsScore ?? null,
@@ -141,8 +143,14 @@ export function updateApplicationFavouriteById(id, userId, isFavourite) {
 }
 
 // add a (note checklist) to the card's checklist
+// only matches while the card has fewer than MAX_TASKS tasks (no task at index MAX_TASKS - 1),
+// so quick adds at the same time still can't go over the limit
 export function addApplicationTaskById(id, userId, text) {
-    return Application.findOneAndUpdate({ _id: id, user: userId }, { $push: { tasks: { text: text } } }, { returnDocument: 'after', runValidators: true });
+    return Application.findOneAndUpdate(
+        { _id: id, user: userId, [`tasks.${MAX_TASKS - 1}`]: { $exists: false } },
+        { $push: { tasks: { text: text } } },
+        { returnDocument: 'after', runValidators: true }
+    );
 }
 
 // tick or untick one task ('tasks.$' is the task that matched tasks._id)

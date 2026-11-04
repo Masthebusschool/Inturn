@@ -15,11 +15,8 @@ const dateLabel = computed(() => {
   return 'Due ' + formatDate(app.expiryDate);
 });
 
-// skills matched as a percentage (will be 0 if the job lists no skills)
-const matchPercent = computed(() => {
-  if (!props.app.total) return 0;
-  return (props.app.matched / props.app.total) * 100;
-});
+// skills matched as a percentage (only shown when the job lists skills, so no dividing by 0)
+const matchPercent = computed(() => (props.app.matched / props.app.total) * 100);
 
 // whether the missing skills list is open (picks the arrow icon)
 const missingOpen = ref(false);
@@ -88,15 +85,17 @@ onMounted(() => {
       <i class="bi small" :class="collapsed ? 'bi-chevron-down' : 'bi-chevron-up'"></i>
     </button>
 
-    <!-- the details, starts open unless the board says it's collapsed (set in onMounted) -->
     <div ref="details" class="collapse" :id="'details-' + app._id">
     <div class="pt-2">
 
-    <div class="progress">
-      <!-- if the job lists no skills, the bar stays empty (avoids dividing by 0) -->
-      <div class="progress-bar" :style="{ width: matchPercent + '%' }"></div>
-    </div>
-    <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
+    <!-- only show the match bar when the job lists some skills -->
+    <template v-if="app.total > 0">
+      <div class="progress">
+        <div class="progress-bar" :style="{ width: matchPercent + '%' }"></div>
+      </div>
+      <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
+    </template>
+    <small v-else class="d-block text-secondary">No skills listed</small>
     <button
       v-if="app.missing?.length"
       type="button"

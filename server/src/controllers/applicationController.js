@@ -13,6 +13,7 @@ import {
     updateApplicationDetailsById,
     toCard
 } from "../models/Application.js";
+import { MAX_TASKS, MAX_TASK_LENGTH } from "../models/constants/applications.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
 import { fetchJobDetail } from "../routes/jobs.js";
 import * as User from "../models/User.js";
@@ -229,10 +230,18 @@ export async function addTask(req, res, next) {
             return res.status(400).json({ error: 'Task text is required' });
         }
         text = text.trim();
+        if (text.length > MAX_TASK_LENGTH) {
+            return res.status(400).json({ error: `Task must be ${MAX_TASK_LENGTH} characters or less` });
+        }
 
         const application = await addApplicationTaskById(req.params.id, uid, text);
 
-        if (!application) return res.status(404).json({ error: 'Application not found' });
+        // no match means the card doesn't exist, or it already has the most tasks allowed
+        if (!application) {
+            const exists = await getApplicationByIdAndUser(req.params.id, uid);
+            if (!exists) return res.status(404).json({ error: 'Application not found' });
+            return res.status(400).json({ error: `A card can have up to ${MAX_TASKS} tasks` });
+        }
         return res.status(201).json(application);
 
     } catch (err) {

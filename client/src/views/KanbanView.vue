@@ -9,6 +9,7 @@ import ApplicationModal from '../components/apptrackingboard/modals/ApplicationM
 import AddChecklistModal from '../components/apptrackingboard/modals/AddChecklistModal.vue';
 import DeleteCardModal from '../components/apptrackingboard/modals/DeleteCardModal.vue';
 import { authStore } from '../stores/auth.js';
+import { STATUSES } from '../utils/trackerBoardOptions.js';
 import {
   isMobileScreen,
   isTabletScreen,
@@ -31,7 +32,6 @@ import {
 
 const user = computed(() => authStore.user);
 const router = useRouter();
-const kanbanColumns = ['Saved', 'Applied', 'Interview', 'Offered'];
 
 function goToSkillGap (card) {
   router.push({ path: '/skill-gap', query: { applicationId: card._id } });
@@ -403,7 +403,7 @@ onUnmounted(() => {
     >
       <!-- outer loop which loads the individual columns -->
       <div
-      v-for="col in kanbanColumns"
+      v-for="col in STATUSES"
       :key="col"
       class="col-10 col-sm-8 col-md-12 col-lg-3"
       v-on:pointerenter="setSelectedColumn(col)"
@@ -472,7 +472,7 @@ onUnmounted(() => {
                     v-on:change="onMoveCard(app, $event.target.value)" 
                     v-on:pointerdown.stop
                     class="input-inturn mt-3">
-                    <option v-for="col in kanbanColumns" :key="col" :value="col">Move to {{ col }}</option>
+                    <option v-for="col in STATUSES" :key="col" :value="col">Move to {{ col }}</option>
                   </select>
                 </ApplicationCard>
 

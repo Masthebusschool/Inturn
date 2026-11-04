@@ -10,16 +10,12 @@ import {
     deleteTask,
     deleteApplication
 } from '../../services/applicationsApi.js'
+import { TABLET_MIN_WIDTH, DESKTOP_MIN_WIDTH } from '../../utils/trackerBoardOptions.js';
 
-// bootstrap breakpts
-// mobile is below md, tablet is md up to lg
-const tabletMinWidth = 768;
-const desktopMinWidth = 992;
-
-export function isMobileScreen () { return window.innerWidth < tabletMinWidth; }
+export function isMobileScreen () { return window.innerWidth < TABLET_MIN_WIDTH; }
 
 export function isTabletScreen () {
-  return window.innerWidth >= tabletMinWidth && window.innerWidth < desktopMinWidth;
+  return window.innerWidth >= TABLET_MIN_WIDTH && window.innerWidth < DESKTOP_MIN_WIDTH;
 }
 
 // only the applications that belong in this column
@@ -138,12 +134,16 @@ function countPrep (card) {
 }
 
 export async function addChecklistTask (card, text) {
-  // show it straight away, then swap in the saved list so the new task gets its _id
+  // show it straight away, then give only this task its saved _id
+  // (not swapping in the whole saved list, as replies to quick adds can arrive out of order
+  // and an older list would drop the newer tasks)
   card.tasks.push({ text: text, done: false });
+  const task = card.tasks[card.tasks.length - 1];
   countPrep(card);
 
+  // the server adds to the end, so this task is the last one in its reply
   const updated = await addTask(card._id, text);
-  card.tasks = updated.tasks;
+  task._id = updated.tasks[updated.tasks.length - 1]._id;
 }
 
 export async function toggleChecklistTask (card, task) {
