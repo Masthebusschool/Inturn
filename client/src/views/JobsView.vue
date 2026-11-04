@@ -40,14 +40,14 @@
       </div>
 
       <form class="card-inturn search-bar" @submit.prevent="searchJobs">
-        <label for="job-search">Search jobs</label>
+        <label for="job-search">Search Internships</label>
 
         <input
           id="job-search"
           v-model.trim="searchInput"
           type="search"
           class="input-inturn"
-          placeholder="Search jobs or internships..."
+          placeholder="Search internships..."
           :disabled="loading"
         />
 
@@ -109,7 +109,7 @@
 
             <p v-else>
               {{ filteredJobs.length }} matches on this page ·
-              {{ total }} jobs found by keyword
+              {{ total }} internships found by keyword
             </p>
 
             <p v-if="!loading && !error">
@@ -141,7 +141,7 @@
           </div>
 
           <div v-else-if="error" class="message" role="alert">
-            <h3>Unable to load jobs</h3>
+            <h3>Unable to load internships</h3>
             <p>{{ error }}</p>
 
             <button
@@ -154,7 +154,7 @@
           </div>
 
           <div v-else-if="filteredJobs.length === 0" class="message">
-            <h3>No matching jobs</h3>
+            <h3>No matching internships</h3>
             <p>
               Try another keyword, change your filters, or check the next page.
             </p>
