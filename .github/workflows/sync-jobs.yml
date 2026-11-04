@@ -2,7 +2,7 @@ name: Sync MyCareersFuture jobs
 
 on:
   schedule:
-    - cron: "0 10 * * *"
+    - cron: "17 19 * * *"
   workflow_dispatch:
 
 permissions:

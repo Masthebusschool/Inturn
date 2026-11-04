@@ -254,7 +254,7 @@ const locations = [
   "Islandwide",
 ];
 
-// Category options from the current API page.
+// Category options from API page.
 const categories = computed(() => {
   const values = [];
 
@@ -281,7 +281,7 @@ const categories = computed(() => {
   return values.sort();
 });
 
-// Skill options, filtered by the skill search field.
+// Skill options
 const availableSkills = computed(() => {
   const values = [];
 
@@ -322,11 +322,7 @@ const availableSkills = computed(() => {
 
 // Tags for the selected filters.
 function hasPayValue(value) {
-  return (
-    value !== undefined &&
-    value !== null &&
-    String(value).trim() !== ""
-  );
+  return (value !== undefined && value !== null && String(value).trim() !== "");
 }
 
 const payRangeInvalid = computed(() => {
@@ -349,11 +345,7 @@ const payRangeInvalid = computed(() => {
     }
   }
 
-  return (
-    hasPayValue(minimum) &&
-    hasPayValue(maximum) &&
-    Number(minimum) > Number(maximum)
-  );
+  return (hasPayValue(minimum) && hasPayValue(maximum) && Number(minimum) > Number(maximum));
 });
 
 // Tags appear only for selected filters.
@@ -436,10 +428,10 @@ function changeCategory(category) {
   }
 }
 
+// Select or deselects skill when clicked
 function toggleSkill(skill) {
   const selectedSkills = [];
 
-  // Copy the array instead of changing props.
   for (let i = 0; i < props.modelValue.skills.length; i++) {
     selectedSkills.push(props.modelValue.skills[i]);
   }
