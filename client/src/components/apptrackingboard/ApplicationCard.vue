@@ -80,7 +80,7 @@ onMounted(() => {
       title="Open the job posting in a new tab"
       v-on:pointerdown.stop
     >
-      <span class="text-secondary">Job Posting:</span>
+      <span class="text-secondary">Internship Posting:</span>
       <span class="job-link-action text-nowrap">
         View <i class="bi bi-box-arrow-up-right ms-1"></i>
       </span>

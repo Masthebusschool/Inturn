@@ -74,7 +74,7 @@ const lastLogin = computed(() =>
 const stats = computed(() => {
   const s = activity.value?.stats
   return [
-    { label: 'Jobs tracked', value: s?.total ?? 0 },
+    { label: 'Internships tracked', value: s?.total ?? 0 },
     { label: 'Applied', value: s?.submitted ?? 0 },
     { label: 'Interviews', value: s?.byStatus?.Interview ?? 0 },
     { label: 'Offers', value: s?.byStatus?.Offered ?? 0 },
