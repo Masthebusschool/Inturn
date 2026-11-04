@@ -442,6 +442,7 @@ const applicationUrl = computed(() => {
   return "";
 });
 
+// Questions if have from application
 async function loadQuestions() {
   if (loadingQuestions.value) {
     return;

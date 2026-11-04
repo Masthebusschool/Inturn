@@ -428,6 +428,7 @@ function changeCategory(category) {
   }
 }
 
+// Select or deselects skill when clicked
 function toggleSkill(skill) {
   const selectedSkills = [];
 
