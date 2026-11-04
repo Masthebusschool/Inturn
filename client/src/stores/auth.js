@@ -46,9 +46,12 @@ export const authStore = reactive({
     return user
   },
 
-  // Creates the account only; the user logs in afterwards.
+  // Creates the account and logs it in immediately (the server starts a session on signup).
   async signup(details) {
     const { user } = await authApi.signup(details)
+    authVersion++
+    this.user = user
+    this.checked = true
     return user
   },
 

@@ -1,12 +1,13 @@
 <script setup>
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { authStore } from '../stores/auth.js'
 import { isValidEmail, PASSWORD_RULES } from '../utils/validators.js'
 
+const router = useRouter()
 const form = reactive({ name: '', email: '', password: '', confirmPassword: '' })
 const errors = ref([])
 const submitting = ref(false)
-const createdUser = ref(null)
 
 function validate() {
   const list = []
@@ -30,9 +31,11 @@ async function handleSignup() {
 
   submitting.value = true
   try {
-    createdUser.value = await authStore.signup({ ...form, name: form.name.trim(), email: form.email.trim() })
+    const user = await authStore.signup({ ...form, name: form.name.trim(), email: form.email.trim() })
     form.password = ''
     form.confirmPassword = ''
+    // Fresh signup never has educationLevel set yet, but match login's redirect logic in case it ever does
+    router.push(user.educationLevel ? '/jobs' : '/onboarding')
   } catch (err) {
     errors.value = err.errors ?? [err.message]
   } finally {
@@ -44,19 +47,9 @@ async function handleSignup() {
 
 <template>
   <section class="signup-page">
-    
+    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
 
-    <div v-if="createdUser" class="card-inturn auth-card text-center">
-      <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
-      <h2 class="welcome">Account created</h2>
-      <p class="subtitle mb-1">{{ createdUser.name }}</p>
-      <p class="subtitle">{{ createdUser.email }}</p>
-      <p class="small text-body-secondary">Log in to complete your profile.</p>
-      <!-- The email goes in history state (not the URL) so the login form can prefill it -->
-      <RouterLink :to="{ path: '/login', state: { email: createdUser.email } }" class="btn-primary-inturn">Log in</RouterLink>
-    </div>
-
-    <form v-else class="card-inturn auth-card" novalidate @submit.prevent="handleSignup">
+    <form class="card-inturn auth-card" novalidate @submit.prevent="handleSignup">
       <h2 class="welcome text-center">Create your account</h2>
       <p class="subtitle">Start preparing for your next internship.</p>
 

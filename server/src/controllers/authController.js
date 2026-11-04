@@ -87,7 +87,9 @@ export const signup = async (req, res) => {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     const user = await User.createUser({ name: data.name, email: data.email, passwordHash });
 
-    // No session here: the user logs in themselves after signing up
+    // Log the new account in immediately so the client lands straight on onboarding
+    await startSession(req, user, false);
+    await User.recordLogin(user.id);
     return res.status(201).json({ user: User.toPublicUser(user) });
   }
   catch (e) {
