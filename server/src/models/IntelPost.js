@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 const MAX_QUESTIONS = 10;
 
 const intelPostSchema = new mongoose.Schema(
@@ -20,3 +21,5 @@ const intelPostSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+export default mongoose.model('IntelPost', intelPostSchema);
