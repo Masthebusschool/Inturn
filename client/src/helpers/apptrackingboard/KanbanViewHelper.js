@@ -10,17 +10,20 @@ import {
     deleteTask,
     deleteApplication
 } from '../../services/applicationsApi.js'
+import { TABLET_MIN_WIDTH, DESKTOP_MIN_WIDTH } from '../../utils/trackerBoardOptions.js';
 
-const mobileAndTabletWidth = 992; // below bootstrap lg = phones and tablets
+export function isMobileScreen () { return window.innerWidth < TABLET_MIN_WIDTH; }
 
-export function isMobileOrTabletScreen () { return window.innerWidth < mobileAndTabletWidth; }
+export function isTabletScreen () {
+  return window.innerWidth >= TABLET_MIN_WIDTH && window.innerWidth < DESKTOP_MIN_WIDTH;
+}
 
 // only the applications that belong in this column
 export function applicationsInColumn (applications, col) {
   return applications.filter(app => app.status == col);
 }
 
-// only the applications whose title or company has the search text in it, ignores capitals
+// only the applications whose title or company has the search text in it, ignores uppercase
 export function searchApplications (applications, searchText) {
   const text = searchText.trim().toLowerCase();
   if (text === '') return applications; // empty search shows every card
@@ -73,7 +76,8 @@ export async function moveCard (card, updatedStatus) {
   try {
     await updateStatus(card._id, updatedStatus);
   } catch (err) {
-    card.status = oldStatus // if fail, revert
+    // if fail, revert
+    card.status = oldStatus 
     return false;
   }
   return updatedStatus === 'Interview' && !card.interviewAt;
@@ -85,7 +89,7 @@ export async function saveInterviewDate (card, date) {
   card.interviewAt = date;
 }
 
-// true if the board already has a card with the same title and company, ignores capitals
+// true if the board already has a card with the same title and company, ignores uppercase
 // ignoreId skips the card being edited so it isn't a duplicate of itself
 export function isDuplicateApplication (applications, details, ignoreId = null) {
   const title = details.title.toLowerCase();
@@ -101,24 +105,20 @@ export function isDuplicateApplication (applications, details, ignoreId = null) 
   return isDuplicate;
 }
 
-// add an application typed in by the user, then fetch the board again
 export async function addNewApplication (details) {
   await addApplication(details);
   return await getApplications();
 }
 
-// save the edit form, then fetch the board again
 export async function editApplication (card, details) {
   await updateApplicationDetails(card._id, details);
   return await getApplications();
 }
 
-// delete a card, named deleteApplicationCard so it doesn't clash with deleteApplication from the api
 export async function deleteApplicationCard (card) {
   await deleteApplication(card._id);
 }
 
-// star or unstar a card, changes on screen first then saves
 export async function toggleFavourite (card) {
   card.isFavourite = !card.isFavourite;
   await updateFavourite(card._id, card.isFavourite);
@@ -133,17 +133,19 @@ function countPrep (card) {
   card.prep = done + ' / ' + card.tasks.length;
 }
 
-// add a task to the checklist
 export async function addChecklistTask (card, text) {
-  // show it straight away, then swap in the saved list so the new task gets its _id
+  // show it straight away, then give only this task its saved _id
+  // (not swapping in the whole saved list, as replies to quick adds can arrive out of order
+  // and an older list would drop the newer tasks)
   card.tasks.push({ text: text, done: false });
+  const task = card.tasks[card.tasks.length - 1];
   countPrep(card);
 
+  // the server adds to the end, so this task is the last one in its reply
   const updated = await addTask(card._id, text);
-  card.tasks = updated.tasks;
+  task._id = updated.tasks[updated.tasks.length - 1]._id;
 }
 
-// tick or untick a task
 export async function toggleChecklistTask (card, task) {
   task.done = !task.done; // cross it out straight away
   countPrep(card);
@@ -151,7 +153,6 @@ export async function toggleChecklistTask (card, task) {
   await updateTask(card._id, task._id, task.done);
 }
 
-// delete a task from the checklist
 export async function deleteChecklistTask (card, task) {
   card.tasks = card.tasks.filter(t => t._id !== task._id); // delete it straight away
   countPrep(card);
@@ -159,16 +160,17 @@ export async function deleteChecklistTask (card, task) {
   await deleteTask(card._id, task._id);
 }
 
-// datetime-local inputs need 'YYYY-MM-DDTHH:mm' in local time, e.g. for min or a prefilled value
+// datetime-local inputs
 export function toDateTimeInput (value) {
   if (!value) return '';
   const date = new Date(value);
-  date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); // shift so toISOString shows local time
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
   return date.toISOString().slice(0, 16);
 }
 
 export function formatDate (value) {
-  if (!value) return ''; // no date, e.g. interviewAt is null
+  // no date, e.g. interviewAt is null
+  if (!value) return ''; 
   return new Date(value).toLocaleDateString('en-GB', {
     day: '2-digit',
     month: '2-digit',

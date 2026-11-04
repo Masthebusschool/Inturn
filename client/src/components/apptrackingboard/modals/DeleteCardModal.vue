@@ -9,13 +9,9 @@ defineProps(
 
 const emit = defineEmits(['confirm', 'cancel']);
 
-function confirmDelete() {
-    emit('confirm');
-}
-
-function cancelDelete() {
-    emit('cancel'); // do nothing
-}
+function confirmDelete() { emit('confirm'); }
+// do nothing
+function cancelDelete() { emit('cancel'); }
 
 </script>
 
@@ -40,6 +36,5 @@ function cancelDelete() {
         </div>
     </div>
     </div>
-    <!-- dark background behind the modal -->
     <div class="modal-backdrop show"></div>
 </template>

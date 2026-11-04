@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import CommunityQuestionsModal from '../components/CommunityQuestionsModal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 
+// Ensure all data is fetched before full page loads
+const isLoading = ref(true)
 const isLoggedOut = ref(false)
 const userName = ref('Student')
 const questions = ref([])
@@ -66,9 +68,9 @@ async function loadCommunityQuestions() {
   }
 }
 
-onMounted(() => {
-  loadJournal()
-  loadCommunityQuestions()
+onMounted(async () => {
+  await Promise.all([loadJournal(), loadCommunityQuestions()])
+  isLoading.value = false
 })
 
 // Format display number safely (01, 02...) using array index
@@ -275,8 +277,14 @@ async function confirmDeleteQuestion() {
 
 <template>
   <main class="p-3 p-lg-4 text-start">
+    <!-- spinner in the page area -->
+    <div v-if="isLoading" class="d-flex flex-column justify-content-center align-items-center text-secondary" style="min-height: 70vh">
+      <div class="spinner-border text-primary mb-3" role="status"></div>
+      <p class="mb-0">Loading your interview journal...</p>
+    </div>
+
     <!-- Shown if user is not logged in -->
-    <div v-if="isLoggedOut" class="card rounded-4 p-5 text-center my-4 mx-auto" style="max-width: 520px;">
+    <div v-else-if="isLoggedOut" class="card rounded-4 p-5 text-center my-4 mx-auto" style="max-width: 520px;">
       <i class="bi bi-lock fs-1 text-primary mb-2"></i>
       <h2 class="h4 fw-semibold mb-2">Log in to access your Interview Journal</h2>
       <p class="text-secondary small mb-4">

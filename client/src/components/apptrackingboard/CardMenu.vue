@@ -1,14 +1,11 @@
 <script setup>
 import { ref } from 'vue';
 
-// only needs to know if the card is a favourite to switch the label
 defineProps({ isFavourite: Boolean });
 
-// tells the page which option was picked
 const emit = defineEmits(['edit', 'delete', 'favourite', 'checklist']);
 
 const isOpen = ref(false);
-
 function toggleMenu () { isOpen.value = !isOpen.value; }
 
 // close the menu then tell the page
@@ -16,16 +13,16 @@ function pick (option) {
   isOpen.value = false;
   emit(option);
 }
+
 </script>
 
 <template>
-  <!-- pointerdown.stop so clicking the menu doesn't start dragging the card -->
+  <!-- pointerdown.stop so clicking on the menu won't drag the card -->
   <div class="position-absolute top-0 end-0 m-3" v-on:pointerdown.stop>
     <button type="button" class="btn-neutral-inturn btn-sm-inturn" v-on:click="toggleMenu" aria-label="Card options">
       &#8943;
     </button>
 
-    <!-- dropdown-menu has a min width so it never squashes, end-0 opens it to the left of the button so it stays on screen -->
     <div v-if="isOpen" class="dropdown-menu d-block end-0 mt-1 shadow-sm p-1">
       <button type="button" class="dropdown-item rounded-2 px-2 py-2" v-on:click="pick('edit')">
         <i class="bi bi-pencil text-primary me-2"></i>Edit Card

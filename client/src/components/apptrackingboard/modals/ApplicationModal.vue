@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { toDateTimeInput } from '../../../helpers/apptrackingboard/KanbanViewHelper';
+import { STATUSES, MAX_TITLE_LENGTH, MAX_COMPANY_LENGTH, MAX_SKILLS_LENGTH } from '../../../utils/trackerBoardOptions.js';
 
 // error from the page if saving to the backend fails, startStatus is the column whose + was clicked
 // card is the card being edited, null when adding a new one
@@ -13,11 +14,12 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'cancel']);
 
 const isEdit = props.card !== null;
-const card = props.card || {}; // so the prefills below work when adding too
+// so the prefills below work when adding too
+const card = props.card || {}; 
 
-const statuses = ['Saved', 'Applied', 'Interview', 'Offered'];
 const today = new Date().toISOString().split('T')[0];
-const now = toDateTimeInput(new Date()); // earliest interview date allowed
+// earliest interview date allowed
+const now = toDateTimeInput(new Date()); 
 
 // job application fields, prefilled from the card when editing
 const title = ref(card.title || '');
@@ -108,13 +110,13 @@ function cancel() { emit('cancel'); }
 
           <div class="mb-3">
             <label class="form-label">Internship title <span class="text-danger">*</span></label>
-            <input v-model="title" class="input-inturn" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" maxlength="100" />
+            <input v-model="title" class="input-inturn" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" :maxlength="MAX_TITLE_LENGTH" />
             <div class="invalid-feedback">{{ errors.title }}</div>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Company <span class="text-danger">*</span></label>
-            <input v-model="companyName" class="input-inturn" :class="{ 'is-invalid': errors.companyName }" placeholder="e.g. Grab" maxlength="100" />
+            <input v-model="companyName" class="input-inturn" :class="{ 'is-invalid': errors.companyName }" placeholder="e.g. Grab" :maxlength="MAX_COMPANY_LENGTH" />
             <div class="invalid-feedback">{{ errors.companyName }}</div>
           </div>
 
@@ -128,11 +130,11 @@ function cancel() { emit('cancel'); }
           <div v-if="!isEdit" class="mb-3">
             <label class="form-label">Status <span class="text-danger">*</span></label>
             <select v-model="status" class="input-inturn">
-              <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
+              <option v-for="s in STATUSES" :key="s" :value="s">{{ s }}</option>
             </select>
           </div>
 
-          <!-- only shown when the card is in Interview -->
+          <!-- only shown when the card is in Interview column -->
           <div v-if="status === 'Interview'" class="mb-3">
             <label class="form-label">Interview date</label>
             <input v-model="interviewAt" type="datetime-local" class="input-inturn" :class="{ 'is-invalid': errors.interviewAt }" :min="now" />
@@ -148,14 +150,13 @@ function cancel() { emit('cancel'); }
 
           <div class="mb-3">
             <label class="form-label">Skills needed</label>
-            <input v-model="skills" class="input-inturn" placeholder="Python, SQL, Git" maxlength="500" />
+            <input v-model="skills" class="input-inturn" placeholder="Python, SQL, Git" :maxlength="MAX_SKILLS_LENGTH" />
             <div class="form-text">Separate skills with commas.</div>
           </div>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn-neutral-inturn" v-on:click="cancel">Cancel</button>
-          <!-- type="submit" already runs submitApplication through the form, no v-on:click needed -->
           <button type="submit" class="btn-primary-inturn">{{ isEdit ? 'Save' : 'Add' }}</button>
         </div>
       </form>

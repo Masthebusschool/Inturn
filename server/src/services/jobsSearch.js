@@ -245,7 +245,6 @@ export async function prepareJobGeneration(generation) {
     await jobs.bulkWrite(batch, { ordered: false });
   }
 
-  // Already created by your sync; do not add duplicate search indexes.
   await jobs.createIndex(
     { generation: 1, uuid: 1 },
     { unique: true }
@@ -359,7 +358,7 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Small cache for filter suggestions, not the full jobs dataset.
+// Temp storage for filter suggestions, not the full jobs dataset.
 const optionCache = new Map();
 
 async function getFilterOptions(jobs, query, cacheKey) {
@@ -481,7 +480,6 @@ export async function searchPublishedJobs(input = {}) {
     throw badRequest("Invalid monthly pay range.");
   }
 
-  // Singapore uses UTC+8. Calculate today's date once per request.
   const today = new Date(
     Date.now() + 8 * 60 * 60 * 1000
   ).toISOString().slice(0, 10);
@@ -501,7 +499,6 @@ export async function searchPublishedJobs(input = {}) {
     ],
   };
 
-  // Build keyword text inside MongoDB without storing another text copy.
   if (keyword) {
     const searchableText = join({
       $concatArrays: [
@@ -579,37 +576,23 @@ export async function searchPublishedJobs(input = {}) {
 
   const requestedLimit = Number(input.limit);
   const limit = Number.isFinite(requestedLimit)
-    ? Math.max(
-        1,
-        Math.min(100, Math.floor(requestedLimit || 10))
-      )
-    : 10;
+    ? Math.max(1, Math.min(100, Math.floor(requestedLimit || 10))) : 10;
 
   const requestedPage = Number(input.page);
-  const wantedPage = Number.isFinite(requestedPage)
-    ? Math.max(0, Math.floor(requestedPage))
-    : 0;
+  const wantedPage = Number.isFinite(requestedPage) ? Math.max(0, Math.floor(requestedPage)) : 0;
 
-  const optionsKey = JSON.stringify([
-    active.generation,
-    today,
-    keyword,
-  ]);
+  const optionsKey = JSON.stringify([active.generation, today, keyword]);
 
   const [total, filterOptionsJobs] = await Promise.all([
     jobs.countDocuments(query, {
       maxTimeMS: 30000,
     }),
 
-    // Suggestions remain based on all keyword results.
     getFilterOptions(jobs, keywordQuery, optionsKey),
   ]);
 
   const totalPages = Math.ceil(total / limit);
-  const page = Math.min(
-    wantedPage,
-    Math.max(0, totalPages - 1)
-  );
+  const page = Math.min(wantedPage, Math.max(0, totalPages - 1));
 
   if (total === 0) {
     return {
@@ -624,7 +607,6 @@ export async function searchPublishedJobs(input = {}) {
 
   const sort = {};
 
-  // Selected-skill match count remains the primary ranking rule.
   if (selected.length > 0) {
     sort.selectedCount = -1;
   }

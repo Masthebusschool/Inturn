@@ -642,7 +642,6 @@ export function useJobsView() {
 
   return {
     searchInput,
-    jobs,
     filteredJobs,
     filterOptionsJobs,
     total,

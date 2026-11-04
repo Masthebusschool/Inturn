@@ -5,6 +5,8 @@ import VueMultiselect from "vue-multiselect";
 import ConfirmModal from "../components/ConfirmModal.vue";
 
 const route = useRoute();
+// Ensure all data is fetched before full page loads
+const isLoading = ref(true);
 
 // Posts list and auth/notice states
 const posts = ref([]);
@@ -43,8 +45,8 @@ function findOption(options, text) {
 }
 
 onMounted(async () => {
-  checkAuth();
-  await loadPosts();
+  await Promise.all([checkAuth(), loadPosts()]);
+  isLoading.value = false;
 
   // From a tracker board card, filter to that job
   if (route.query.company || route.query.role) {
@@ -307,7 +309,13 @@ async function publishPost() {
 
 <template>
   <div class="bg-body-tertiary min-vh-100 p-3 p-lg-4 text-start">
-    <div class="container-xl px-0">
+    <!-- spinner in the page area -->
+    <div v-if="isLoading" class="d-flex flex-column justify-content-center align-items-center text-secondary" style="min-height: 70vh">
+      <div class="spinner-border text-primary mb-3" role="status"></div>
+      <p class="mb-0">Loading interview intel...</p>
+    </div>
+
+    <div v-else class="container-xl px-0">
       <!-- Header -->
       <header
         class="card rounded-4 p-3 p-sm-4 mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3"
