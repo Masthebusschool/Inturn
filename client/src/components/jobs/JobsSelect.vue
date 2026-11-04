@@ -141,67 +141,6 @@
       </template>
     </section>
 
-    <!-- Application questions -->
-    <section class="card-inturn detail-section">
-      <h2 class="section-title">Application Questions</h2>
-
-      <p
-        v-if="loadingQuestions"
-        class="section-description"
-        role="status"
-      >
-        Checking for available questions...
-      </p>
-
-      <div v-else-if="questionError">
-        <p class="section-description">{{ questionError }}</p>
-
-        <button
-          class="btn-neutral-inturn"
-          type="button"
-          @click="loadQuestions"
-        >
-          Try again
-        </button>
-      </div>
-
-      <template v-else-if="questions.length > 0">
-        <p class="section-description">
-          Prepare draft answers here. Complete the official questions on
-          the application website when you apply.
-        </p>
-
-        <div
-          v-for="(question, index) in questions"
-          :key="index"
-          class="question-box"
-        >
-          <label :for="'answer-' + index">
-            {{ index + 1 }}. {{ question }}
-          </label>
-
-          <textarea
-            :id="'answer-' + index"
-            v-model="answers[index]"
-            class="input-inturn"
-            rows="4"
-            placeholder="Draft your answer..."
-          ></textarea>
-        </div>
-
-        <p class="small-note">
-          Answers are not submitted or transferred to MyCareersFuture.
-          Copy your drafts before going back or refreshing this page.
-        </p>
-      </template>
-
-      <p v-else class="section-description">
-        No readable application questions are available through this API
-        response. The official application site may show additional
-        questions.
-      </p>
-    </section>
-
     <!-- Apply link -->
     <footer class="apply-footer">
       <a
@@ -227,8 +166,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import axios from "axios";
+import { computed } from "vue";
 
 const props = defineProps({
   job: {
@@ -246,11 +184,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "save"]);
-
-const questions = ref([]);
-const answers = ref([]);
-const loadingQuestions = ref(false);
-const questionError = ref("");
 
 const companyName = computed(() => {
   const job = props.job;
@@ -442,69 +375,6 @@ const applicationUrl = computed(() => {
   return "";
 });
 
-// Questions if have from application
-async function loadQuestions() {
-  if (loadingQuestions.value) {
-    return;
-  }
-
-  loadingQuestions.value = true;
-  questionError.value = "";
-  questions.value = [];
-  answers.value = [];
-
-  try {
-    const response = await axios.get(
-      "/api/mcf/v2/jobs/" +
-        props.job.uuid +
-        "/screening-questions"
-    );
-
-    if (!Array.isArray(response.data)) {
-      throw new Error("Question format not supported");
-    }
-
-    const questionList = [];
-
-    for (let i = 0; i < response.data.length; i++) {
-      const item = response.data[i];
-      let text = "";
-
-      if (typeof item === "string") {
-        text = item;
-      } else if (item && typeof item.question === "string") {
-        text = item.question;
-      } else if (item && typeof item.questionText === "string") {
-        text = item.questionText;
-      }
-
-      if (text.trim() !== "") {
-        questionList.push(text);
-      }
-    }
-
-    if (response.data.length > 0 && questionList.length === 0) {
-      throw new Error("Question format not supported");
-    }
-
-    questions.value = questionList;
-
-    for (let i = 0; i < questionList.length; i++) {
-      answers.value.push("");
-    }
-  } catch (err) {
-    console.error(err);
-
-    questionError.value =
-      "Questions could not be displayed. Check the official listing when applying.";
-  }
-
-  loadingQuestions.value = false;
-}
-
-onMounted(() => {
-  loadQuestions();
-});
 </script>
 
 <style scoped>
@@ -620,18 +490,6 @@ onMounted(() => {
 
 .skill-tag span {
   font-size: 11px;
-}
-
-.question-box {
-  margin-top: 18px;
-}
-
-.question-box label {
-  display: block;
-  margin-bottom: 9px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.6;
 }
 
 .small-note {
