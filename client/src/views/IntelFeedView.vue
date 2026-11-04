@@ -401,7 +401,7 @@ async function publishPost() {
             <input
               id="post-role"
               v-model="formRole"
-              maxlength="80"
+              maxlength="100"
               class="form-control bg-body-tertiary rounded-3"
               placeholder="e.g. Engineering Intern"
             />
@@ -413,7 +413,7 @@ async function publishPost() {
             <input
               id="post-title"
               v-model="formTitle"
-              maxlength="120"
+              maxlength="150"
               class="form-control bg-body-tertiary rounded-3"
               placeholder="Give your post a clear title"
             />
