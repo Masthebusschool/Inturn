@@ -16,7 +16,7 @@
       :jobs="filterOptionsJobs"
       :result-count="total"
       @update:model-value="updateFilters"
-      @close="showFilters = false"
+      @close="backToJobs"
     />
 
     <div v-else>
@@ -339,6 +339,8 @@
 </template>
 
 <script setup>
+import { watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import JobsFilter from "../components/jobs/JobsFilter.vue";
 import JobsSelect from "../components/jobs/JobsSelect.vue";
@@ -389,6 +391,50 @@ const {
   toggleSaved,
   isSaving,
 } = useJobsView();
+
+const route = useRoute();
+const router = useRouter();
+
+// Add a history entry when opening filters or job details.
+watch(
+  () => {
+    if (selectedJob.value) return "details";
+    if (showFilters.value) return "filters";
+
+    return "";
+  },
+  (panel) => {
+    if (panel && route.query.jobPanel !== panel) {
+      router.push({
+        query: {
+          ...route.query,
+          jobPanel: panel,
+        },
+      });
+    }
+  }
+);
+
+// Browser Back removes the panel query and shows the job results.
+watch(
+  () => route.query.jobPanel,
+  (panel) => {
+    if (!panel) {
+      selectedJob.value = null;
+      showFilters.value = false;
+    }
+  }
+);
+
+function backToJobs() {
+  if (route.query.jobPanel) {
+    router.back();
+  } else {
+    selectedJob.value = null;
+    showFilters.value = false;
+  }
+}
+
 </script>
 
 <style scoped>
