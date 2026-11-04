@@ -5,7 +5,7 @@ import { isLoggedIn } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-// 1. GET /api/intel - Get all community posts
+// GET /api/intel - Get all community posts
 router.get('/', async (req, res) => {
   try {
     // If database is empty on first run, insert the 4 sample posts
@@ -99,12 +99,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST /api/intel - Create a new post (Protected by isLoggedIn)
+// POST /api/intel - Create a new post (Protected by isLoggedIn)
 router.post('/', isLoggedIn, async (req, res) => {
   try {
     const { type, company, role, title, questions, experience } = req.body;
 
-    // 1. Check that company, role, and title are strings and not just empty spaces
+    // Check that company, role, and title are strings and not just empty spaces
     if (
       typeof company !== 'string' || !company.trim() ||
       typeof role !== 'string' || !role.trim() ||
@@ -113,19 +113,19 @@ router.post('/', isLoggedIn, async (req, res) => {
       return res.status(400).json({ error: 'Company, role, and title must be valid text.' });
     }
 
-    // 2. Check that post type is one of the two allowed options
+    // Check that post type is one of the two allowed options
     if (type !== 'Experience' && type !== 'Interview questions') {
       return res.status(400).json({ error: 'Invalid post type.' });
     }
 
-    // 3. If it's an Experience post, make sure experience text is provided
+    // If it's an Experience post, make sure experience text is provided
     if (type === 'Experience') {
       if (typeof experience !== 'string' || !experience.trim()) {
         return res.status(400).json({ error: 'Please share your interview experience.' });
       }
     }
 
-    // 4. If it's an Interview questions post, make sure questions is a non-empty array
+    // If it's an Interview questions post, make sure questions is a non-empty array
     let cleanQuestions = [];
     if (type === 'Interview questions') {
       if (!Array.isArray(questions) || questions.length === 0) {
@@ -141,7 +141,7 @@ router.post('/', isLoggedIn, async (req, res) => {
     }
 
     const newPost = await IntelPost.create({
-      author: req.session.user.id, // Stored in DB only, never exposed in response
+      author: req.session.user.id, // Stored in DB only
       type: type,
       company: company.trim(),
       role: role.trim(),
@@ -177,7 +177,7 @@ router.post('/', isLoggedIn, async (req, res) => {
   }
 });
 
-// 3. POST /api/intel/:id/upvote - Toggle upvote (Protected by isLoggedIn)
+// POST /api/intel/:id/upvote - Toggle upvote (Protected by isLoggedIn)
 router.post('/:id/upvote', isLoggedIn, async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
@@ -210,7 +210,7 @@ router.post('/:id/upvote', isLoggedIn, async (req, res) => {
   }
 });
 
-// 4. DELETE /api/intel/:id - Delete a post (Only the author can delete their own post)
+// DELETE /api/intel/:id - Delete a post (Only the author can delete their own post)
 router.delete('/:id', isLoggedIn, async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {

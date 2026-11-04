@@ -277,10 +277,10 @@ async function publishPost() {
       return;
     }
 
-    // Add the new post from MongoDB to the top of our list
+    // Add the new post from MongoDB to the top of list
     posts.value.unshift(data.post);
 
-    // Reset filters so the new post shows up right away
+    // Reset filters so the new post shows up 
     selectedType.value = "All";
     selectedCompany.value = "All";
     selectedRole.value = "All";
@@ -390,7 +390,7 @@ async function publishPost() {
             <input
               id="post-role"
               v-model="formRole"
-              maxlength="80"
+              maxlength="100"
               class="form-control bg-body-tertiary rounded-3"
               placeholder="e.g. Engineering Intern"
             />
@@ -402,7 +402,7 @@ async function publishPost() {
             <input
               id="post-title"
               v-model="formTitle"
-              maxlength="120"
+              maxlength="150"
               class="form-control bg-body-tertiary rounded-3"
               placeholder="Give your post a clear title"
             />

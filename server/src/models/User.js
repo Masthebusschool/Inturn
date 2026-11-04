@@ -94,7 +94,7 @@ const userSchema = new mongoose.Schema(
     journalQuestions: {
       type: [
         {
-          sourceId: { type: String, default: '' },
+          sourceId: { type: String, default: '', maxLength: 100},
           category: { type: String, default: 'General', trim: true, maxLength: 50 },
           company: { type: String, default: '', trim: true, maxLength: 80 },
           text: { type: String, required: true, trim: true, maxLength: 500 },
@@ -158,8 +158,7 @@ export async function deleteUser(userId) {
   await Resume.deleteMany({ user: userId });
   await LearningTask.deleteMany({ user: userId });
   await Application.deleteMany({ user: userId });
-  // Keep community intel posts, but detach them from the deleted user
-  await IntelPost.updateMany({ author: userId }, { author: null });
+  await IntelPost.updateMany({ author: userId }, { author: null });  // Keep community intel posts, but detach them from the deleted user
   await IntelPost.updateMany(
     { upvotedBy: userId },
     { $pull: { upvotedBy: userId }, $inc: { upvotes: -1 } }

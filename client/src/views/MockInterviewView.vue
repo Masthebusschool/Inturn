@@ -12,7 +12,7 @@ const showModal = ref(false)
 const showSaveMessage = ref(false)
 const isAdding = ref(false)
 
-// 1. Load user's saved journal questions from GET /api/interview
+// Load user's saved journal questions from GET /api/interview
 async function loadJournal() {
   try {
     const res = await fetch('/api/interview')
@@ -36,7 +36,7 @@ async function loadJournal() {
   }
 }
 
-// 2. Load community questions directly from GET /api/intel
+// Load community questions directly from GET /api/intel
 async function loadCommunityQuestions() {
   try {
     const res = await fetch('/api/intel')
