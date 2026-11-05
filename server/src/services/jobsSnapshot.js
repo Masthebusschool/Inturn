@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { randomUUID } from "node:crypto";
-import { prepareJobGeneration } from "./jobsSearch.js";
+import { prepareJobGeneration, SEARCH_VERSION } from "./jobsSearch.js";
 
 const API = "https://api.mycareersfuture.gov.sg/v2/jobs";
 const LIMIT = 100;
@@ -262,8 +262,22 @@ export async function syncJobs() {
       throw new Error("Stored internship count is inconsistent.");
     }
 
+    // Prepare the new batch before the website can read it.
     await prepareJobGeneration(generation);
 
+    const preparedCount = await jobs.countDocuments({
+      generation,
+      "search.v": SEARCH_VERSION,
+    });
+
+    if (preparedCount !== count) {
+      throw new Error(
+        `Jobs sync stopped: ${preparedCount} of ${count} jobs ` +
+        `are ready for search version ${SEARCH_VERSION}.`
+      );
+    }
+
+    // Only switch to the new batch after every job is ready.
     await state.updateOne(
       { _id: "active" },
       {
@@ -271,7 +285,7 @@ export async function syncJobs() {
           generation,
           updatedAt: new Date().toISOString(),
           count,
-          searchVersion: 2,
+          searchVersion: SEARCH_VERSION,
         },
       },
       { upsert: true }

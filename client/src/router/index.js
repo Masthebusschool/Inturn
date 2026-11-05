@@ -13,10 +13,12 @@ import EditProfileView from '../views/EditProfileView.vue'
 import ResumeAnalysisView from '../views/ResumeAnalysisView.vue'
 import ResumesView from '../views/ResumesView.vue'
 import ResumeEditorView from '../views/ResumeEditorView.vue'
-import { authStore } from '../stores/auth.js' 
+import LandingView from '../views/LandingView.vue'
+import { authStore } from '../stores/auth.js'
 
 const routes = [
-  { path: '/', name: 'home', redirect: '/jobs'},
+  // landing page for visitors, logged in users go straight to the jobs page (see beforeEach)
+  { path: '/', name: 'home', component: LandingView, meta: { fullPage: true, public: true } },
   { path: '/applications', name: 'applications' , component: KanbanView},
   { path: '/jobs', name: 'jobs', component: JobsView },
   { path: '/skill-gap', name: 'skill-gap', component: SkillGapView },
@@ -39,7 +41,7 @@ const routes = [
 const router = createRouter({ history: createWebHistory(), routes })
 router.beforeEach(async (to) => { 
   if (!authStore.checked) await authStore.fetchMe()
-  if (authStore.isLoggedIn && (to.name === 'login' || to.name === 'signup')) {
+  if (authStore.isLoggedIn && (to.name === 'home' || to.name === 'login' || to.name === 'signup')) {
     return authStore.user.educationLevel ? '/jobs' : '/onboarding'}
   if (to.meta.public) return true
   if (!authStore.isLoggedIn) return { name: 'login', query: { redirect: to.fullPath } }
