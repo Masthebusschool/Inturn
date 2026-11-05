@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-const pageUrl = 'http://localhost:5173';
+const pageUrl = 'http://localhost:5173/login';
 
 export async function loginTestUser(page, email, password) {
     await page.goto(pageUrl);
