@@ -34,13 +34,13 @@ const interviewAt = ref(toDateTimeInput(card.interviewAt)); // only used when st
 const originalExpiryDate = expiryDate.value;
 const originalInterviewAt = interviewAt.value;
 
-const errors = ref({}); // e.g. { title: 'Please enter the job title.' }
+const errors = ref({}); // e.g. { title: 'Please enter the internship title.' }
 
 // check the fields, return true if everything is ok
 function validate() {
     const newErrors = {};
 
-    if (title.value.trim() === '') newErrors.title = 'Please enter the job title.';
+    if (title.value.trim() === '') newErrors.title = 'Please enter the internship title.';
     if (companyName.value.trim() === '') newErrors.companyName = 'Please enter the company name.';
 
     if (expiryDate.value === '') {
@@ -109,7 +109,7 @@ function cancel() { emit('cancel'); }
           <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
 
           <div class="mb-3">
-            <label class="form-label">Job title <span class="text-danger">*</span></label>
+            <label class="form-label">Internship title <span class="text-danger">*</span></label>
             <input v-model="title" class="input-inturn" :class="{ 'is-invalid': errors.title }" placeholder="e.g. Software Engineer Intern" :maxlength="MAX_TITLE_LENGTH" />
             <div class="invalid-feedback">{{ errors.title }}</div>
           </div>
@@ -143,7 +143,7 @@ function cancel() { emit('cancel'); }
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Job posting link</label>
+            <label class="form-label">Internship posting link</label>
             <input v-model="jobDetailsUrl" type="url" class="input-inturn" :class="{ 'is-invalid': errors.jobDetailsUrl }" placeholder="https://..." />
             <div class="invalid-feedback">{{ errors.jobDetailsUrl }}</div>
           </div>

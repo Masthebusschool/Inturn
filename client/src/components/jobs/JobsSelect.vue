@@ -15,7 +15,7 @@
         type="button"
         @click="emit('save', job.uuid)"
       >
-        {{ saved ? "Saved" : "Save Job" }}
+        {{ saved ? "Saved" : "Save Internship" }}
       </button>
     </header>
 
@@ -44,7 +44,7 @@
 
     <!-- Job information -->
     <section class="card-inturn detail-section">
-      <h2 class="section-title">Job Information</h2>
+      <h2 class="section-title">Internship Information</h2>
 
       <div class="job-facts">
         <div>
@@ -86,9 +86,9 @@
       </p>
     </section>
 
-    <!-- Resume skills -->
+    <!-- Profile skills -->
     <section class="card-inturn detail-section">
-      <h2 class="section-title">Skills and Resume Match</h2>
+      <h2 class="section-title">Skills and Profile Match</h2>
 
       <p v-if="jobSkills.length === 0" class="section-description">
         No structured skills were provided for this listing.
@@ -102,12 +102,12 @@
           </strong>
 
           <p>
-            Compared against the resume skills supplied by your application.
+            Compared against the skills in your profile.
           </p>
         </div>
 
         <p v-else class="section-description">
-          Resume skills have not been connected yet. The job's listed
+          Your profile has no skills yet. The internship's listed
           skills are shown below.
         </p>
 
@@ -134,9 +134,9 @@
         </div>
 
         <p v-if="resumeSkills.length > 0" class="small-note">
-          This compares skill names without considering letter case.
-          Different wording may not match. This is not an interview
-          prediction.
+          This compares skill names, ignoring case, spacing and common
+          abbreviations. Very different wording may still not match. This
+          is not an interview prediction.
         </p>
       </template>
     </section>
@@ -154,7 +154,7 @@
       </a>
 
       <p v-else class="section-description">
-        An official listing link is not available for this job.
+        An official listing link is not available for this internship.
       </p>
 
       <p class="small-note">
@@ -167,6 +167,7 @@
 
 <script setup>
 import { computed } from "vue";
+import { canonical } from "../../utils/skillNormalize.js";
 
 const props = defineProps({
   job: {
@@ -326,14 +327,14 @@ const jobSkills = computed(() => {
 });
 
 function hasResumeSkill(skill) {
-  const keyword = skill.trim().toLowerCase();
+  const keyword = canonical(skill);
 
   for (let i = 0; i < props.resumeSkills.length; i++) {
     const resumeSkill = props.resumeSkills[i];
 
     if (
       typeof resumeSkill === "string" &&
-      resumeSkill.trim().toLowerCase() === keyword
+      canonical(resumeSkill) === keyword
     ) {
       return true;
     }

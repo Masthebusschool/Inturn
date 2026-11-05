@@ -87,7 +87,9 @@ export const signup = async (req, res) => {
     const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
     const user = await User.createUser({ name: data.name, email: data.email, passwordHash });
 
-    // No session here: the user logs in themselves after signing up
+    // Log the new account in immediately so the client lands straight on onboarding
+    await startSession(req, user, false);
+    await User.recordLogin(user.id);
     return res.status(201).json({ user: User.toPublicUser(user) });
   }
   catch (e) {
@@ -155,6 +157,82 @@ export const me = async (req, res) => {
       });
     }
     return res.json({ user: User.toPublicUser(user) });
+  }
+  catch (e) {
+    console.error(e);
+    return res.status(500).json({ error: 'An internal error occurred' });
+  }
+};
+
+// Email and password changes both re-check the current password, so a hijacked session alone cannot take over the account.
+export const changeEmail = async (req, res) => {
+  const body = req.body ?? {};
+  const email = String(body.email ?? '').trim().toLowerCase();
+  const currentPassword = String(body.currentPassword ?? '');
+  const errors = [];
+
+  if (!email)
+    errors.push('Email is required');
+  else if (!EMAIL_PATTERN.test(email))
+    errors.push('Email format is invalid');
+  if (!currentPassword)
+    errors.push('Enter your current password');
+  if (errors.length > 0)
+    return res.status(400).json({ errors });
+
+  try {
+    const user = await User.retrieveUserWithPassword({ _id: req.session.user.id });
+    if (!user)
+      return res.status(404).json({ error: 'User not found' });
+    if (!await bcrypt.compare(currentPassword, user.passwordHash))
+      return res.status(400).json({ errors: ['Current password is incorrect'] });
+    if (email === user.email)
+      return res.status(400).json({ errors: ['That is already your email'] });
+    if (await User.retrieveUser({ email }))
+      return res.status(400).json({ errors: ['Email is already registered'] });
+
+    const updated = await User.updateUser(user.id, { email });
+    req.session.user.email = updated.email;
+    return res.json({ user: User.toPublicUser(updated) });
+  }
+  catch (e) {
+    // Someone else registered the same email at the same time
+    if (e.code === 11000)
+      return res.status(400).json({ errors: ['Email is already registered'] });
+    if (e.name === 'ValidationError')
+      return res.status(400).json({ errors: Object.values(e.errors).map((err) => err.message) });
+    console.error(e);
+    return res.status(500).json({ error: 'An internal error occurred' });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const body = req.body ?? {};
+  const currentPassword = String(body.currentPassword ?? '');
+  const data = {
+    password: String(body.password ?? ''),
+    confirmPassword: String(body.confirmPassword ?? ''),
+  };
+  const errors = [];
+
+  if (!currentPassword)
+    errors.push('Enter your current password');
+  validatePassword(data, errors);
+  if (currentPassword && data.password === currentPassword)
+    errors.push('New password must be different from your current password');
+  if (errors.length > 0)
+    return res.status(400).json({ errors });
+
+  try {
+    const user = await User.retrieveUserWithPassword({ _id: req.session.user.id });
+    if (!user)
+      return res.status(404).json({ error: 'User not found' });
+    if (!await bcrypt.compare(currentPassword, user.passwordHash))
+      return res.status(400).json({ errors: ['Current password is incorrect'] });
+
+    const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
+    await User.updateUser(user.id, { passwordHash });
+    return res.json({ message: 'Password updated' });
   }
   catch (e) {
     console.error(e);

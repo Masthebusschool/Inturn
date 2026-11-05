@@ -131,7 +131,7 @@
 
     <!-- Category -->
     <section class="card-inturn filter-section">
-      <h3 class="section-title mb-0">Job Category</h3>
+      <h3 class="section-title mb-0">Internship Category</h3>
 
       <p class="section-description">
         Choose the type of work you are interested in.
@@ -229,6 +229,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { canonical } from "../../utils/skillNormalize.js";
 
 const props = defineProps({
   modelValue: {
@@ -484,7 +485,7 @@ function addCustomSkill() {
   for (const selected of props.modelValue.skills) {
     selectedSkills.push(selected);
 
-    if (selected.toLowerCase() === skill.toLowerCase()) {
+    if (canonical(selected) === canonical(skill)) {
       alreadySelected = true;
     }
   }

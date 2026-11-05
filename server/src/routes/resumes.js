@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { isLoggedIn, loadUser } from '../middleware/authMiddleware.js';
-import { receiveResumePdf } from '../middleware/uploadMiddleware.js';
+import { receiveResumeFile } from '../middleware/uploadMiddleware.js';
 import { apiErrors } from '../middleware/apiErrors.js';
 import { toProfile } from '../utils/profile.js';
+import { getPrimaryResume, getOrCreatePrimaryResume, createResume } from '../utils/primaryResume.js';
 import { canonical } from '../utils/skillNormalize.js';
 import { s, strList, objList } from '../utils/sanitize.js';
-import { readResumePdf, MAX_TEXT_LENGTH } from '../services/resumeText.js';
+import { cleanContact } from '../utils/contact.js';
+import { readResumeFile, MAX_TEXT_LENGTH } from '../services/resumeText.js';
 import { parseResume, AIServiceError } from '../services/aiService.js';
 import Resume from '../models/Resume.js';
 
@@ -16,11 +18,7 @@ const skillKey = (t) => canonical(t) || t.toLowerCase();
 
 router.use(isLoggedIn, loadUser);
 
-// ---- sanitising (mirrors profile.js's PUT cleaning, plus contact + resume-only fields) ----
-const cleanContact = (c) => ({
-  fullName: s(c?.fullName), phone: s(c?.phone), email: s(c?.email),
-  linkedin: s(c?.linkedin), github: s(c?.github), portfolio: s(c?.portfolio),
-});
+// ---- sanitising of resume request bodies ----
 const cleanExperience = (v) =>
   objList(v, (e) => ({
     title: s(e.title), company: s(e.company), location: s(e.location), startDate: s(e.startDate), endDate: s(e.endDate),
@@ -61,8 +59,24 @@ async function loadOwned(req, res, select = '') {
 }
 
 router.get('/', async (req, res) => {
-  const resumes = await Resume.find({ user: req.user._id }).sort({ updatedAt: -1 }).select('name updatedAt').lean();
+  const resumes = await Resume.find({ user: req.user._id }).sort({ updatedAt: -1 }).select('name updatedAt primary').lean();
   res.json({ resumes });
+});
+
+// Registered before /:id so "primary" isn't read as an id.
+router.get('/primary', async (req, res) => {
+  res.json({ resume: await getPrimaryResume(req.user._id) });
+});
+
+// The Profile page edits only these three sections; each is replaced only when present in the body.
+router.patch('/primary', async (req, res) => {
+  const body = req.body ?? {};
+  const resume = await getOrCreatePrimaryResume(req.user._id);
+  if (body.skills !== undefined) resume.skills = strList(body.skills, skillKey);
+  if (body.experience !== undefined) resume.experience = cleanExperience(body.experience);
+  if (body.projects !== undefined) resume.projects = cleanProjects(body.projects);
+  await resume.save();
+  res.json({ resume });
 });
 
 router.post('/', async (req, res) => {
@@ -72,18 +86,18 @@ router.post('/', async (req, res) => {
 
   let fields = { contact: {}, summary: '', skills: [], experience: [], projects: [], education: [] };
   if (seed === 'profile') {
-    const p = toProfile(req.user);
+    const p = await toProfile(req.user);
     fields = {
-      contact: { fullName: s(req.user.name), email: s(req.user.email), phone: '', linkedin: '', github: '', portfolio: '' },
+      contact: { fullName: s(req.user.name), email: s(req.user.email), phone: '', links: [] },
       summary: p.summary,
       skills: p.skills,
-      experience: p.experience.map((e) => ({ ...e, location: '' })),
-      projects: p.projects.map(({ name: n, bullets, skills }) => ({ name: n, bullets, skills, startDate: '', endDate: '' })),
+      experience: cleanExperience(p.experience), // also drops the source subdoc _ids
+      projects: cleanProjects(p.projects),
       education: p.education.map((e) => ({ ...e, grade: '', bullets: [] })),
     };
   }
 
-  const resume = await Resume.create({ user: req.user._id, name, ...fields });
+  const resume = await createResume(req.user._id, { name, ...fields });
   res.status(201).json({ resume });
 });
 
@@ -121,13 +135,13 @@ router.post('/:id/duplicate', async (req, res) => {
   res.status(201).json({ resume: copy });
 });
 
-// PDF upload and text extraction are shared with the resume analysis feature (resumeText.js).
-router.post('/:id/parse', receiveResumePdf, async (req, res) => {
+// Upload and text extraction are shared with the resume analysis feature (resumeText.js).
+router.post('/:id/parse', receiveResumeFile, async (req, res) => {
   const resume = await loadOwned(req, res, '_id user'); // loadOwned's ownership check needs `user` even when the route doesn't
   if (!resume) return;
-  const { resume: pdf, errors } = await readResumePdf(req.file);
+  const { resume: parsed, errors } = await readResumeFile(req.file);
   if (errors) return res.status(400).json({ errors });
-  res.json({ draft: await parseResume(pdf.text) });
+  res.json({ draft: await parseResume(parsed.text) });
 });
 
 // Hand-over from Resume Analysis ("AI deep analysis"): the text was already extracted from the
@@ -139,7 +153,7 @@ router.post('/from-text', async (req, res) => {
   const name = s(req.body?.name).slice(0, MAX_NAME) || 'Uploaded resume';
 
   const draft = await parseResume(text);
-  const resume = await Resume.create({ user: req.user._id, name, ...draft });
+  const resume = await createResume(req.user._id, { name, ...draft });
   res.status(201).json({ resume });
 });
 

@@ -9,7 +9,9 @@ import Application from '../models/Application.js';
 import { toProfile } from '../utils/profile.js';
 import { profileFromResume } from '../utils/resumeProfile.js';
 import { syncLearningTasksFromResult } from '../utils/learningTasks.js';
-import { cleanDraft, cleanOverrides, draftToProfile } from '../utils/tailorDraft.js';
+import { cleanDraft, cleanOverrides, draftToProfile, unsupportedSkills } from '../utils/tailorDraft.js';
+import { addSkillsToPrimary } from '../utils/primaryResume.js';
+import { canonical } from '../utils/skillNormalize.js';
 
 const router = Router();
 router.use(isLoggedIn, loadUser);
@@ -17,6 +19,7 @@ router.use(isLoggedIn, loadUser);
 const MAX_DESCRIPTION = 20000;
 const MAX_MESSAGE = 2000;
 const MAX_LABEL = 80;
+const skillKey = (t) => canonical(t) || t.toLowerCase();
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 // Optional "apply by" date for the posting; invalid/missing input is silently dropped (feature degrades gracefully).
 const parseDeadline = (v) => {
@@ -50,7 +53,7 @@ router.post('/', async (req, res) => {
     applicationDeadline: parseDeadline(j.applicationDeadline),
   };
   if (!job.title || !job.description) {
-    return res.status(400).json({ error: 'Job title and description are required.' });
+    return res.status(400).json({ error: 'Internship title and description are required.' });
   }
 
   // Set when the analysis started from the Tracker board's "Tailor Resume" button.
@@ -74,7 +77,7 @@ router.post('/', async (req, res) => {
     profile = profileFromResume(resumeDoc);
     sourceResume = { resume: resumeDoc._id, name: resumeDoc.name, resumeUpdatedAt: resumeDoc.updatedAt };
   } else {
-    profile = toProfile(req.user);
+    profile = await toProfile(req.user);
   }
   if (!profile.skills.length && !profile.experience.length && !profile.projects.length) {
     return res.status(400).json({
@@ -103,7 +106,15 @@ router.post('/', async (req, res) => {
   } catch (e) {
     console.error('[skillgap] learning-task sync failed:', e);
   }
-  res.status(201).json({ result });
+  // Add-only merge of the tailored skills into the profile, minus any the AI invented (not in the analysed profile).
+  let addedSkills = [];
+  try {
+    const fabricated = new Set(unsupportedSkills(tailoredResume.skills, gap.profileSnapshot));
+    addedSkills = await addSkillsToPrimary(req.user._id, (tailoredResume.skills || []).filter((t) => !fabricated.has(t)));
+  } catch (e) {
+    console.error('[skillgap] profile skill merge failed:', e);
+  }
+  res.status(201).json({ result, addedSkills });
 });
 
 // Registered before '/:id' so "history" isn't treated as an id.
@@ -131,7 +142,7 @@ router.post('/:id/rescore', async (req, res) => {
   const draft = cleanDraft(req.body?.draft);
   const overrides = cleanOverrides(req.body?.overrides, new Set(r.requirements.map((x) => x.key)));
   const rev = Number.isFinite(req.body?.rev) && req.body.rev > 0 ? req.body.rev : Date.now();
-  const fullProfile = toProfile(req.user);
+  const fullProfile = await toProfile(req.user);
   // Anchor stability on the last draft score when there is one, else on the original analysis.
   const prior = r.draftScore
     ? { requirements: r.draftScore.requirements || [], profileSnapshot: r.draftSnapshot }
@@ -151,7 +162,21 @@ router.post('/:id/rescore', async (req, res) => {
     { _id: r._id, user: req.user._id, $or: [{ draftRev: { $lt: rev } }, { draftRev: { $exists: false } }] },
     { $set: { draftResume: draft, overrides, draftScore: score, draftSnapshot: snapshot, draftRev: rev } }
   );
-  res.json({ score, stats, saved: w.matchedCount === 1 });
+  const saved = w.matchedCount === 1;
+
+  // Add-only merge into the profile. Skills the student typed are their own assertion; only skills that
+  // the AI's initial draft introduced AND the analysed profile doesn't support are held back.
+  let addedSkills = [];
+  if (saved) {
+    try {
+      const aiMade = new Set((r.tailoredResume?.skills || []).map(skillKey));
+      const fabricated = new Set(unsupportedSkills(draft.skills, r.profileSnapshot).filter((t) => aiMade.has(skillKey(t))));
+      addedSkills = await addSkillsToPrimary(req.user._id, draft.skills.filter((t) => !fabricated.has(t)));
+    } catch (e) {
+      console.error('[skillgap] profile skill merge failed:', e);
+    }
+  }
+  res.json({ score, stats, saved, addedSkills });
 });
 
 router.post('/:id/tailor', async (req, res) => {
@@ -166,8 +191,9 @@ router.post('/:id/tailor', async (req, res) => {
   const focusKeys = (Array.isArray(req.body?.focusKeys) ? req.body.focusKeys : []).filter((k) => validKeys.has(k));
   const draft = cleanDraft(req.body?.draft || r.draftResume || r.tailoredResume);
 
+  const fullProfile = await toProfile(req.user);
   const turn = await tailorChatTurn({
-    job: r.job, draft, fullProfile: toProfile(req.user), requirements, focusKeys, history: r.tailorChat || [], message,
+    job: r.job, draft, fullProfile, requirements, focusKeys, history: r.tailorChat || [], message,
   });
   const now = new Date();
   const u = { role: 'user', text: message, focusKeys, asking: false, suggestions: [], createdAt: now };
@@ -192,6 +218,9 @@ router.post('/:id/duplicate', async (req, res) => {
   const copy = await SkillGapResult.create({
     user: r.user,
     job: r.job,
+    // Without it the client's resume Preview loses the source resume's contact details.
+    // `application` is deliberately not copied: the tracker card stays linked to the original.
+    ...(r.sourceResume && { sourceResume: r.sourceResume }),
     atsScore: r.atsScore,
     band: r.band,
     requirements: r.requirements,

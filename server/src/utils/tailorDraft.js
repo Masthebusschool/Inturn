@@ -136,6 +136,13 @@ export function hasPlaceholder(text) {
 
 const hasWord = (haystackWords, words) => Boolean(words) && ` ${haystackWords} `.includes(` ${words} `);
 
+// Skills whose words never appear in supportText (e.g. a profileSnapshot): the AI made them up.
+// Same rule cleanSuggestions applies to the skills field.
+export function unsupportedSkills(skills, supportText) {
+  const supportWords = wordsOf(supportText);
+  return (Array.isArray(skills) ? skills : []).filter((sk) => !hasWord(supportWords, wordsOf(sk)));
+}
+
 // Named products/languages the model likes to "helpfully" add (live test: it slipped PostgreSQL into a
 // summary as "a standard pairing"). Practices (CI/CD, REST, OOP) are left out on purpose, and so are
 // words that are also plain English (go, react, express, spring, swift, excel) to avoid false rejects.

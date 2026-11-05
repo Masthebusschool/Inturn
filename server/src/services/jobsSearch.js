@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { canonical } from "../utils/skillNormalize.js";
 
 export const SEARCH_VERSION = 2;
 
@@ -14,15 +15,27 @@ function normalize(value) {
   return String(value ?? "").trim().toLowerCase();
 }
 
-function uniqueNames(values) {
+function uniqueNames(values, mapFn = normalize) {
   return [
     ...new Set(
       (Array.isArray(values) ? values : [])
-        .filter((value) => typeof value === "string").map(normalize).filter(Boolean)
+        .filter((value) => typeof value === "string")
+        .map(mapFn)
+        .filter(Boolean)
     ),
   ];
 }
 
+// Same normalizer the rest of the app uses for skills, so "Java Script" on a resume matches
+// "javascript" from MCF instead of failing a literal string comparison.
+export function canonicalSkillList(rawSkills) {
+  return uniqueNames(
+    (Array.isArray(rawSkills) ? rawSkills : []).map((entry) => entry?.skill),
+    canonical
+  );
+}
+
+// MongoDB expression helpers.
 function text(expression) {
   return {
     $convert: {
@@ -196,6 +209,39 @@ export async function prepareJobGeneration(generation) {
       },
     ]
   );
+
+  // search.skills above is a plain lowercase of the MCF tag — aggregation pipelines can't call
+  // the shared canonical() normalizer, so re-derive it here in JS. Runs over the whole generation
+  // (not just search.v-stale docs) so a SEARCH_VERSION bump always fully re-canonicalizes.
+  console.log("[Jobs search] Canonicalizing skill tags.");
+
+  const cursor = jobs.find(
+    { generation },
+    { projection: { "job.skills": 1 } }
+  );
+
+  let batch = [];
+  for await (const doc of cursor) {
+    batch.push({
+      updateOne: {
+        filter: { _id: doc._id },
+        update: {
+          $set: {
+            "search.skills": canonicalSkillList(doc.job?.skills),
+          },
+        },
+      },
+    });
+
+    if (batch.length >= 500) {
+      await jobs.bulkWrite(batch, { ordered: false });
+      batch = [];
+    }
+  }
+
+  if (batch.length) {
+    await jobs.bulkWrite(batch, { ordered: false });
+  }
 
   await jobs.createIndex(
     { generation: 1, uuid: 1 },
@@ -384,7 +430,7 @@ export async function searchPublishedJobs(input = {}) {
 
   if (!active) {
     const error = new Error(
-      "No completed jobs collection is available."
+      "No completed internships collection is available."
     );
     error.status = 503;
     throw error;
@@ -392,7 +438,7 @@ export async function searchPublishedJobs(input = {}) {
 
   if (active.searchVersion !== SEARCH_VERSION) {
     const error = new Error(
-      "Job search needs one-time preparation. " +
+      "Internship search needs one-time preparation. " +
       "Run the prepare-search command."
     );
     error.status = 503;
@@ -400,8 +446,8 @@ export async function searchPublishedJobs(input = {}) {
   }
 
   const keyword = normalize(input.search);
-  const selected = uniqueNames(input.skills);
-  const resume = uniqueNames(input.resumeSkills);
+  const selected = uniqueNames(input.skills, canonical);
+  const resume = uniqueNames(input.resumeSkills, canonical);
 
   if (keyword.length > 200) {
     throw badRequest("Search text is too long.");

@@ -8,5 +8,7 @@ router.post('/signup', authController.signup);
 router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', isLoggedIn, authController.me);
+router.put('/email', isLoggedIn, authController.changeEmail);
+router.put('/password', isLoggedIn, authController.changePassword);
 
 export default router;

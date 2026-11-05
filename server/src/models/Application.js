@@ -62,6 +62,11 @@ export function toCard(application, skills) {
         else skillsMissing.push(skill);
     });
 
+    // Populated analysis (not a bare ObjectId, which has _bsontype): its gaps are more accurate than the keyword heuristic.
+    const link = application.skillGapResultId;
+    const gap = link && typeof link === 'object' && !link._bsontype ? link : null;
+    const gapMissing = gap ? (gap.draftScore?.missingSkills ?? gap.missingSkills ?? []) : null;
+
     // add to application cards list
     let card = {
         _id: application._id,
@@ -75,7 +80,7 @@ export function toCard(application, skills) {
         tasks: application.tasks, // [{ _id, text, done }] for the checklist modal
         prep: `${completedTasks} / ${application.tasks.length}`,
         matched: skillsMatched,
-        missing: skillsMissing,
+        missing: gapMissing ?? skillsMissing,
         total: application.skills.length,
         skills: application.skills, // prefills the edit form
         jobDetailsUrl: application.jobDetailsUrl, // prefills the edit form
@@ -93,7 +98,7 @@ export function toCard(application, skills) {
 
 // get all specified user's applications
 export function getApplicationsByUser(uid) {
-    return Application.find({ user: uid }).populate('skillGapResultId', 'atsScore band draftScore.atsScore draftScore.band');
+    return Application.find({ user: uid }).populate('skillGapResultId', 'atsScore band missingSkills draftScore.atsScore draftScore.band draftScore.missingSkills');
 }
 
 // create application

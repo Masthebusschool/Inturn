@@ -10,6 +10,7 @@ import ScoreReport from '../components/skillgap/ScoreReport.vue'
 import DraftEditor from '../components/skillgap/DraftEditor.vue'
 import TailorChat from '../components/skillgap/TailorChat.vue'
 import ResumePaper from '../components/skillgap/ResumePaper.vue'
+import { restoreMatchingResume } from '../stores/jobMatch.js'
 
 const TYPING_MS = 2500 // wait for a pause in typing before paying for a rescore
 const APPLY_MS = 1200 // an applied suggestion is a deliberate, discrete edit
@@ -46,10 +47,37 @@ async function loadSourceResumeDoc(resumeId) {
   }
 }
 
+// Primary (profile) resume: its contact is the fallback for analyses with no source resume,
+// so the preview keeps the phone and links instead of just name + email.
+const primaryResume = ref(null)
+
+async function loadPrimaryResume() {
+  try {
+    primaryResume.value = (await api('/api/resumes/primary')).resume || null
+  } catch {
+    primaryResume.value = null // fall back to name + email only
+  }
+}
+
 const paperProfile = computed(() => {
   if (sourceResumeDoc.value) return { contact: sourceResumeDoc.value.contact, education: sourceResumeDoc.value.education }
-  return { contact: { fullName: profile.value?.name, email: profile.value?.email }, education: profile.value?.education }
+  const primaryContact = primaryResume.value?.contact || {}
+  return {
+    contact: {
+      ...primaryContact,
+      fullName: primaryContact.fullName || profile.value?.name,
+      email: primaryContact.email || profile.value?.email,
+    },
+    education: profile.value?.education,
+  }
 })
+
+// The server may auto-append skills to the primary resume; refresh what depends on it.
+function onAddedSkills(addedSkills) {
+  if (!addedSkills?.length) return
+  restoreMatchingResume()
+  loadPrimaryResume()
+}
 
 const route = useRoute()
 const resumes = ref([])
@@ -176,7 +204,7 @@ async function removeTodo(t) {
 
 async function loadProfile() {
   try {
-    profile.value = (await api('/api/profile')).user || {}
+    profile.value = (await api('/api/profile')).profile || {}
   } catch (e) {
     profileError.value = e.message
   }
@@ -243,13 +271,14 @@ async function doRescore() {
   rescoring.value = true
   rescoreErr.value = null
   try {
-    const { score } = await api(`/api/skillgap/${result.value._id}/rescore`, {
+    const { score, addedSkills } = await api(`/api/skillgap/${result.value._id}/rescore`, {
       method: 'POST',
       body: { draft: draft.value, overrides: overrides.value, rev: lastRev },
       signal: ctrl.signal,
     })
     if (mySeq !== seq) return // a newer rescore owns the UI now
     draftScore.value = score
+    onAddedSkills(addedSkills)
   } catch (e) {
     if (e.name === 'AbortError' || mySeq !== seq) return
     lastKey = '' // let Retry or the next edit send again
@@ -334,7 +363,7 @@ async function analyze() {
   elapsedTimer = setInterval(() => elapsed.value++, 1000)
   const linked = linksToApplication()
   try {
-    const { result: r } = await api('/api/skillgap', {
+    const { result: r, addedSkills } = await api('/api/skillgap', {
       method: 'POST',
       body: {
         job: {
@@ -351,6 +380,7 @@ async function analyze() {
     openLoaded(r)
     loadHistory()
     loadTodos() // the server just added this analysis's skills
+    onAddedSkills(addedSkills)
   } catch (e) {
     fail(e, analyze)
   } finally {
@@ -451,6 +481,7 @@ async function copyText() {
 
 onMounted(() => {
   loadProfile()
+  loadPrimaryResume()
   loadHistory()
   loadTodos()
   loadResumes()
@@ -470,7 +501,7 @@ onBeforeUnmount(() => {
       <div>
         <h1 class="header-title">Skill Gap Analysis</h1>
         <p class="header-subtitle">
-          Paste a job posting to see how your profile scores, then tailor a resume draft and watch its score move.
+          Paste an internship posting to see how your profile scores, then tailor a resume draft and watch its score move.
         </p>
       </div>
     </header>
@@ -498,20 +529,20 @@ onBeforeUnmount(() => {
       <div v-if="!result || setupPanel === 'form'" class="col-12 col-lg-7">
         <form class="card-inturn p-0" novalidate @submit.prevent="analyze">
           <div class="p-4">
-            <h2 class="section-title">Job posting</h2>
+            <h2 class="section-title">Internship posting</h2>
             <div class="mb-3">
-              <label for="sg-title" class="form-label">Job title <span class="text-danger" aria-hidden="true">*</span></label>
+              <label for="sg-title" class="form-label">Internship title <span class="text-danger" aria-hidden="true">*</span></label>
               <input id="sg-title" v-model="job.title" class="input-inturn" :class="{ 'is-invalid': titleInvalid }" required aria-required="true" :disabled="analyzing" />
-              <div class="invalid-feedback">Enter the job title.</div>
+              <div class="invalid-feedback">Enter the internship title.</div>
             </div>
             <div class="mb-3">
               <label for="sg-company" class="form-label">Company</label>
               <input id="sg-company" v-model="job.company" class="input-inturn" :disabled="analyzing" />
             </div>
             <div class="mb-3">
-              <label for="sg-desc" class="form-label">Job description <span class="text-danger" aria-hidden="true">*</span></label>
-              <textarea id="sg-desc" v-model="job.description" rows="9" class="input-inturn" :class="{ 'is-invalid': descInvalid }" required aria-required="true" placeholder="Paste the full job posting here" :disabled="analyzing"></textarea>
-              <div class="invalid-feedback">Paste the job description.</div>
+              <label for="sg-desc" class="form-label">Internship description <span class="text-danger" aria-hidden="true">*</span></label>
+              <textarea id="sg-desc" v-model="job.description" rows="9" class="input-inturn" :class="{ 'is-invalid': descInvalid }" required aria-required="true" placeholder="Paste the full internship posting here" :disabled="analyzing"></textarea>
+              <div class="invalid-feedback">Paste the internship description.</div>
             </div>
             <div class="mb-3">
               <label for="sg-deadline" class="form-label">Application deadline <span class="text-body-secondary">(optional)</span></label>
@@ -589,7 +620,7 @@ onBeforeUnmount(() => {
       <div class="text-center py-4">
         <h2 class="section-title">No analysis yet</h2>
         <p class="text-body-secondary mb-0 mx-auto" style="max-width: 34rem">
-          Submit a job posting and you'll get a requirement-by-requirement match score, a tailored resume draft you can edit with a live score, and an AI assistant to close the gaps truthfully.
+          Submit an internship posting and you'll get a requirement-by-requirement match score, a tailored resume draft you can edit with a live score, and an AI assistant to close the gaps truthfully.
         </p>
       </div>
     </div>
@@ -604,29 +635,30 @@ onBeforeUnmount(() => {
               Analyzed {{ fmtDate(result.createdAt) }}<template v-if="result.job?.applicationDeadline"> · Apply by {{ fmtDate(result.job.applicationDeadline) }}</template><template v-if="result.label"> · <span class="badge text-bg-light border fw-normal">{{ result.label }}</span></template>
             </small>
           </div>
-          <div class="small" role="status" aria-live="polite">
-            <span v-if="!canRescore"></span>
-            <span v-else-if="rescoreErr && !dirty && !rescoring" class="text-danger-emphasis">
-              {{ rescoreErr.message }}
-              <button v-if="!quota(rescoreErr)" type="button" class="btn-danger-inturn btn-sm-inturn ms-1" @click="runRescore">Retry</button>
-            </span>
-            <span v-else-if="dirty" class="text-body-secondary">Changes pending…</span>
-            <span v-else-if="rescoring" class="text-body-secondary"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Re-scoring draft… usually 5–20s, instant if nothing changed</span>
-            <span v-else class="text-success-emphasis">Draft score up to date</span>
-          </div>
-          <div class="d-flex flex-wrap gap-2">
+          <!-- One toolbar; the status has a fixed-width slot so its text changing never moves the buttons -->
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn-primary-inturn btn-sm-inturn d-xxl-none" @click="showPane('chat')">Tailor chat</button>
+            <button type="button" class="btn-secondary-inturn btn-sm-inturn d-xxl-none" @click="showPane('preview')">Preview</button>
             <button type="button" class="btn-neutral-inturn btn-sm-inturn" :disabled="savingCopy || !canRescore" @click="saveAsNew">
               <span v-if="savingCopy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Save as new version
             </button>
-            <button type="button" class="btn-primary-inturn btn-sm-inturn d-xxl-none" @click="showPane('chat')">Tailor chat</button>
-            <button type="button" class="btn-secondary-inturn btn-sm-inturn d-xxl-none" @click="showPane('preview')">Preview</button>
+            <div class="sg-status small" :class="{ 'sg-status-error': canRescore && rescoreErr && !dirty && !rescoring }" role="status" aria-live="polite">
+              <span v-if="!canRescore"></span>
+              <span v-else-if="rescoreErr && !dirty && !rescoring" class="text-danger-emphasis">
+                {{ rescoreErr.message }}
+                <button v-if="!quota(rescoreErr)" type="button" class="btn-danger-inturn btn-sm-inturn ms-1" @click="runRescore">Retry</button>
+              </span>
+              <span v-else-if="dirty" class="text-body-secondary d-block text-truncate" title="Changes pending…">Changes pending…</span>
+              <span v-else-if="rescoring" class="text-body-secondary d-block text-truncate" title="Re-scoring draft… usually 5–20s, instant if nothing changed"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Re-scoring… (5–20s)</span>
+              <span v-else class="text-success-emphasis d-block text-truncate" title="Draft score up to date">Draft score up to date</span>
+            </div>
           </div>
         </div>
       </header>
 
       <p v-if="applyNote" class="alert alert-info py-2 small" role="status">{{ applyNote }}</p>
 
-      <div class="row g-4 g-xl-5 g-xxl-4">
+      <div class="row g-4 gx-xl-5 gx-xxl-4 sg-workspace">
         <div class="col-12 col-lg-4 col-xxl-3">
           <div class="sg-left" tabindex="0" role="region" aria-label="Score report" :aria-busy="dirty || rescoring">
             <ScoreReport
@@ -765,6 +797,13 @@ onBeforeUnmount(() => {
   display: flex; flex-direction: column; gap: 0.5rem; z-index: 1030;
   width: auto; max-width: none; padding: 0; margin-top: 0;
 }
+/* Reserve a gutter at the right so the fixed edge tabs don't cover the draft editor */
+@media (min-width: 1400px) {
+  .sg-workspace { padding-right: 3rem; }
+}
+.sg-status { flex: 0 0 13rem; width: 13rem; min-width: 0; }
+/* the error message + Retry may wrap, so it can take the full row */
+.sg-status-error { flex-basis: auto; width: auto; }
 .sg-edge-tab {
   writing-mode: vertical-rl; transform: rotate(180deg);
   border: none; border-radius: var(--r-pill); padding: 1.25rem 0.5rem;

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { formatDate } from '../../helpers/apptrackingboard/KanbanViewHelper';
+import { BAND_META, rawBand } from '../../lib/skillgap.js';
 
 const props = defineProps({ app: Object, collapsed: Boolean });
 const emit = defineEmits(['tailor-resume', 'view-intel', 'toggle']);
@@ -15,8 +16,20 @@ const dateLabel = computed(() => {
   return 'Due ' + formatDate(app.expiryDate);
 });
 
-// skills matched as a percentage (only shown when the job lists skills, so no dividing by 0)
-const matchPercent = computed(() => (props.app.matched / props.app.total) * 100);
+// a linked Skill Gap analysis score beats the matched/total heuristic
+const hasScore = computed(() => props.app.skillGapScore != null);
+const scoreCaption = computed(() => {
+  const score = props.app.skillGapScore;
+  const band = BAND_META[props.app.skillGapBand] ?? BAND_META[rawBand(score)];
+  return `${score}% · ${band.label} (Skill Gap analysis)`;
+});
+
+// skills matched as a percentage (only meaningful when the job lists skills, so no dividing by 0)
+const matchPercent = computed(() => {
+  if (hasScore.value) return props.app.skillGapScore;
+  if (!props.app.total) return 0;
+  return (props.app.matched / props.app.total) * 100;
+});
 
 // whether the missing skills list is open (picks the arrow icon)
 const missingOpen = ref(false);
@@ -67,7 +80,7 @@ onMounted(() => {
       title="Open the job posting in a new tab"
       v-on:pointerdown.stop
     >
-      <span class="text-secondary">Job Posting:</span>
+      <span class="text-secondary">Internship Posting:</span>
       <span class="job-link-action text-nowrap">
         View <i class="bi bi-box-arrow-up-right ms-1"></i>
       </span>
@@ -88,14 +101,17 @@ onMounted(() => {
     <div ref="details" class="collapse" :id="'details-' + app._id">
     <div class="pt-2">
 
-    <!-- only show the match bar when the job lists some skills -->
-    <template v-if="app.total > 0">
+    <!-- a linked Skill Gap analysis always has a score to show, even when the job lists no skills -->
+    <template v-if="hasScore || app.total > 0">
       <div class="progress">
         <div class="progress-bar" :style="{ width: matchPercent + '%' }"></div>
       </div>
-      <small class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
+      <small v-if="hasScore" class="d-block mt-1 text-secondary">{{ scoreCaption }}</small>
+      <small v-else class="d-block mt-1 text-secondary">{{ app.matched }}/{{ app.total }} Skills Matched</small>
     </template>
     <small v-else class="d-block text-secondary">No skills listed</small>
+
+    <!-- full width row under the count that opens the missing skills, hidden when nothing is missing -->
     <button
       v-if="app.missing?.length"
       type="button"

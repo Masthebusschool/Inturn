@@ -46,9 +46,12 @@ export const authStore = reactive({
     return user
   },
 
-  // Creates the account only; the user logs in afterwards.
+  // Creates the account and logs it in immediately (the server starts a session on signup).
   async signup(details) {
     const { user } = await authApi.signup(details)
+    authVersion++
+    this.user = user
+    this.checked = true
     return user
   },
 
@@ -68,10 +71,20 @@ export const authStore = reactive({
     resumeStore.clear()
   },
 
-  // Saves education, skills and target industries; keeps the stored user in sync.
+  // Saves name and education; keeps the stored user in sync.
   async updateProfile(details) {
     const { user } = await profileApi.updateProfile(details)
     this.user = user
     return user
+  },
+
+  async changeEmail(details) {
+    const { user } = await authApi.changeEmail(details)
+    this.user = user
+    return user
+  },
+
+  async changePassword(details) {
+    return authApi.changePassword(details)
   },
 })

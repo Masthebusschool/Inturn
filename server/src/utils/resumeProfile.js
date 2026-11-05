@@ -12,7 +12,6 @@ export function profileFromResume(resume) {
     summary: resume.summary || '',
     skills: [...(resume.skills || [])],
     targetRoles: [],
-    targetIndustries: [],
     experience: plain(resume.experience),
     projects: plain(resume.projects),
     education: plain(resume.education),

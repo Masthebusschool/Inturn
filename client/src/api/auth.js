@@ -15,3 +15,12 @@ export function logout() {
 export function getMe() {
   return request('/auth/me')
 }
+
+// Both re-check the current password on the server.
+export function changeEmail({ email, currentPassword }) {
+  return request('/auth/email', { method: 'PUT', body: { email, currentPassword } })
+}
+
+export function changePassword({ currentPassword, password, confirmPassword }) {
+  return request('/auth/password', { method: 'PUT', body: { currentPassword, password, confirmPassword } })
+}

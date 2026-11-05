@@ -16,7 +16,7 @@ export function useJobsView() {
   const pageInput = ref("");
 
   const loading = ref(false);
-  const loadingMessage = ref("Loading jobs...");
+  const loadingMessage = ref("Loading internships...");
   const error = ref("");
   const updatedAt = ref("");
 
@@ -135,7 +135,7 @@ export function useJobsView() {
     controller = currentController;
 
     loading.value = true;
-    loadingMessage.value = "Loading jobs...";
+    loadingMessage.value = "Loading internships...";
     error.value = "";
 
     try {
@@ -172,7 +172,7 @@ export function useJobsView() {
         !Number.isInteger(data.page) ||
         data.page < 0
       ) {
-        throw new Error("Unexpected job response.");
+        throw new Error("Unexpected internship response.");
       }
 
       jobs.value = data.results;
@@ -204,14 +204,14 @@ export function useJobsView() {
         error.value = serverMessage;
       } else if (err.code === "ECONNABORTED") {
         error.value =
-          "Loading jobs took too long. Please try again.";
+          "Loading internships took too long. Please try again.";
       } else if (status) {
         error.value =
-          `Jobs request failed: HTTP ${status}.`;
+          `Internships request failed: HTTP ${status}.`;
       } else {
         error.value =
           err.message ||
-          "Could not connect to the jobs server.";
+          "Could not connect to the internships server.";
       }
     } finally {
       if (
@@ -329,7 +329,7 @@ export function useJobsView() {
     } catch {
       if (!disposed) {
         error.value =
-          "Could not open job details. Please try again.";
+          "Could not open internship details. Please try again.";
       }
     } finally {
       if (!disposed) {
@@ -536,8 +536,8 @@ export function useJobsView() {
 
       notify(
         error.response?.status === 401
-          ? "Please sign in to save jobs to your tracker."
-          : "Could not load your saved jobs. Refresh to try again."
+          ? "Please sign in to save internships to your tracker."
+          : "Could not load your saved internships. Refresh to try again."
       );
     }
   }
@@ -557,7 +557,7 @@ export function useJobsView() {
       if (existing) {
         if (existing.status !== "Saved") {
           notify(
-            "This job has moved beyond Saved. Manage it from the tracker board."
+            "This internship has moved beyond Saved. Manage it from the tracker board."
           );
 
           return;
@@ -574,7 +574,7 @@ export function useJobsView() {
           (application) => application.jobId !== jobId
         );
 
-        notify("Job removed from Saved on your tracker board.");
+        notify("Internship removed from Saved on your tracker board.");
       } else {
         const job =
           selectedJob.value?.uuid === jobId
@@ -582,7 +582,7 @@ export function useJobsView() {
             : jobs.value.find((item) => item.uuid === jobId);
 
         if (!job) {
-          notify("Job information is unavailable. Please try again.");
+          notify("Internship information is unavailable. Please try again.");
           return;
         }
 
@@ -602,8 +602,8 @@ export function useJobsView() {
 
         notify(
           response.data.status === "Saved"
-            ? "Job saved to your tracker board."
-            : "This job is already on your tracker board."
+            ? "Internship saved to your tracker board."
+            : "This internship is already on your tracker board."
         );
       }
     } catch (error) {

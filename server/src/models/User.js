@@ -79,16 +79,13 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxLength: [100, 'Field of study must not exceed 100 characters'],
     },
-    skills: {
-      type: [{ type: String, trim: true, minLength: 1, maxLength: [50, 'Each skill must not exceed 50 characters'] }],
-      validate: [(arr) => arr.length <= 30, 'You can add at most 30 skills'],
-    },
     targetIndustries: {
       type: [{ type: String, trim: true, minLength: 1, maxLength: [50, 'Each industry must not exceed 50 characters'] }],
       validate: [(arr) => arr.length <= 10, 'You can add at most 10 industries'],
     },
-    // Work experience, projects and summaries live on each Resume, not here.
-    // utils/profile.js toProfile() builds the Skill Gap / "Start from Profile" shape from the fields above.
+    // Skills, work experience, projects and summaries live on each Resume, not here
+    // (target industries are the exception: they stay on the account).
+    // utils/profile.js toProfile() reads the user's primary resume (see utils/primaryResume.js).
 
    // Mock Interview Journal questions & saved reflections
     journalQuestions: {
@@ -121,8 +118,7 @@ export function toPublicUser(user) {
     educationLevel: user.educationLevel,
     institution: user.institution,
     fieldOfStudy: user.fieldOfStudy,
-    skills: user.skills,
-    targetIndustries: user.targetIndustries,
+    targetIndustries: user.targetIndustries ?? [],
   };
 }
 

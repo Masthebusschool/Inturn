@@ -2,7 +2,13 @@
 import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { authStore } from "../stores/auth.js";
-import { createResumeFromText } from "../api/resume.js";
+import {
+  createResumeFromText,
+  getPrimaryResume,
+  updatePrimaryResume,
+} from "../api/resume.js";
+import { setMatchingFromResume } from "../stores/jobMatch.js";
+import { canonical } from "../utils/skillNormalize.js";
 import TagInput from "../components/profile/TagInput.vue";
 import ComboboxInput from "../components/profile/ComboboxInput.vue";
 import ResumeUploadBox from "../components/profile/ResumeUploadBox.vue";
@@ -58,18 +64,31 @@ const parsing = ref(false);
 const skillSuggestions = computed(() => skillSuggestionsFor(form.fieldOfStudy));
 const matchedField = computed(() => findFieldOfStudy(form.fieldOfStudy));
 
+// Promise + result of the resume upload. Finish does not wait for it, so the skills write
+// has to be ordered after it (the first resume becomes the primary one).
+let uploadPromise = null;
+let uploadedResume = null;
+
 // The upload box only extracts text; the AI parser turns it into a saved resume in My Resumes.
 // Not awaited by Finish/Skip: the request keeps running after navigation.
-async function handleResumeUploaded(resume) {
+function handleResumeUploaded(resume) {
+  uploadPromise = parseUploadedResume(resume);
+  return uploadPromise;
+}
+
+async function parseUploadedResume(resume) {
   parsing.value = true;
   resumeNote.value = "";
   resumeError.value = "";
   try {
-    const name = resume.fileName.replace(/\.pdf$/i, "");
+    const name = resume.fileName.replace(/\.(pdf|docx)$/i, "");
     const { resume: saved } = await createResumeFromText({
       name,
       text: resume.text,
     });
+    uploadedResume = saved;
+    // The first resume becomes the profile resume, so job matching works straight away
+    if (saved?.primary) setMatchingFromResume(saved);
     const count = (list, noun) => `${list?.length ?? 0} ${noun}`;
     resumeNote.value = `Saved to My Resumes as "${saved?.name ?? name}" — found ${count(saved?.skills, "skills")}, ${count(saved?.education, "education")} and ${count(saved?.experience, "experience")} entries.`;
   } catch (err) {
@@ -91,8 +110,14 @@ onMounted(async () => {
   form.educationLevel = user.educationLevel ?? "";
   form.institution = user.institution ?? "";
   form.fieldOfStudy = user.fieldOfStudy ?? "";
-  form.skills = [...(user.skills ?? [])];
   form.targetIndustries = [...(user.targetIndustries ?? [])];
+  // Skills live on the primary resume, not the user; a failed fetch must not block the page
+  try {
+    const { resume } = await getPrimaryResume();
+    form.skills = [...(resume?.skills ?? [])];
+  } catch (err) {
+    errors.value = [`Could not load your saved skills (${err.message})`];
+  }
   ready.value = true;
 });
 
@@ -133,16 +158,51 @@ function back() {
   }
 }
 
+// Union keyed on canonical() (case/spacing/alias-insensitive), keeping the first spelling seen
+function mergeSkills(a, b) {
+  const seen = new Set();
+  return [...a, ...b].filter((s) => {
+    const key = canonical(s);
+    return seen.has(key) ? false : seen.add(key);
+  });
+}
+
+async function saveSkills(skills) {
+  const { resume } = await updatePrimaryResume({ skills });
+  setMatchingFromResume(resume);
+}
+
 // "Skip for now" only skips the resume upload; everything already filled in is still saved
 async function finish() {
   errors.value = [];
   saving.value = true;
   try {
     await authStore.updateProfile({
-      ...form,
+      educationLevel: form.educationLevel,
       institution: form.institution.trim(),
       fieldOfStudy: form.fieldOfStudy.trim(),
+      targetIndustries: form.targetIndustries,
     });
+    if (parsing.value && uploadPromise) {
+      // Upload still in flight: write skills after it settles, without holding up navigation.
+      // If the upload became the primary resume, PATCH would replace its parsed skills, so merge.
+      const skills = [...form.skills];
+      uploadPromise
+        .then(() =>
+          saveSkills(
+            uploadedResume?.primary
+              ? mergeSkills(uploadedResume.skills ?? [], skills)
+              : skills,
+          ),
+        )
+        .catch((err) => console.error("Saving skills after resume upload failed", err));
+    } else {
+      await saveSkills(
+        uploadedResume?.primary
+          ? mergeSkills(uploadedResume.skills ?? [], form.skills)
+          : form.skills,
+      );
+    }
     router.push("/jobs");
   } catch (err) {
     errors.value = err.errors ?? [err.message];
@@ -302,6 +362,7 @@ async function finish() {
               :suggestions="skillSuggestions"
               :max="PROFILE_LIMITS.skills"
               :max-length="PROFILE_LIMITS.tagLength"
+              :normalize="canonical"
               placeholder="e.g. Python"
             />
           </div>

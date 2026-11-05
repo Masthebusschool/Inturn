@@ -1,4 +1,6 @@
 import { PDFParse } from 'pdf-parse';
+import mammoth from 'mammoth';
+import { DOCX_MIMETYPE } from '../middleware/uploadMiddleware.js';
 
 // Far longer than any real resume; stops very large bodies being analyzed
 export const MAX_TEXT_LENGTH = 50000;
@@ -12,43 +14,33 @@ function cleanText(text) {
     .join('\n');
 }
 
-/**
- * Reads the text out of an uploaded resume PDF.
- * Shared by the resume upload and the AI features (Skill Gap, resume editor),
- * so every page applies the same rules.
- * @param {Object} file req.file from receiveResumePdf
- * @returns {Promise<{ resume?: { fileName, pageCount, wordCount, text }, errors?: string[] }>}
- *   errors is set when the file is the user's problem (show it with status 400);
- *   anything unexpected is thrown, so the route answers 500
- */
-export async function readResumePdf(file) {
-  if (!file)
-    return { errors: ['Choose a PDF file to upload'] };
+// Wraps up a cleaned, length-checked text body into the shared resume result shape.
+function toResumeResult(file, text, pageCount) {
+  if (!text)
+    return { errors: ['No text found in this file. Upload a text-based resume, not a scanned image'] };
+  if (text.length > MAX_TEXT_LENGTH)
+    return { errors: ['Resume text is too long to analyze'] };
 
+  return {
+    resume: {
+      fileName: file.originalname,
+      pageCount,
+      wordCount: text.split(/\s+/).length,
+      text,
+    },
+  };
+}
+
+async function readPdf(file) {
   // The browser's file type can be faked, so check the file really starts like a PDF
   if (file.buffer.subarray(0, 5).toString() !== '%PDF-')
-    return { errors: ['Resume must be a PDF file'] };
+    return { errors: ['Resume must be a PDF or Word (.docx) file'] };
 
   const parser = new PDFParse({ data: file.buffer });
   try {
     // No "-- 1 of 2 --" page markers: they would end up in the resume text
     const result = await parser.getText({ pageJoiner: '' });
-    const text = cleanText(result.text);
-
-    // Scanned resumes are images, so there is no text to read
-    if (!text)
-      return { errors: ['No text found in this PDF. Upload a text-based PDF, not a scanned one'] };
-    if (text.length > MAX_TEXT_LENGTH)
-      return { errors: ['Resume text is too long to analyze'] };
-
-    return {
-      resume: {
-        fileName: file.originalname,
-        pageCount: result.total,
-        wordCount: text.split(/\s+/).length,
-        text,
-      },
-    };
+    return toResumeResult(file, cleanText(result.text), result.total);
   }
   catch (e) {
     if (e.name === 'PasswordException')
@@ -60,4 +52,37 @@ export async function readResumePdf(file) {
   finally {
     await parser.destroy();
   }
+}
+
+async function readDocx(file) {
+  // The browser's file type can be faked; a .docx is a zip, so check it really starts like one
+  if (file.buffer.subarray(0, 2).toString() !== 'PK')
+    return { errors: ['This Word document could not be read. It may be damaged'] };
+
+  try {
+    const result = await mammoth.extractRawText({ buffer: file.buffer });
+    return toResumeResult(file, cleanText(result.value), null);
+  }
+  catch {
+    return { errors: ['This Word document could not be read. It may be damaged'] };
+  }
+}
+
+/**
+ * Reads the text out of an uploaded resume (PDF or DOCX).
+ * Shared by the resume upload and the AI features (Skill Gap, resume editor),
+ * so every page applies the same rules.
+ * @param {Object} file req.file from receiveResumeFile
+ * @returns {Promise<{ resume?: { fileName, pageCount, wordCount, text }, errors?: string[] }>}
+ *   errors is set when the file is the user's problem (show it with status 400);
+ *   anything unexpected is thrown, so the route answers 500
+ */
+export async function readResumeFile(file) {
+  if (!file)
+    return { errors: ['Choose a PDF or Word (.docx) file to upload'] };
+
+  if (file.mimetype === DOCX_MIMETYPE)
+    return readDocx(file);
+
+  return readPdf(file);
 }

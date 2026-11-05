@@ -1,10 +1,10 @@
 <script setup>
+import { contactLine } from '../../utils/contact.js'
 defineProps({
   form: { type: Object, required: true }, // { contact, summary, skills, experience, projects, education } — see ResumeEditorView's previewData
 })
 
 const dateRange = (e) => [e.startDate, e.endDate].filter(Boolean).join(' – ')
-const contactLine = (c) => [c.phone, c.email, c.linkedin, c.github, c.portfolio].filter(Boolean).join(' · ')
 </script>
 
 <template>

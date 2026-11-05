@@ -9,6 +9,7 @@ import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import OnboardingView from '../views/OnboardingView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import EditProfileView from '../views/EditProfileView.vue'
 import ResumeAnalysisView from '../views/ResumeAnalysisView.vue'
 import ResumesView from '../views/ResumesView.vue'
 import ResumeEditorView from '../views/ResumeEditorView.vue'
@@ -27,6 +28,7 @@ const routes = [
   { path: '/onboarding', name: 'onboarding', component: OnboardingView, meta: { fullPage: true } },
 
   { path: '/profile', name: 'profile', component: ProfileView },
+  { path: '/profile/edit', name: 'profile-edit', component: EditProfileView },
   { path: '/resumes', name: 'resumes', component: ResumesView },
   { path: '/resumes/:id', name: 'resume-editor', component: ResumeEditorView, props: true },
   { path: '/resumes/:id/analysis', name: 'resume-analysis', component: ResumeAnalysisView, props: true },

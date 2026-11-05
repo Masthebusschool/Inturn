@@ -1,13 +1,13 @@
 import mongoose from 'mongoose';
 import Resume from '../models/Resume.js';
 import * as resumeAnalyzer from '../services/resumeAnalyzer.js';
-import { readResumePdf } from '../services/resumeText.js';
+import { readResumeFile } from '../services/resumeText.js';
 
-// Reads the text out of an uploaded PDF. Onboarding sends it on to the AI parser,
+// Reads the text out of an uploaded PDF or DOCX. Onboarding sends it on to the AI parser,
 // which saves it as a resume in My Resumes.
 export const uploadResume = async (req, res) => {
   try {
-    const { resume, errors } = await readResumePdf(req.file);
+    const { resume, errors } = await readResumeFile(req.file);
     if (errors)
       return res.status(400).json({ errors });
     return res.json({ resume });

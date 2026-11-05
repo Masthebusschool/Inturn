@@ -13,6 +13,7 @@ import {
 import {
   draftToProfile, draftPromptText, resolveFocus, cleanSuggestions, droppedTargets, followUpFor, compactForHistory,
 } from '../utils/tailorDraft.js';
+import { cleanContact } from '../utils/contact.js';
 
 export { AIServiceError }; // keeps the old export path working
 
@@ -66,10 +67,8 @@ ${text}
     }),
   });
   return {
-    contact: {
-      fullName: str(d.contact?.fullName), phone: str(d.contact?.phone), email: str(d.contact?.email),
-      linkedin: str(d.contact?.linkedin), github: str(d.contact?.github), portfolio: str(d.contact?.portfolio),
-    },
+    // The model extracts the three legacy link fields; cleanContact turns them into contact.links.
+    contact: cleanContact(d.contact),
     summary: str(d.summary),
     skills: strs(d.skills),
     experience: list(d.experience).map((e) => ({
@@ -322,7 +321,7 @@ export async function analyzeSkillGap(profile, job, prior = null) {
   if (!units.length) {
     return {
       atsScore: 0, band: 'low', requirements: [], eligibility, matchedSkills: [], missingSkills: [],
-      recommendations: ['No scorable requirements could be extracted from this job description.'],
+      recommendations: ['No scorable requirements could be extracted from this internship description.'],
       ungradedCount: 0, profileSnapshot: profileTxt,
     };
   }

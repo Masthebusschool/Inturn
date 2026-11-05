@@ -48,6 +48,10 @@ function getResumeSkills(resume) {
   ];
 }
 
+export function setMatchingFromResume(resume) {
+  setMatchingResume(resume.name, getResumeSkills(resume));
+}
+
 export async function restoreMatchingResume() {
   // Avoid starting the same request twice.
   if (restoreRequest) return restoreRequest;
@@ -59,39 +63,18 @@ export async function restoreMatchingResume() {
 
   restoreRequest = (async () => {
     try {
-      const { resumes } = await api("/api/resumes");
-
-      if (!Array.isArray(resumes)) {
-        throw new Error("Unexpected resume response.");
-      }
-
-      const latestResume = [...resumes].sort(
-        (a, b) =>
-          (Date.parse(b.updatedAt) || 0) -
-          (Date.parse(a.updatedAt) || 0)
-      )[0];
-
-      if (!latestResume) {
-        if (revision === startingRevision) {
-          clearMatchingResume();
-        }
-
-        return;
-      }
-
-      const { resume } = await api(
-        `/api/resumes/${encodeURIComponent(latestResume._id)}`
-      );
-
-      if (!resume) {
-        throw new Error("The saved resume could not be loaded.");
-      }
+      const { resume } = await api("/api/resumes/primary");
 
       // Do not overwrite skills updated in the editor while loading.
       if (revision !== startingRevision) return;
 
+      if (!resume) {
+        clearMatchingResume();
+        return;
+      }
+
       setMatchingResume(
-        resume.name || "Saved resume",
+        resume.name || "Profile resume",
         getResumeSkills(resume)
       );
     } catch (error) {

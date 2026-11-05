@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-// A list of tags (skills, industries...). Type and press Enter or comma to add,
+// A list of tags (skills...). Type and press Enter or comma to add,
 // click a suggestion to add it, click × to remove. Duplicates are ignored (any case).
 const props = defineProps({
   modelValue: { type: Array, required: true },
@@ -10,6 +10,9 @@ const props = defineProps({
   maxLength: { type: Number, default: 50 },
   inputId: { type: String, required: true },
   placeholder: { type: String, default: 'Type and press Enter' },
+  // Key used for duplicate detection. Defaults to plain case-insensitive matching; callers with
+  // a domain-specific normalizer (e.g. skills: canonical() closes "Java Script" vs "JavaScript") pass one in.
+  normalize: { type: Function, default: (s) => s.trim().toLowerCase() },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -17,7 +20,7 @@ const draft = ref('')
 const hint = ref('')
 
 const isFull = computed(() => props.modelValue.length >= props.max)
-const hasTag = (text) => props.modelValue.some((tag) => tag.toLowerCase() === text.toLowerCase())
+const hasTag = (text) => props.modelValue.some((tag) => props.normalize(tag) === props.normalize(text))
 const remainingSuggestions = computed(() => props.suggestions.filter((item) => !hasTag(item)))
 
 // Accepts one tag or several separated by commas (e.g. pasted "Python, Java").
@@ -29,7 +32,7 @@ function addTag(raw) {
   for (const part of raw.split(',')) {
     const text = part.trim()
     if (!text) continue
-    if (tags.some((tag) => tag.toLowerCase() === text.toLowerCase())) {
+    if (tags.some((tag) => props.normalize(tag) === props.normalize(text))) {
       hint.value = `"${text}" is already added`
     } else if (tags.length >= props.max) {
       hint.value = `You can add at most ${props.max}`

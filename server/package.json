@@ -19,11 +19,13 @@
     "dotenv": "^18.0.0",
     "express": "^5.1.0",
     "express-session": "^1.19.0",
+    "mammoth": "^1.13.0",
     "mongoose": "^9.11.4",
     "multer": "^2.4.0",
     "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
+    "jszip": "^3.10.2",
     "nodemon": "^3.1.0"
   }
 }

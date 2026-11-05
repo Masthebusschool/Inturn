@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import skillgapRouter from './skillgap.js';
 import Application from '../models/Application.js';
+import SkillGapResult from '../models/SkillGapResult.js';
+import User from '../models/User.js';
 import { ensureDb, startTestServer } from '../test/helpers.js';
 
 const TITLE_PREFIX = '__test_skillgap_link__';
@@ -16,6 +18,7 @@ before(async () => {
 
 after(async () => {
   await Application.deleteMany({ title: new RegExp(`^${TITLE_PREFIX}`) });
+  await SkillGapResult.deleteMany({ 'job.title': new RegExp(`^${TITLE_PREFIX}`) });
   await close();
   await mongoose.disconnect();
 });
@@ -36,6 +39,25 @@ test('POST / 404s for an applicationId the caller does not own, before calling t
     }),
   });
   assert.equal(res.status, 404);
+});
+
+test('POST /:id/duplicate keeps sourceResume but not the tracker link', async () => {
+  const user = await User.findOne({ email: 'dev@inturn.local' });
+  const src = await SkillGapResult.create({
+    user: user._id,
+    job: { title: `${TITLE_PREFIX} dup`, company: 'Acme', description: 'x' },
+    sourceResume: { resume: new mongoose.Types.ObjectId(), name: 'My CV' },
+    application: new mongoose.Types.ObjectId(),
+  });
+  const res = await fetch(`${base}/${src._id}/duplicate`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+  });
+  assert.equal(res.status, 201);
+  const { result } = await res.json();
+  assert.equal(result.sourceResume.name, 'My CV');
+  assert.equal(result.sourceResume.resume, String(src.sourceResume.resume));
+  assert.equal(result.application, null);
+  assert.equal(result.forkedFrom, String(src._id));
 });
 
 test('POST / 404s for a garbage applicationId', async () => {

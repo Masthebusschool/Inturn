@@ -16,7 +16,7 @@ import {
 import { MAX_TASKS, MAX_TASK_LENGTH } from "../models/constants/applications.js";
 import { jobFromMcf, jobFromForm } from "../models/McfJobs.js";
 import { fetchJobDetail } from "../routes/jobs.js";
-import * as User from "../models/User.js";
+import { getPrimaryResume } from "../utils/primaryResume.js";
 import Application from "../models/Application.js";
 import IntelPost from "../models/IntelPost.js";
 
@@ -37,14 +37,17 @@ export async function getApplications (req, res, next) {
     try {
         const uid = req.session.user.id;
         const applications = await getApplicationsByUser(uid);
-        const user = await User.retrieveUserById(uid);
 
-        // get user's skills
-        let skills = [];
-        if (user && user.skills) {
-            user.skills.forEach(skill => {
-                skills.push(skill.toLowerCase());
-            });
+        // skills from the primary resume: its own list plus every experience/project skill
+        const resume = await getPrimaryResume(uid);
+        const skills = [];
+        if (resume) {
+            const all = [
+                ...(resume.skills || []),
+                ...(resume.experience || []).flatMap(e => e.skills || []),
+                ...(resume.projects || []).flatMap(p => p.skills || []),
+            ];
+            all.forEach(skill => skills.push(skill.toLowerCase()));
         }
 
         // intel posts to match against
@@ -167,7 +170,7 @@ export async function editApplication(req, res, next) {
 
         if (typeof req.body.title !== 'string' || req.body.title.trim() === '' ||
             typeof req.body.companyName !== 'string' || req.body.companyName.trim() === '') {
-            return res.status(400).json({ error: 'Job title and company are required.' });
+            return res.status(400).json({ error: 'Internship title and company are required.' });
         }
 
         // jobFromForm cleans the skills, then only the editable fields are kept
@@ -299,7 +302,7 @@ export async function getDiscoverySavedJobs(req, res, next) {
 
   if (!uid) {
     return res.status(401).json({
-      error: "Please sign in to save jobs.",
+      error: "Please sign in to save internships.",
     });
   }
 
@@ -327,7 +330,7 @@ export async function saveDiscoveryJob(req, res, next) {
 
   if (!uid) {
     return res.status(401).json({
-      error: "Please sign in to save jobs.",
+      error: "Please sign in to save internships.",
     });
   }
 
@@ -341,7 +344,7 @@ export async function saveDiscoveryJob(req, res, next) {
     !job.title.trim()
   ) {
     return res.status(400).json({
-      error: "Invalid job information.",
+      error: "Invalid internship information.",
     });
   }
 
@@ -396,7 +399,7 @@ export async function saveDiscoveryJob(req, res, next) {
     if (duplicate) {
       return res.status(409).json({
         error:
-          "A job with this title and company is already on your tracker board.",
+          "An internship with this title and company is already on your tracker board.",
       });
     }
 
@@ -421,7 +424,7 @@ export async function saveDiscoveryJob(req, res, next) {
       }
 
       return res.status(409).json({
-        error: "This job is already on your tracker board.",
+        error: "This internship is already on your tracker board.",
       });
     }
 
@@ -434,13 +437,13 @@ export async function removeDiscoverySavedJob(req, res, next) {
 
   if (!uid) {
     return res.status(401).json({
-      error: "Please sign in to manage saved jobs.",
+      error: "Please sign in to manage saved internships.",
     });
   }
 
   if (!/^[a-f0-9]{32}$/i.test(req.params.jobId)) {
     return res.status(400).json({
-      error: "Invalid job ID.",
+      error: "Invalid internship ID.",
     });
   }
 
@@ -466,7 +469,7 @@ export async function removeDiscoverySavedJob(req, res, next) {
     if (existing) {
       return res.status(409).json({
         error:
-          "This job has moved beyond Saved. Manage it from the tracker board.",
+          "This internship has moved beyond Saved. Manage it from the tracker board.",
         status: existing.status,
       });
     }
