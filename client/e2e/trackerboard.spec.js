@@ -308,9 +308,9 @@ test.describe('Tracker Board', () => {
         await card.getByRole('button', { name: 'Checklist' }).click();
 
         // add with an empty box, then with only spaces
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Add Task', exact: true }).click();
         await page.getByRole('textbox', { name: 'e.g. Research the company' }).fill('   ');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Add Task', exact: true }).click();
 
         // neither one is added
         await expect(page.getByText('No tasks yet. Add one below.')).toBeVisible();
@@ -341,7 +341,7 @@ test.describe('Tracker Board', () => {
 
         // adding the same task again (in any capitals) is blocked each time
         const taskBox = page.getByRole('textbox', { name: 'e.g. Research the company' });
-        const addButton = page.getByRole('button', { name: 'Add', exact: true });
+        const addButton = page.getByRole('button', { name: 'Add Task', exact: true });
         await taskBox.fill('Research the company');
         await addButton.click();
         await taskBox.fill('research the company');

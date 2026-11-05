@@ -24,7 +24,7 @@ export async function addCard(page, company, title, status, deadline = '2030-12-
 // add a task in the open checklist popup
 export async function addTask(page, text) {
     await page.getByRole('textbox', { name: 'e.g. Research the company' }).fill(text);
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.getByRole('button', { name: 'Add Task', exact: true }).click();
 
     // wait until it's saved (the checkbox unlocks once the server gives the task an id)
     // the server can be slow to reply during a full run, so allow more than the default 5s
