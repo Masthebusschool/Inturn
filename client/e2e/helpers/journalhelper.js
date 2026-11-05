@@ -28,6 +28,7 @@ export function getCommunityCard(page, questionText) {
     return page
         .getByRole('dialog')
         .getByRole('heading', { name: questionText })
+        .first()
         .locator('xpath=ancestor::div[contains(@class, "card")][1]');
 }
 
