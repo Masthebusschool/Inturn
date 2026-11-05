@@ -4,7 +4,7 @@ const highlights = [
   'Listings from MyCareersFuture',
   'One board for every application',
   'Interview questions from real students',
-  'Free to use, no credit card needed'
+  'Free to use, no subscriptions or payments'
 ];
 
 // feature cards, one per main part of the app
