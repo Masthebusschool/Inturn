@@ -31,7 +31,10 @@ const draftSchema = new mongoose.Schema(
 );
 
 const suggestionSchema = new mongoose.Schema(
-  { id: String, sectionId: String, field: String, original: String, text: String, requirementKeys: [String] },
+  {
+    id: String, sectionId: String, field: String, original: String, text: String,
+    title: String, company: String, bullets: [String], requirementKeys: [String],
+  },
   { _id: false }
 );
 

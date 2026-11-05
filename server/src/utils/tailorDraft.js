@@ -175,6 +175,7 @@ export function cleanSuggestions(raw, draft, { validKeys, supportText }) {
   const rejected = { placeholder: 0, unmatched: 0, unsupported: 0 };
   const unsupportedTerms = [];
   const supportWords = wordsOf(supportText);
+  const supportSet = new Set(supportWords.split(' '));
   const supportTech = techWords(supportText);
   const suggestions = [];
   const have = new Set((draft.skills || []).map(canonical));
@@ -182,12 +183,46 @@ export function cleanSuggestions(raw, draft, { validKeys, supportText }) {
   for (const item of Array.isArray(raw) ? raw : []) {
     if (suggestions.length >= MAX_SUGGESTIONS) break;
     if (!item || typeof item !== 'object') continue;
+    const sectionId = typeof item.sectionId === 'string' ? item.sectionId.trim() : '';
+    const field = item.field;
+    const requirementKeys = (Array.isArray(item.requirementKeys) ? item.requirementKeys : []).filter((k) => validKeys.has(k));
+
+    // A whole new role/project: no `text`, its content is title/company/bullets.
+    if (field === 'entry') {
+      const kind = /^(experience|project):new$/.exec(sectionId)?.[1];
+      if (!kind) { rejected.unmatched++; continue; }
+      const title = clip(item.title);
+      const company = kind === 'experience' ? clip(item.company) : '';
+      const bullets = clipList(item.bullets, MAX_BULLETS);
+      if (!title || !bullets.length) continue;
+      if ([title, company, ...bullets].some(hasPlaceholder)) { rejected.placeholder++; continue; }
+
+      const existing = ((kind === 'experience' ? draft.experience : draft.projects) || [])
+        .map((e) => ({ title: kind === 'experience' ? e.title : e.name, company: e.company }));
+      const pending = suggestions.filter((s) => s.sectionId === sectionId);
+      if (existing.length + pending.length >= MAX_ENTRIES) { rejected.unmatched++; continue; }
+      // Already in the draft: the model should have targeted that entry with a "bullet" instead.
+      const same = (e) => wordsOf(e.title) === wordsOf(title) && (kind !== 'experience' || wordsOf(e.company) === wordsOf(company));
+      if (existing.some(same) || pending.some(same)) { rejected.unmatched++; continue; }
+
+      // Token-level, not whole-phrase: "CCA Attendance Telegram Bot" passes when the student said "a Telegram bot
+      // for my CCA that tracks attendance", while a made-up employer whose words they never said is rejected.
+      const unsupportedNames = [title, company].filter((n) => n && wordsOf(n).split(' ').some((t) => !supportSet.has(t)));
+      if (unsupportedNames.length) { rejected.unsupported++; unsupportedTerms.push(...unsupportedNames); continue; }
+
+      const inventedTech = unsupportedTech([title, company, ...bullets].join('\n'), supportTech);
+      if (inventedTech.length) { rejected.unsupported++; unsupportedTerms.push(...inventedTech); continue; }
+
+      suggestions.push({
+        id: randomUUID().slice(0, 8), sectionId, field, original: '', text: '', title, company, bullets, requirementKeys,
+      });
+      continue;
+    }
+
     let text = clip(item.text);
     if (!text) continue;
     if (hasPlaceholder(text)) { rejected.placeholder++; continue; }
 
-    const sectionId = typeof item.sectionId === 'string' ? item.sectionId.trim() : '';
-    const field = item.field;
     let original = '';
 
     if (field === 'summary' && sectionId === 'summary') {
@@ -230,10 +265,18 @@ export function cleanSuggestions(raw, draft, { validKeys, supportText }) {
       field,
       original,
       text,
-      requirementKeys: (Array.isArray(item.requirementKeys) ? item.requirementKeys : []).filter((k) => validKeys.has(k)),
+      requirementKeys,
     });
   }
   return { suggestions, rejected, unsupportedTerms: [...new Set(unsupportedTerms)] };
+}
+
+// Section ids a brand-new entry can target: only kinds still under the entry cap.
+export function newEntryIds(draft) {
+  const d = draft || {};
+  return [['experience:new', d.experience], ['project:new', d.projects]]
+    .filter(([, list]) => (Array.isArray(list) ? list.length : 0) < MAX_ENTRIES)
+    .map(([id]) => id);
 }
 
 // Targets the reply and suggestions never touched. Errs toward asking: a redundant question is

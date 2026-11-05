@@ -25,6 +25,10 @@ await applyWindowsDnsWorkaroundIfNeeded(process.env.MONGODB_URI);
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
+// Render terminates TLS at its proxy; without this, Express sees plain HTTP
+// and req.secure is always false, so the session cookie's secure:true never gets sent.
+app.set('trust proxy', 1);
+
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 app.use(createSessionMiddleware());
