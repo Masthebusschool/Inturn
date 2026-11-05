@@ -147,8 +147,8 @@ To run one side only: `pnpm dev:client` or `pnpm dev:server`. The Vite dev serve
  
 Open http://localhost:5173, click **Get started for free**, sign up with any name and email, and follow onboarding. Suggested path: onboarding (upload a resume PDF) → Job Discovery → Save an internship → Tracker Board → **Tailor Resume** on the saved card → move the card to Applied, then Interview → Interview Intel → Interview Journal.
  
-> **Demo account (optional):** `<EMAIL>` / `<PASSWORD>`  *(delete this line if you do not provide one)*
- 
+**Demo account (optional):** Email: testing@gmail.com / Password: Ab123456
+
 > **Gemini note:** a skill gap analysis on a posting that has not been analysed before makes three Gemini calls one after another and can take up to about two minutes. Results for the same posting are cached, so repeat runs are much faster. The Gemini free tier has a daily quota; if it runs out, AI features show a clear error and resume after the quota resets.
  
 ---
@@ -241,9 +241,9 @@ Gemini only works from facts already in the student's profile and resume. The ta
 | Name | Main contributions |
 |---|---|
 | Mas Lutfir Rahman Bin Jumari | Skill gap analysis, tailor chat, Gemini integration, skill gap e2e tests |
-| `<NAME>` | `<...>` |
-| `<NAME>` | `<...>` |
-| `<NAME>` | `<...>` |
+| Charlene Woo Xin Ying | Search internships and sort/filter, intern application, search e2e test |
+| Sui Ruirong | Auth, onboarding, profile, resume analysis, UI, auth and profile e2e tests |
+| Muhammad Farhan Bin Abdul Rashid | Interview Journal, Intel Feed, journal and feed e2e tests |
 | `<NAME>` | `<...>` |
  
 ---
