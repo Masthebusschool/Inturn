@@ -187,7 +187,6 @@ AI responses in the skill gap tests are mocked, so the suite is deterministic an
 |---|---|
 | `auth.spec.js` | Sign up and log in, including validation errors and wrong credentials |
 | `profile.spec.js` | Onboarding, profile editing, change email, change password, delete account |
-| `jobs.spec.js` | Internship search, filtering, retry after failed search |
 | `trackerboard.spec.js` | Moving cards between columns, interview date, card actions |
 | `intelfeed.spec.js` | Posting, filtering and upvoting interview intel |
 | `interviewjournal.spec.js` | Adding intel questions to the journal and saving STAR answers |
