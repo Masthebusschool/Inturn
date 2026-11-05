@@ -8,7 +8,7 @@ IS216 Web Application Development 2 group project, 2026-2027 Term 1.
  
 | | |
 |---|---|
-| **Live app** | `<PASTE DEPLOYED URL HERE, or delete this row if running locally only>` |
+| **Live app** | https://inturn-seven.vercel.app |
 | **Git repository** | https://github.com/Masthebusschool/Inturn |
  
 ---
@@ -38,6 +38,7 @@ Inturn covers that earlier stage:
 | **Skill gap analysis (AI)** | Gemini splits a posting into requirements, grades each against the resume (quoting the exact line that proves it), and drafts a tailored resume using only facts already in the profile. Includes re-scoring when the student confirms a skill, a tailor chat that asks for missing detail instead of inventing it, and a to-do list of missing skills. |
 | **Interview intel** | Students share real interview experiences and questions anonymously. Posts can be upvoted and filtered by company and role. The author's identity is never sent to the browser. |
 | **Interview journal** | Pick a question from the intel feed, write an answer in STAR form (situation, task, action, result) and save it against that question to revisit before the interview. |
+| **Deployment**| The front end is hosted on Vercel and the API on Render (free tier), with MongoDB Atlas as the database. Vercel forwards /api requests to Render. The Render free instance sleeps when idle, so the first request after a quiet period can take up to about a minute to respond.
  
 ---
  
@@ -61,7 +62,7 @@ MongoDB holds users, resumes, saved applications, skill gap results and history,
  
 | API | Purpose | Integration |
 |---|---|---|
-| **MyCareersFuture** (`api.mycareersfuture.gov.sg`), Singapore's public job portal | Internship listings | A scheduled job (`server/src/scripts/syncJobs.js`, run daily by the GitHub Action `.github/workflows/sync-jobs.yml`) stores listings in MongoDB for fast search. The job detail page fetches the full posting live, through the Vite dev proxy locally. |
+| **MyCareersFuture** (`api.mycareersfuture.gov.sg`), Singapore's public job portal | Internship listings | A scheduled job (`server/src/scripts/syncJobs.js`, run daily by the GitHub Action `.github/workflows/sync-jobs.yml`) stores listings in MongoDB for fast search. The job detail page fetches the full posting live through the server’s /api/jobs/:id endpoint. |
 | **Google Gemini** (`@google/genai`) | Resume parsing, requirement extraction, skill grading, tailored resume drafts and the tailor chat | All calls go through one gateway (`server/src/services/aiGateway.js`) that serialises requests, spaces them out, times them out and retries on overload or quota errors. |
  
 ---
@@ -115,7 +116,7 @@ Then open `server/.env` and fill in:
  
 `server/.env` is git-ignored. Never commit it.
  
-> **For markers:** `<STATE HERE HOW YOU ARE PROVIDING A WORKING .env, e.g. a shared MONGODB_URI and GEMINI_API_KEY in the submission zip. Delete this line if not applicable.>`
+Environment files: the submitted zip already includes the .env file with working credentials (database, Gemini API key and session secret), so you can skip step 2 and go straight to pnpm install and pnpm dev. If you clone from GitHub instead, follow step 2 to create your own.
  
 ### 3. Load internship listings (first run only)
  
@@ -180,7 +181,7 @@ pnpm --filter ./client exec playwright show-report               # open the HTML
  
 Each test signs up its own brand-new account with a unique email, so the suite can be run repeatedly without clearing the database or sharing state between tests.
  
-<!-- UPDATE THIS PARAGRAPH once the skill gap tests are mocked: "AI responses in the skill gap tests are mocked so the suite is deterministic and does not use Gemini quota. One optional real-AI smoke test runs only when RUN_AI_TESTS=1 is set." -->
+AI responses in the skill gap tests are mocked, so the suite is deterministic and does not use Gemini quota. One optional real-AI smoke test runs only when RUN_AI_TESTS=1 is set.
  
 | Spec file | Journeys covered |
 |---|---|
