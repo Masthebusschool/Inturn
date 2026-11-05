@@ -96,12 +96,16 @@ watch(() => [props.messages.length, sending.value], async () => {
           <div class="p-2">
             <div class="small fw-semibold mb-1">{{ sectionLabel(draft, s.sectionId) }}</div>
             <div v-if="s.original" class="small text-body-secondary mb-1">Replaces: <s>{{ s.original }}</s></div>
-            <div class="sg-text">{{ s.field === 'skills' ? 'Add: ' : '' }}{{ s.text }}</div>
+            <template v-if="s.field === 'entry'">
+              <div class="sg-text fw-semibold">{{ s.title }}{{ s.company ? ' — ' + s.company : '' }}</div>
+              <ul class="mb-0 ps-3"><li v-for="(b, j) in s.bullets" :key="j" class="sg-text">{{ b }}</li></ul>
+            </template>
+            <div v-else class="sg-text">{{ s.field === 'skills' ? 'Add: ' : '' }}{{ s.text }}</div>
             <div v-if="s.requirementKeys?.length" class="d-flex flex-wrap gap-2 mt-1">
               <span v-for="k in s.requirementKeys" :key="k" class="badge text-bg-light border fw-normal">{{ k.replace(/-/g, ' ') }}</span>
             </div>
             <div class="d-flex gap-2 mt-2">
-              <button type="button" class="btn-primary-inturn btn-sm-inturn" :disabled="applied.has(s.id)" @click="emit('apply', s)">{{ applied.has(s.id) ? 'Applied' : 'Apply' }}</button>
+              <button type="button" class="btn-primary-inturn btn-sm-inturn" :disabled="applied.has(s.id)" @click="emit('apply', s)">{{ applied.has(s.id) ? (s.field === 'entry' ? 'Added' : 'Applied') : (s.field === 'entry' ? 'Add' : 'Apply') }}</button>
               <button v-if="!applied.has(s.id)" type="button" class="btn-neutral-inturn btn-sm-inturn" @click="dismiss(s.id)">Dismiss</button>
             </div>
           </div>

@@ -47,6 +47,8 @@ export function categoryBreakdown(requirements = []) {
   })
 }
 
+const MAX_ENTRIES = 15 // mirrors the server's cleanDraft cap
+
 // Mirrors the server's wordsOf so client matching agrees with server matching.
 export const normWords = (s) => String(s ?? '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 
@@ -102,6 +104,20 @@ export function applySuggestion(draft, s) {
     }
     return { draft: next, fieldId: 'skills', note: '' }
   }
+  if (s.field === 'entry') {
+    const kind = String(s.sectionId || '').split(':')[0]
+    if (kind !== 'experience' && kind !== 'project') return { draft: next, fieldId: null, note: 'That suggestion could not be added.' }
+    const list = kind === 'experience' ? next.experience : next.projects
+    const title = String(s.title || '').trim()
+    const company = kind === 'experience' ? String(s.company || '').trim() : ''
+    const bullets = (s.bullets || []).map((b) => String(b).trim()).filter(Boolean)
+    const i = list.findIndex((e) => normWords(kind === 'experience' ? e.title : e.name) === normWords(title)
+      && (kind !== 'experience' || normWords(e.company) === normWords(company)))
+    if (i >= 0) return { draft: next, fieldId: `${kind}:${i}:head`, note: 'That entry is already in your draft.' }
+    if (list.length >= MAX_ENTRIES) return { draft: next, fieldId: null, note: `Your draft already has the maximum of ${MAX_ENTRIES} ${kind === 'experience' ? 'roles' : 'projects'}.` }
+    list.push(kind === 'experience' ? { title, company, bullets } : { name: title, bullets })
+    return { draft: next, fieldId: `${kind}:${list.length - 1}:head`, note: '' }
+  }
   const [kind, idx] = s.sectionId.split(':')
   const entry = (kind === 'experience' ? next.experience : next.projects)[Number(idx)]
   if (!entry) return { draft: next, fieldId: null, note: 'That section no longer exists in your draft.' }
@@ -124,6 +140,7 @@ export function sectionLabel(draft, sectionId) {
   if (sectionId === 'summary') return 'Summary'
   if (sectionId === 'skills') return 'Skills'
   const [kind, idx] = sectionId.split(':')
+  if (idx === 'new') return kind === 'experience' ? 'New experience' : 'New project'
   if (kind === 'experience') {
     const e = draft?.experience?.[Number(idx)]
     return e ? `Experience · ${e.title}${e.company ? ' — ' + e.company : ''}` : 'Experience'
