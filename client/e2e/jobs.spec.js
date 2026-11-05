@@ -14,6 +14,10 @@ import { loginTestUser } from './helpers/loginhelper.js';
   5. User retries after a failed search request
  */
 
+// disclaimer: unable to do internship-related testing as internships refreshes everyday 
+// due to a scheduled sync to update live internships, thus it may change and test may fail if
+// listing expires.
+
 const jobCards = (page) => page.locator('.job-card');
 
 const emptyHeading = (page) =>
@@ -65,13 +69,8 @@ async function openFilters(page) {
 test.describe('Job Search', () => {
     // Every test starts logged in on the Jobs page.
     test.beforeEach(async ({ page }) => {
-        const { E2E_EMAIL: email, E2E_PASSWORD: password } = process.env;
-
-        if (!email || !password) {
-            throw new Error('Set E2E_EMAIL and E2E_PASSWORD in your terminal.');
-        }
-
-        await loginTestUser(page, email, password, { waitForNav: false });
+        await loginTestUser(page, 'char@gmail.com', 'Ab123456', { waitForNav: false });
+        
         await expect(page).toHaveURL(/\/jobs(?:[/?#]|$)/, { timeout: 60_000 });
 
         await expect(
