@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import { canonical } from "../utils/skillNormalize.js";
 
-export const SEARCH_VERSION = 2;
+// Bump whenever the search field derivation changes (e.g. skill normalization) — prepareJobGeneration
+// re-derives any doc whose "search.v" doesn't match, so this self-heals without a DB reset.
+const SEARCH_VERSION = 3;
 
 function database() {
   if (mongoose.connection.readyState !== 1) {
