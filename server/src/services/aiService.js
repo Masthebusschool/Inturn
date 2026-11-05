@@ -11,7 +11,7 @@ import {
   preserveMetVerdicts, preserveGapVerdicts, groundVerdicts, scoreRequirements, summarizeGap,
 } from '../utils/skillGapScoring.js';
 import {
-  draftToProfile, draftPromptText, resolveFocus, cleanSuggestions, droppedTargets, followUpFor, compactForHistory,
+  draftToProfile, draftPromptText, resolveFocus, cleanSuggestions, droppedTargets, followUpFor, compactForHistory, newEntryIds,
 } from '../utils/tailorDraft.js';
 import { cleanContact } from '../utils/contact.js';
 
@@ -407,7 +407,7 @@ function weakSpotBlock(focus) {
     return `SECTION [${g.sectionId}]:\n${g.sectionText}\n${g.targets.map((t) => `  ${line(t)}`).join('\n')}${more}`;
   });
   const ungrounded = focus.ungrounded.length
-    ? `\n\nNOT SHOWN ANYWHERE YET (no draft section to rewrite; weave into the most relevant section only if truthful, otherwise ask):\n${focus.ungrounded.map((t) => `  ${line(t)}`).join('\n')}`
+    ? `\n\nNOT SHOWN ANYWHERE YET (no draft section to rewrite; weave into the most relevant section only if truthful, or add it as a new "entry" if the student described a role or project that shows it, otherwise ask):\n${focus.ungrounded.map((t) => `  ${line(t)}`).join('\n')}`
     : '';
   return groups.join('\n\n') + ungrounded;
 }
@@ -419,8 +419,11 @@ export async function tailorChatTurn({ job, draft, fullProfile, requirements, fo
   const turns = (history || []).slice(-HISTORY_TURNS).map((m) => {
     const text = m.role === 'user' ? String(m.text || '') : compactForHistory(m.text);
     const head = `${m.role === 'user' ? 'STUDENT' : 'ASSISTANT'}: ${text.slice(0, HISTORY_CHARS)}`;
-    return head + (m.suggestions || []).map((s) => `\n  (suggested for ${s.sectionId}: "${s.text}")`).join('');
+    return head + (m.suggestions || []).map((s) => (s.field === 'entry'
+      ? `\n  (suggested adding new ${s.sectionId.split(':')[0]} "${[s.title, s.company].filter(Boolean).join(' — ')}" with bullets: ${(s.bullets || []).map((b) => `"${b}"`).join('; ')})`
+      : `\n  (suggested for ${s.sectionId}: "${s.text}")`)).join('');
   });
+  const newIds = newEntryIds(draft);
   // With a focus selected the other gaps stay out of the prompt entirely: when listed, the model asked about all of them.
   const jobGaps = focus.targets.length
     ? '(the student selected specific requirements: see WEAK SPOTS)'
@@ -440,7 +443,7 @@ ${jobGaps || '(none)'}
 =====BEGIN DRAFT=====
 ${draftPromptText(draft) || '(empty draft)'}
 =====END DRAFT=====
-The bracketed ids ([summary], [skills], [experience:0], [project:1]...) are the section ids your suggestions must target.
+The bracketed ids ([summary], [skills], [experience:0], [project:1]...) are the section ids your suggestions must target.${newIds.length ? `\nTo ADD a whole new role or project that is not in the draft yet, target ${newIds.map((x) => `[${x}]`).join(' or ')}.` : ''}
 
 =====BEGIN FULL PROFILE=====
 ${profileToText(fullProfile)}
@@ -473,6 +476,8 @@ SUGGESTION FORMAT (otherwise "asking": false and 0-4 suggestions, each targeting
 - field "summary" (sectionId "summary"): exactly ONE complete 2-4 sentence replacement summary in "text"; "original" = "".
 - field "skills" (sectionId "skills"): "text" = comma-separated skills to ADD, only ones present in the profile or stated by the student; "original" = "".
 - field "bullet" (sectionId "experience:<i>" or "project:<i>"): prefer rewriting an existing bullet of the target section, with "original" = that bullet VERBATIM and "text" = the rewrite; add a brand-new bullet only if none is a sensible base ("original" = ""). ONE rewrite per bullet. Never touch a bullet that hosts none of the flagged weak spots. Each bullet stays a single focused accomplishment, not a keyword dump.
+- field "entry" (sectionId "experience:new" or "project:new"): ONLY for a role or project the student described in this conversation, or one in the full profile, that is NOT already in the draft (to improve an entry already in the draft, use "bullet"). "title" = the role title or project name and "company" = the employer (experience only; "" for projects), both in the words the student or profile used, never invented: if the name or employer is unknown, ASK instead. "bullets" = 1-4 accomplishment bullets using only facts the student gave. "text" = "", "original" = "".
+- For every field except "entry": "title" = "", "company" = "", "bullets" = [].
 - "requirementKeys" = the [keys] that suggestion lifts.
 "reply" is concise plain text, no markdown headers. Return JSON only.`;
 
@@ -484,7 +489,7 @@ SUGGESTION FORMAT (otherwise "asking": false and 0-4 suggestions, each targeting
     responseSchema: obj({
       reply: S,
       asking: { type: Type.BOOLEAN },
-      suggestions: objArr({ sectionId: S, field: en(['summary', 'skills', 'bullet']), original: S, text: S, requirementKeys: strArr }),
+      suggestions: objArr({ sectionId: S, field: en(['summary', 'skills', 'bullet', 'entry']), original: S, text: S, title: S, company: S, bullets: strArr, requirementKeys: strArr }),
     }),
   });
 
@@ -505,7 +510,7 @@ SUGGESTION FORMAT (otherwise "asking": false and 0-4 suggestions, each targeting
   // The model's reply may describe suggestions the guards just removed, so say so plainly.
   if (forcedEmpty > 0) reply += "\n\n(I'll hold off on rewrites until you answer, so nothing is guessed.)";
   if (unsupportedTerms.length) {
-    reply += `\n\n(I left out a suggestion that named ${unsupportedTerms.join(', ')}, which isn't in your profile or our conversation. If you have actually used it, tell me where and I'll add it.)`;
+    reply += `\n\n(I left out a suggestion that named ${unsupportedTerms.join(', ')}, which isn't in your profile or our conversation. If it's real, tell me where it comes from and I'll add it.)`;
     if (!suggestions.length) asking = true;
   }
   if (rejected.placeholder > 0) {

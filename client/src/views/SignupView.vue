@@ -48,6 +48,7 @@ async function handleSignup() {
 <template>
   <section class="signup-page">
     <form class="card-inturn auth-card" novalidate @submit.prevent="handleSignup">
+      <RouterLink to="/" class="btn-link-inturn back-link"><i class="bi bi-arrow-left"></i>Back</RouterLink>
       <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
       <h2 class="welcome text-center">Create your account</h2>
       <p class="subtitle">Start preparing for your next internship.</p>
@@ -132,8 +133,15 @@ async function handleSignup() {
 }
 
 .brand-logo {
+  display: block;
   height: 60px;
   width: auto;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: flex;
+  margin-bottom: 1rem;
 }
 
 .auth-card {
