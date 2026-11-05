@@ -2,11 +2,10 @@
  
 **Find, track and prepare for internships in Singapore, in one place.**
  
-Inturn is a web application for university and polytechnic students. It brings internship discovery, application tracking, AI-assisted skill gap analysis and interview preparation together, so a student always knows what to do next, before and after they apply.
+Inturn is a web application for students looking for internship. It brings internship discovery, application tracking, AI-assisted skill gap analysis and interview preparation together, so a student always knows what to do next, before and after they apply.
  
 IS216 Web Application Development 2 group project, 2026-2027 Term 1.
  
-| | |
 |---|---|
 | **Live app** | https://inturn-seven.vercel.app |
 | **Git repository** | https://github.com/Masthebusschool/Inturn |
@@ -15,8 +14,8 @@ IS216 Web Application Development 2 group project, 2026-2027 Term 1.
  
 ## Problem and solution
  
-Most internship tools only track applications a student has already made. Students still struggle to find relevant roles, to see which skills a specific posting expects of them, and to prepare for interviews with realistic, role-specific practice.
- 
+Most internship tools only track applications a student has already made. Students still struggle to find relevant roles, to see which skills a specific posting expects of them, and to prepare for interviews with realistic, role-specific practice all while being organised when handling many applications.
+
 Inturn covers that earlier stage:
  
 1. **Discover** real internship listings from MyCareersFuture, ranked by how well they match the student's own profile.
@@ -53,6 +52,7 @@ Inturn covers that earlier stage:
 | End-to-end tests | Playwright |
 | Server tests | Node's built-in test runner |
 | Tooling | pnpm workspace (`client` and `server`) |
+| Hosting | Vercel (front end), Render (API), MongoDB Atlas (database), GitHub Actions (daily job sync)
  
 ### Data store
  
@@ -147,8 +147,8 @@ To run one side only: `pnpm dev:client` or `pnpm dev:server`. The Vite dev serve
  
 Open http://localhost:5173, click **Get started for free**, sign up with any name and email, and follow onboarding. Suggested path: onboarding (upload a resume PDF) → Job Discovery → Save an internship → Tracker Board → **Tailor Resume** on the saved card → move the card to Applied, then Interview → Interview Intel → Interview Journal.
  
-> **Demo account (optional):** `<EMAIL>` / `<PASSWORD>`  *(delete this line if you do not provide one)*
- 
+**Demo account (optional):** Email: testing@gmail.com / Password: Ab123456
+
 > **Gemini note:** a skill gap analysis on a posting that has not been analysed before makes three Gemini calls one after another and can take up to about two minutes. Results for the same posting are cached, so repeat runs are much faster. The Gemini free tier has a daily quota; if it runs out, AI features show a clear error and resume after the quota resets.
  
 ---
@@ -191,6 +191,7 @@ AI responses in the skill gap tests are mocked, so the suite is deterministic an
 | `intelfeed.spec.js` | Posting, filtering and upvoting interview intel |
 | `interviewjournal.spec.js` | Adding intel questions to the journal and saving STAR answers |
 | `skillgap.spec.js` | Skill gap analysis, score report and the tailor chat |
+| `jobs.spec.js` | Searching internships, skill filters, no-results state, invalid pay range, and retry after a failed search |
  
 Shared page actions live in `client/e2e/helpers/`, so each spec reads as a list of scenarios.
  
@@ -241,10 +242,10 @@ Gemini only works from facts already in the student's profile and resume. The ta
 | Name | Main contributions |
 |---|---|
 | Mas Lutfir Rahman Bin Jumari | Skill gap analysis, tailor chat, Gemini integration, skill gap e2e tests |
-| `<NAME>` | `<...>` |
-| `<NAME>` | `<...>` |
-| `<NAME>` | `<...>` |
-| `<NAME>` | `<...>` |
+| Charlene Woo Xin Ying | Search internships and sort/filter, intern application, search e2e test |
+| Sui Ruirong | Auth, onboarding, profile, resume analysis, UI, auth and profile e2e tests |
+| Muhammad Farhan Bin Abdul Rashid | Interview Journal, Intel Feed, journal and feed e2e tests |
+| Sherryan Soo Tingxuan | Applications Tracker Board, manual add job apps, favourite, search, sort, add checklist todo tasks and view missing skills per application, tracker board e2e tests |
  
 ---
  
