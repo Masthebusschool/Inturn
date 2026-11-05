@@ -24,7 +24,7 @@ export async function addCard(page, company, title, status, deadline = '2030-12-
 // add a task in the open checklist popup
 export async function addTask(page, text) {
     await page.getByRole('textbox', { name: 'e.g. Research the company' }).fill(text);
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.getByRole('button', { name: 'Add Task', exact: true }).click();
 
     // wait until it's saved (the checkbox unlocks once the server gives the task an id)
     // the server can be slow to reply during a full run, so allow more than the default 5s
@@ -39,7 +39,8 @@ export async function moveCard(page, card, status) {
 // delete every matching card from its 3 dot menu (does nothing if there are none)
 export async function deleteCard(page, company, title) {
     // wait for the board to load before checking for the card
-    await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
+    // loading the cards from the database can take well over the default 5s
+    await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible({ timeout: 30000 });
 
     const cards = getCard(page, company, title);
     let remaining = await cards.count();

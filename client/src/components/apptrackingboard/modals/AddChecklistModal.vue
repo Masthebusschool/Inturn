@@ -63,9 +63,9 @@ function addTask () {
           </ul>
 
           <!-- add a new task for the checklist -->
-          <form class="d-flex gap-2" v-on:submit.prevent="addTask">
+          <form v-on:submit.prevent="addTask">
             <textarea v-model="newTask" class="input-inturn" rows="3" style="resize: none;" placeholder="e.g. Research the company" :maxlength="MAX_TASK_LENGTH" :disabled="isFull"></textarea>
-            <button type="submit" class="btn-primary-inturn" :disabled="isFull">Add</button>
+            <button type="submit" class="btn-primary-inturn w-100 my-2" :disabled="isFull">Add Task</button>
           </form>
 
           <p v-if="duplicateError" class="small text-danger mt-2 mb-0">

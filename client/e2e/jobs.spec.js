@@ -14,7 +14,7 @@ import { loginTestUser } from './helpers/loginhelper.js';
   5. User retries after a failed search request
  */
 
-// disclaimer: unable to do internship-related testing as internships refreshes everyday 
+// disclaimer: unable to do specific listing testing as internships refreshes everyday 
 // due to a scheduled sync to update live internships, thus it may change and test may fail if
 // listing expires.
 
