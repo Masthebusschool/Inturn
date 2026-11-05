@@ -757,6 +757,9 @@ export async function searchPublishedJobs(input = {}) {
         $project: {
           _id: 0,
           job: 1,
+          matchPercentage: "$percentage",
+          matchCount: "$resumeCount",
+          totalSkillCount: { $size: "$search.skills" },
         },
       },
     ],
@@ -767,7 +770,15 @@ export async function searchPublishedJobs(input = {}) {
   ).toArray();
 
   return {
-    results: documents.map((document) => document.job),
+    // Canonical (alias-aware) skill match numbers, same ones the sort above used — the client
+    // renders these instead of recomputing with its own plain-string comparison, which used to
+    // disagree with the actual sort order.
+    results: documents.map((document) => ({
+      ...document.job,
+      matchPercentage: document.matchPercentage === -1 ? null : document.matchPercentage,
+      matchCount: document.matchCount,
+      totalSkillCount: document.totalSkillCount,
+    })),
     total,
     totalPages,
     page,

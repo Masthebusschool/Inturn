@@ -225,7 +225,7 @@
 
                   <span>
                     {{ getMatchCount(job) }} of
-                    {{ getJobSkillNames(job).length }} listed skills
+                    {{ getTotalSkillCount(job) }} listed skills
                   </span>
                 </template>
 
@@ -383,8 +383,8 @@ const {
   getEmployment,
   getSalary,
   getExperience,
-  getJobSkillNames,
   getMatchCount,
+  getTotalSkillCount,
   getMatchPercentage,
   getSelectedSkillMatchCount,
   isSaved,

@@ -466,11 +466,17 @@ export function useJobsView() {
     return matches.length;
   }
 
+  // The server computes this with the same alias-aware skill matching it sorts "Best Skill
+  // Match" by (see server/src/utils/skillNormalize.js), so the badge always agrees with the
+  // order jobs are actually returned in. Don't recompute it client-side with plain string
+  // comparison — that disagreed with the real sort and looked like results were ordered by
+  // raw match count instead of percentage.
   function getMatchCount(job) {
-    return countMatchingSkills(
-      job,
-      resumeSkills.value
-    );
+    return job.matchCount ?? 0;
+  }
+
+  function getTotalSkillCount(job) {
+    return job.totalSkillCount ?? 0;
   }
 
   function getSelectedSkillMatchCount(job) {
@@ -481,18 +487,7 @@ export function useJobsView() {
   }
 
   function getMatchPercentage(job) {
-    const totalSkills = getJobSkillNames(job).length;
-
-    if (
-      totalSkills === 0 ||
-      resumeSkills.value.length === 0
-    ) {
-      return null;
-    }
-
-    return Math.round(
-      getMatchCount(job) / totalSkills * 100
-    );
+    return typeof job.matchPercentage === "number" ? job.matchPercentage : null;
   }
 
   function notify(message) {
@@ -678,6 +673,7 @@ export function useJobsView() {
     getExperience,
     getJobSkillNames,
     getMatchCount,
+    getTotalSkillCount,
     getMatchPercentage,
     getSelectedSkillMatchCount,
     isSaved,
