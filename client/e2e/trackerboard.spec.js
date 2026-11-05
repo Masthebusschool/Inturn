@@ -27,12 +27,19 @@ import {
  */
 
 test.describe('Tracker Board', () => {
+    // all tests share one account and the same card names, so run them one at a time
+    test.describe.configure({ mode: 'default' });
+
     // every test starts logged in on the tracker board
     test.beforeEach(async ({ page }) => {
         await loginTestUser(page, 'samt@gmail.com', 'Qwertyuiop1');
 
         // bridge portion to reach tracker board:
         await goToNav(page, 'Tracker Board');
+
+        // clear leftovers from an earlier interrupted/failed run so the duplicate check doesn't trip
+        await deleteCard(page, 'Grab', 'Software Intern');
+        await deleteCard(page, 'DBS', 'Software Intern');
     });
 
     // remove the test cards so the next run can add them again (avoids the duplicate check)
@@ -221,7 +228,7 @@ test.describe('Tracker Board', () => {
 
         // submit with nothing filled in
         await page.getByRole('button', { name: 'Add', exact: true }).click();
-        await expect(page.getByText('Please enter the job title.')).toBeVisible();
+        await expect(page.getByText('Please enter the internship title.')).toBeVisible();
         await expect(page.getByText('Please enter the company name.')).toBeVisible();
         await expect(page.getByText('Please pick the application deadline.')).toBeVisible();
 
@@ -269,7 +276,7 @@ test.describe('Tracker Board', () => {
         await page.getByRole('textbox', { name: 'e.g. Software Engineer Intern' }).fill('');
         await page.getByRole('textbox', { name: 'https://...' }).fill('grab.com/careers');
         await page.getByRole('button', { name: 'Save', exact: true }).click();
-        await expect(page.getByText('Please enter the job title.')).toBeVisible();
+        await expect(page.getByText('Please enter the internship title.')).toBeVisible();
         await expect(page.getByText('Link must start with http:// or https://')).toBeVisible();
 
         // renaming it to match the DBS card counts as a duplicate

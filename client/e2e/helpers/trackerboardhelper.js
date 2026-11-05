@@ -27,7 +27,8 @@ export async function addTask(page, text) {
     await page.getByRole('button', { name: 'Add', exact: true }).click();
 
     // wait until it's saved (the checkbox unlocks once the server gives the task an id)
-    await expect(page.getByRole('listitem').filter({ hasText: text }).getByRole('checkbox')).toBeEnabled();
+    // the server can be slow to reply during a full run, so allow more than the default 5s
+    await expect(page.getByRole('listitem').filter({ hasText: text }).getByRole('checkbox')).toBeEnabled({ timeout: 15000 });
 }
 
 // drag a card into another column
@@ -35,16 +36,20 @@ export async function moveCard(page, card, status) {
     await card.dragTo(getColumn(page, status));
 }
 
-// delete a card from its 3 dot menu
+// delete every matching card from its 3 dot menu (does nothing if there are none)
 export async function deleteCard(page, company, title) {
     // wait for the board to load before checking for the card
     await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
 
-    const card = getCard(page, company, title);
-    if (await card.count() === 0) return;
+    const cards = getCard(page, company, title);
+    let remaining = await cards.count();
 
-    await card.getByRole('button', { name: 'Card options' }).click();
-    await card.getByRole('button', { name: 'Delete Card' }).click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
-    await expect(card).toHaveCount(0);
+    while (remaining > 0) {
+        const card = cards.first();
+        await card.getByRole('button', { name: 'Card options' }).click();
+        await card.getByRole('button', { name: 'Delete Card' }).click();
+        await page.getByRole('button', { name: 'Delete', exact: true }).click();
+        await expect(cards).toHaveCount(remaining - 1);
+        remaining--;
+    }
 }
