@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const SEARCH_VERSION = 2;
+export const SEARCH_VERSION = 2;
 
 function database() {
   if (mongoose.connection.readyState !== 1) {
