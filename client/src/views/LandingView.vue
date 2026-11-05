@@ -135,8 +135,8 @@ const sampleTasks = [
         <div class="card border-0 shadow rounded-4 p-4">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
-              <h3 class="h6 fw-semibold mb-0">Software Intern</h3>
-              <p class="small text-secondary mb-0">Sample Company</p>
+              <h3 class="h6 fw-semibold mb-0">Your Dream Internship Role</h3>
+              <p class="small text-secondary mb-0">Your Dream Company</p>
             </div>
             <span class="badge text-bg-info">Interview</span>
           </div>
