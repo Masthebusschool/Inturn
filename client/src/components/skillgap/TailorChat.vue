@@ -87,12 +87,12 @@ watch(() => [props.messages.length, sending.value], async () => {
       <p v-if="!messages.length && !sending" class="small text-body-secondary text-center my-4">
         Ask for help strengthening your draft. Suggestions only use facts from your draft, your profile, or what you tell me here.
       </p>
-      <div v-for="(m, i) in messages" :key="i" class="sg-msg" :class="m.role === 'user' ? 'is-user' : 'is-bot'">
+      <div v-for="(m, i) in messages" :key="i" class="sg-msg" :class="m.role === 'user' ? 'is-user' : 'is-bot'" :data-testid="`sg-msg-${m.role}`">
         <div class="sg-bubble">
           <span v-if="m.asking" class="badge text-bg-warning mb-1">Needs your answer</span>
           <div class="sg-text">{{ m.text }}</div>
         </div>
-        <div v-for="s in visible(m)" :key="s.id" class="sg-sugg card-inturn p-0">
+        <div v-for="s in visible(m)" :key="s.id" class="sg-sugg card-inturn p-0" data-testid="sg-suggestion">
           <div class="p-2">
             <div class="small fw-semibold mb-1">{{ sectionLabel(draft, s.sectionId) }}</div>
             <div v-if="s.original" class="small text-body-secondary mb-1">Replaces: <s>{{ s.original }}</s></div>
