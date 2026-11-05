@@ -66,6 +66,13 @@ MongoDB holds users, resumes, saved applications, skill gap results and history,
 | **Google Gemini** (`@google/genai`) | Resume parsing, requirement extraction, skill grading, tailored resume drafts and the tailor chat | All calls go through one gateway (`server/src/services/aiGateway.js`) that serialises requests, spaces them out, times them out and retries on overload or quota errors. |
  
 ---
+
+## AI Declaration (Areas Of Usage)
+
+### 1. Explaining coding errors and debugging hints
+### 2. Boilerplate code generation - starter code and code snippets
+### 3. Generating mock data and sample inputs
+### 4. Generating website layouts, based on different UI/UX inspirations 
  
 ## Getting started
  
