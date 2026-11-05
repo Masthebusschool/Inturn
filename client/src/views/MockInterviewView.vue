@@ -416,10 +416,9 @@ async function confirmDeleteQuestion() {
                 <button
                   type="button"
                   class="btn btn-link btn-sm text-danger text-decoration-none p-0"
-                  title="Remove question from journal"
                   @click="deleteQuestion(activeQuestion.id)"
                 >
-                  <i class="bi bi-trash me-1"></i>Remove
+                  <i class="bi bi-trash me-1" aria-hidden="true"></i>Remove
                 </button>
               </div>
             </div>
