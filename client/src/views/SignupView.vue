@@ -47,9 +47,8 @@ async function handleSignup() {
 
 <template>
   <section class="signup-page">
-    <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
-
     <form class="card-inturn auth-card" novalidate @submit.prevent="handleSignup">
+      <img src="../assets/logogogo.jpg" class="brand-logo" alt="Inturn">
       <h2 class="welcome text-center">Create your account</h2>
       <p class="subtitle">Start preparing for your next internship.</p>
 
