@@ -63,7 +63,7 @@ const sampleTasks = [
     <!-- Hero Banner -->
     <section class="row align-items-center g-4 mb-5">
       <div class="col-lg-7">
-        <span class="badge fs-6 text-bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-3 mb-3">
+        <span class="badge text-bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-3 mb-3" style="font-size: 0.85em;">
           "Built for students in Singapore - By students in Singapore"
         </span>
         <h1 class="display-5 fw-bold mb-3">
