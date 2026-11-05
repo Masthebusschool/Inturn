@@ -154,7 +154,66 @@ Open http://localhost:5173, click **Get started for free**, sign up with any nam
 ---
  
 ## Testing
- 
+
+### Prerequisites
+
+Check these before running either test suite.
+
+**Environment**
+
+- Setup steps 1–3 above are done: dependencies are installed and `server/.env` has a working `MONGODB_URI`. Both suites use the real database. The server tests fail at startup if `MONGODB_URI` is missing.
+- The job listings snapshot is loaded (step 3). `jobs.spec.js` expects a search for "intern" to return at least one result.
+- For the e2e tests, the app is already running with `pnpm dev`. Playwright does not start it. The tests use `http://localhost:5173` directly, and the client sends API calls to port `3000`.
+- The Playwright browsers are installed (`pnpm --filter ./client exec playwright install`).
+
+**Test accounts**
+
+Some specs sign up a new account each time. Others log in to a fixed account that must **already exist** in the database:
+
+| Account | Password | Used by | The account must |
+|---|---|---|---|
+| `test@edu.sg` | `Testing12` | `intelfeed.spec.js`, `interviewjournal.spec.js` | Have finished onboarding, and still have the starter journal question *"Tell me about a disagreement with a teammate over a technical approach."* (every new account gets it, so don't delete it) |
+| `char@gmail.com` | `Ab123456` | `jobs.spec.js` | Have finished onboarding, so that logging in lands on `/jobs` |
+| `samt@gmail.com` | `Qwertyuiop1` | `trackerboard.spec.js` | Have finished onboarding, so that the side nav shows after login |
+
+These accounts already exist in the team database, which is the one set in the submitted `.env`. If you use your own MongoDB, create each account on the sign-up page and complete onboarding. Any education level and one skill is enough, and the resume step can be skipped.
+
+`auth.spec.js`, `profile.spec.js` and `skillgap.spec.js` don't need any existing account. They sign up new accounts named `e2e-<timestamp>-<n>@inturn.test` with the password `Passw0rd123`. Most of these accounts are not deleted afterwards and build up in the database, which is harmless. The server tests create or reuse a user named `dev@inturn.local`.
+
+**Data the tests create and delete**
+
+The tests use reserved names, so keep real data off these names on the test accounts:
+
+| Spec | Test data (deleted when cleaning up) |
+|---|---|
+| `trackerboard.spec.js` | Cards "Grab – Software Intern" and "DBS – Software Intern" on `samt@gmail.com`'s board. They are deleted before and after every test. Other cards titled "Software Intern" on that board can break the search and sort test. |
+| `intelfeed.spec.js` | Intel posts for the company "E2E Intel Co" |
+| `interviewjournal.spec.js` | Intel posts for "E2E Journal Co", journal questions starting with "E2E journal question", and the saved answer on the starter question above |
+
+If a run is interrupted, the next run normally deletes the leftover data. If a test still fails because leftover data is in the way, delete it by hand in the app.
+
+**Run one at a time**
+
+The fixed accounts are shared. Two test runs at the same time against the same database delete each other's test data and fail randomly. This includes two teammates running tests at once, or one person starting a second run. Also, `playwright.config.js` runs Chromium, Firefox and WebKit in parallel, all logging in to the same accounts. So run with one worker or one browser:
+
+```bash
+pnpm --filter ./client exec playwright test --workers=1
+pnpm --filter ./client exec playwright test --project=chromium
+```
+
+**Slow database**
+
+The database is MongoDB Atlas, reached over the internet, so a request occasionally takes several seconds. Waits that depend on the database already allow extra time. On a slow connection a test can still time out now and then, so rerun it before assuming something is broken.
+
+**AI (Gemini)**
+
+The skill gap e2e tests mock every AI call, so they need no Gemini key and use no quota. The optional real-AI smoke test needs `GEMINI_API_KEY` in `server/.env`, remaining free-tier quota, and the `RUN_AI_TESTS` variable:
+
+```bash
+RUN_AI_TESTS=1 pnpm --filter ./client exec playwright test skillgap.spec.js     # bash
+$env:RUN_AI_TESTS=1; pnpm --filter ./client exec playwright test skillgap.spec.js  # PowerShell
+```
+
 ### End-to-end tests (Playwright)
  
 The e2e tests drive the real app in a browser and check complete user journeys, including both successful and failed paths.
