@@ -39,7 +39,8 @@ export async function moveCard(page, card, status) {
 // delete every matching card from its 3 dot menu (does nothing if there are none)
 export async function deleteCard(page, company, title) {
     // wait for the board to load before checking for the card
-    await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible();
+    // loading the cards from the database can take well over the default 5s
+    await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible({ timeout: 30000 });
 
     const cards = getCard(page, company, title);
     let remaining = await cards.count();
