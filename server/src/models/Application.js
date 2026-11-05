@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
 import { STATUS, STATUSES } from "./constants/statuses.js";
 import { MAX_TASKS } from "./constants/applications.js";
+import { canonical } from "../utils/skillNormalize.js";
 
+const skillKey = (t) => canonical(t) || String(t).toLowerCase();
 // One tasklist per app
 const taskSchema = new mongoose.Schema(
     {
@@ -50,6 +52,7 @@ const Application = mongoose.model('Application', applicationSchema);
 export function toCard(application, skills) {
     let completedTasks = 0;
     // get how many tasks completed count
+    const have = new Set(skills.map(skillKey));
     application.tasks.forEach(task => {
         if (task.done) completedTasks++;
     });
@@ -58,7 +61,7 @@ export function toCard(application, skills) {
     let skillsMatched = 0;
     let skillsMissing = [];
     application.skills.forEach(skill => {
-        if(skills.includes(skill.toLowerCase())) skillsMatched++;
+        if(have.has(skillKey(skill))) skillsMatched++;
         else skillsMissing.push(skill);
     });
 
